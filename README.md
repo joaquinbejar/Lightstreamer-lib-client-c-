@@ -1,2 +1,2 @@
-# Lightstreamer-lib-client-c-
+# Lightstreamer-lib-client-cpp
 Lightstreamer C++ Client SDK

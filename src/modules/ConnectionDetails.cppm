@@ -22,6 +22,40 @@
  ******************************************************************************/
 
 export module ConnectionDetails;
-namespace Lightstreamer::Cpp::ConnectionDetails {
 
+import <string>;
+
+namespace Lightstreamer::Cpp::ConnectionDetails {
+    typedef int AdapterSet;  // TODO:  Define the type of AdapterSet
+    typedef std::string Password; // TODO:  Define the type of Password
+    typedef std::string User; // TODO:  Define the type of User
+    typedef std::string ServerAddress; // TODO:  Define the type of ServerAddress
+
+
+    class ConnectionDetails {
+    public:
+        void getAdapterSet() {}
+
+        void getClientIp() {}
+
+        void getServerAddress() {}
+
+        void getServerInstanceAddress() {}
+
+        void getServerSocketName() {}
+
+        void getSessionId() {}
+
+        void getUser() {}
+
+        void setAdapterSet(AdapterSet adapterset) {}
+
+        void setPassword(Password password) {}
+
+        void setServerAddress(ServerAddress serveraddress) {}
+
+        void setUser(User user) {}
+
+
+    };
 }

@@ -23,5 +23,9 @@
 
 export module Proxy;
 namespace Lightstreamer::Cpp::Proxy {
+    class Proxy {
+    public:
+
+    };
 
 }

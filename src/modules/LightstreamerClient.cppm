@@ -23,5 +23,9 @@
 
 export module LightstreamerClient;
 namespace Lightstreamer::Cpp::LightstreamerClient {
+    class LightstreamerClient {
+    public:
+
+    };
 
 }

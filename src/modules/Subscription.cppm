@@ -23,5 +23,8 @@
 
 export module Subscription;
 namespace Lightstreamer::Cpp::Subscription {
+    class Subscription {
+    public:
 
+    };
 }

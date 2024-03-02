@@ -23,5 +23,8 @@
 
 export module ConsoleLogLevel;
 namespace Lightstreamer::Cpp::ConsoleLogLevel {
+     class ConsoleLogLevel {
+    public:
 
+    };
 }

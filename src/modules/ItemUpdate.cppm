@@ -24,4 +24,9 @@
 export module ItemUpdate;
 namespace Lightstreamer::Cpp::ItemUpdate {
 
+        class ItemUpdate {
+        public:
+
+        };
+
 }

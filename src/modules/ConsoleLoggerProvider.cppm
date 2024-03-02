@@ -23,5 +23,9 @@
 
 export module ConsoleLoggerProvider;
 namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
+     class ConsoleLoggerProvider {
+    public:
+
+    };
 
 }

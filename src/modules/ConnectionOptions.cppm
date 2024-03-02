@@ -22,6 +22,101 @@
  ******************************************************************************/
 
 export module ConnectionOptions;
+
+import <string>;
+
 namespace Lightstreamer::Cpp::ConnectionOptions {
+
+    typedef void ContentLength; // TODO: Implement this type
+    typedef void FirstRetryMaxDelay; // TODO: Implement this type
+    typedef void ForcedTransport; // TODO: Implement this type
+    typedef void HttpExtraHeaders; // TODO: Implement this type
+    typedef void HttpExtraHeadersOnSessionCreationOnly; // TODO: Implement this type
+    typedef void IdleTimeout; // TODO: Implement this type
+    typedef void KeepaliveInterval; // TODO: Implement this type
+    typedef void PollingInterval; // TODO: Implement this type
+    typedef void Proxy; // TODO: Implement this type
+    typedef void ReconnectTimeout; // TODO: Implement this type
+    typedef void MaxBandwidth; // TODO: Implement this type
+    typedef void RetryDelay; // TODO: Implement this type
+    typedef void ReverseHeartbeatInterval; // TODO: Implement this type
+    typedef void ServerInstanceAddressIgnored; // TODO: Implement this type
+    typedef void SessionRecoveryTimeout; // TODO: Implement this type
+    typedef void SlowingEnabled; // TODO: Implement this type
+    typedef void StalledTimeout; // TODO: Implement this type
+
+
+    class ConnectionOptions {
+
+        void getContentLength() {}
+
+        void getFirstRetryMaxDelay() {}
+
+        void getForcedTransport() {}
+
+        void getHttpExtraHeaders() {}
+
+        void getIdleTimeout() {}
+
+        void getKeepaliveInterval() {}
+
+        void getPollingInterval() {}
+
+        void getRealMaxBandwidth() {}
+
+        void getReconnectTimeout() {}
+
+        void getRequestedMaxBandwidth() {}
+
+        void getRetryDelay() {}
+
+        void getReverseHeartbeatInterval() {}
+
+        void getSessionRecoveryTimeout() {}
+
+        void getStalledTimeout() {}
+
+        void isHttpExtraHeadersOnSessionCreationOnly() {}
+
+        void isServerInstanceAddressIgnored() {}
+
+        void isSlowingEnabled() {}
+
+        void setContentLength(ContentLength contentlength) {}
+
+        void setFirstRetryMaxDelay(FirstRetryMaxDelay firstretrymaxdelay) {}
+
+        void setForcedTransport(ForcedTransport forcedtransport) {}
+
+        void setHttpExtraHeaders(HttpExtraHeaders httpextraheaders) {}
+
+        void setHttpExtraHeadersOnSessionCreationOnly(
+                HttpExtraHeadersOnSessionCreationOnly httpextraheadersonsessioncreationonly) {}
+
+        void setIdleTimeout(IdleTimeout idletimeout) {}
+
+        void setKeepaliveInterval(KeepaliveInterval keepaliveinterval) {}
+
+        void setPollingInterval(PollingInterval pollinginterval) {}
+
+        void setProxy(Proxy proxy) {}
+
+        void setReconnectTimeout(ReconnectTimeout reconnecttimeout) {}
+
+        void setRequestedMaxBandwidth(MaxBandwidth maxbandwidth) {}
+
+        void setRetryDelay(RetryDelay retrydelay) {}
+
+        void setReverseHeartbeatInterval(ReverseHeartbeatInterval reverseheartbeatinterval) {}
+
+        void setServerInstanceAddressIgnored(ServerInstanceAddressIgnored serverinstanceaddressignored) {}
+
+        void setSessionRecoveryTimeout(SessionRecoveryTimeout sessionrecoverytimeout) {}
+
+        void setSlowingEnabled(SlowingEnabled slowingenabled) {}
+
+        void setStalledTimeout(StalledTimeout stalledtimeout) {}
+
+    };
 
 }

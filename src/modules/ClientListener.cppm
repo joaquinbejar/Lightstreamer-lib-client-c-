@@ -22,7 +22,25 @@
  ******************************************************************************/
 
 export module ClientListener;
+import <string>;
 
 namespace Lightstreamer::Cpp::ClientListener {
+    typedef int Property; // TODO: Define the property type
+    typedef int Code; // TODO: Define the code type
+    typedef std::string Mesagge; // TODO: Define the message type
+    typedef int Status; // TODO: Define the status type
 
+    class ClientListener {
+    public:
+        void onListenEnd() {}
+
+        void onListenStart() {}
+
+        void onPropertyChange(Property property) {}
+
+        void onServerError(Code code, Mesagge message) {}
+
+        void onStatusChange(Status status) {}
+
+    };
 }

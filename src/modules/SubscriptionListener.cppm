@@ -23,5 +23,8 @@
 
 export module SubscriptionListener;
 namespace Lightstreamer::Cpp::SubscriptionListener {
+    class SubscriptionListener {
+    public:
 
+    };
 }

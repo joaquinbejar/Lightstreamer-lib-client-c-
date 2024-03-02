@@ -1,3 +1,4 @@
 [submodule "extern/beast"]
 	path = extern/beast
 	url = https://github.com/boostorg/beast.git
+    # Use tag boost-1.84.0 for this submodule

@@ -21,21 +21,7 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-module;
-
-export module ILoggerProvider;
-import <string>;
-
-import ILogger;
-
-export namespace Lightstreamer::Cpp::Logging::Log {
-    class ILoggerProvider {
-    public:
-        virtual ~ILoggerProvider() = default;
-
-        // Request for an ILogger instance that will be used for logging occurring on the given category.
-        // It is suggested, but not mandatory, that subsequent calls to this method related to the same category return the same ILogger instance.
-        virtual ILogger *GetLogger(const std::string &category) = 0;
-    };
+export module ClientMessageListener;
+namespace Lightstreamer::Cpp::ClientMessageListener {
 
 }

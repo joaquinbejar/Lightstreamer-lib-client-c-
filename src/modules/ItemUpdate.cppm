@@ -20,25 +20,8 @@
  You should have received a copy of the GNU General Public License along
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
-module;
 
-export module ILogger;
-import <string>;
+export module ItemUpdate;
+namespace Lightstreamer::Cpp::ItemUpdate {
 
-export namespace Lightstreamer::Cpp::Logging::Log {
-    class ILogger {
-    public:
-        virtual ~ILogger() = default;
-        virtual void Error(const std::string& message) = 0;
-        virtual void Warn(const std::string& message) = 0;
-        virtual void Info(const std::string& message) = 0;
-        virtual void Debug(const std::string& message) = 0;
-        virtual void Fatal(const std::string& message) = 0;
-
-        virtual bool IsDebugEnabled() const = 0;
-        virtual bool IsInfoEnabled() const = 0;
-        virtual bool IsWarnEnabled() const = 0;
-        virtual bool IsErrorEnabled() const = 0;
-        virtual bool IsFatalEnabled() const = 0;
-    };
 }

@@ -23,10 +23,30 @@
 
 export module ItemUpdate;
 namespace Lightstreamer::Cpp::ItemUpdate {
+    typedef int FieldNameOrPos; // TODO: Define FieldNameOrPos type
 
-        class ItemUpdate {
-        public:
+    class ItemUpdate {
+    public:
 
-        };
+        void getChangedFields() {}
+
+        void getChangedFieldsByPosition() {}
+
+        void getFields() {}
+
+        void getFieldsByPosition() {}
+
+        void getItemName() {}
+
+        void getItemPos() {}
+
+        void getValue(FieldNameOrPos fieldnameorpos) {}
+
+        void getValueAsJSONPatchIfAvailable(FieldNameOrPos fieldnameorpos) {}
+
+        void isSnapshot() {}
+
+        void isValueChanged(FieldNameOrPos fieldnameorpos) {}
+    };
 
 }

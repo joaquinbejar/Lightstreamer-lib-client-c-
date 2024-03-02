@@ -23,8 +23,14 @@
 
 export module ConsoleLoggerProvider;
 namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
+    typedef int Category; // TODO: Define Category type
+    typedef int ConsoleLogger; // TODO: Define ConsoleLogger type
+
      class ConsoleLoggerProvider {
     public:
+         ConsoleLogger getLogger(Category category) {
+                return {};
+         }
 
     };
 

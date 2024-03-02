@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Idea
+.idea
+.run
+.temp
+.env

@@ -23,6 +23,19 @@
 
 export module Proxy;
 namespace Lightstreamer::Cpp::Proxy {
+
+    /**
+    Simple class representing a Proxy configuration.
+
+    An instance of this class can be used through :meth:`ConnectionOptions.setProxy` to
+            instruct a LightstreamerClient to connect to the Lightstreamer Server passing through a proxy.
+
+    @param type: the proxy type. Supported values are HTTP, SOCKS4 and SOCKS5.
+    @param host: the proxy host
+    @param port: the proxy port
+    @param user: the user name to be used to validate against the proxy. Optional.
+    @param password: the password to be used to validate against the proxy. Optional.
+    **/
     class Proxy {
     public:
 

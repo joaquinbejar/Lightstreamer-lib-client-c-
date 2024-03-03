@@ -25,7 +25,7 @@ export module ItemUpdate;
 namespace Lightstreamer::Cpp::ItemUpdate {
     typedef int FieldNameOrPos; // TODO: Define FieldNameOrPos type
 
-    /*
+    /**
     Contains all the information related to an update of the field values for an item.
     It reports all the new values of the fields.
 
@@ -48,11 +48,11 @@ namespace Lightstreamer::Cpp::ItemUpdate {
     * The field position can always be used; however, the field positions for the second-level fields start at the
     highest position of the first-level field list + 1. If a field schema had been specified for either first-level or
     second-level Subscriptions, then client-side knowledge of the first-level schema length would be required.
-    */
+    **/
     class ItemUpdate {
     public:
 
-        /*
+        /**
 		Returns a map containing the values for each field changed with the last server update.
         The related field name is used as key for the values in the map.
         Note that if the Subscription mode of the involved Subscription is COMMAND, then changed fields
@@ -61,16 +61,16 @@ namespace Lightstreamer::Cpp::ItemUpdate {
         All of this is also true on tables that have the two-level behavior enabled, but in case of
         DELETE commands second-level fields will not be iterated.
 
-        :raises IllegalStateException: if the Subscription was initialized using a field schema.
+        @throw IllegalStateException: if the Subscription was initialized using a field schema.
 
-        :return: A map containing the values for each field changed with the last server update.
+        @return: A map containing the values for each field changed with the last server update.
 
-        .. seealso:: :meth:`.Subscription.setFieldSchema`
-        .. seealso:: :meth:`.Subscription.setFields`
-        */
+        .. seealso:: \ref `.Subscription.setFieldSchema`
+        .. seealso:: \ref `.Subscription.setFields`
+        **/
         void getChangedFields() {}
 
-        /*
+        /**
 		Returns a map containing the values for each field changed with the last server update.
         The 1-based field position within the field schema or field list is used as key for the values in the map.
         Note that if the Subscription mode of the involved Subscription is COMMAND, then changed fields
@@ -79,81 +79,81 @@ namespace Lightstreamer::Cpp::ItemUpdate {
         All of this is also true on tables that have the two-level behavior enabled, but in case of
         DELETE commands second-level fields will not be iterated.
 
-        :return: A map containing the values for each field changed with the last server update.
+        @return: A map containing the values for each field changed with the last server update.
 
-        .. seealso:: :meth:`.Subscription.setFieldSchema`
-        .. seealso:: :meth:`.Subscription.setFields`
-        */
+        .. seealso:: \ref `.Subscription.setFieldSchema`
+        .. seealso:: \ref `.Subscription.setFields`
+        **/
         void getChangedFieldsByPosition() {}
 
-        /*
+        /**
 		Returns a map containing the values for each field in the Subscription.
         The related field name is used as key for the values in the map.
 
-        :raises IllegalStateException: if the Subscription was initialized using a field schema.
+        @throw IllegalStateException: if the Subscription was initialized using a field schema.
 
-        :return: A map containing the values for each field in the Subscription.
+        @return: A map containing the values for each field in the Subscription.
 
-        .. seealso:: :meth:`.Subscription.setFieldSchema`
-        .. seealso:: :meth:`.Subscription.setFields`
-        */
+        .. seealso:: \ref `.Subscription.setFieldSchema`
+        .. seealso:: \ref `.Subscription.setFields`
+        **/
         void getFields() {}
 
-        /*
+        /**
 		Returns a map containing the values for each field in the Subscription.
         The 1-based field position within the field schema or field list is used as key for the values in the map.
 
-        :return: A map containing the values for each field in the Subscription.
+        @return: A map containing the values for each field in the Subscription.
 
-        .. seealso:: :meth:`.Subscription.setFieldSchema`
-        .. seealso:: :meth:`.Subscription.setFields`
-        */
+        .. seealso:: \ref `.Subscription.setFieldSchema`
+        .. seealso:: \ref `.Subscription.setFields`
+        **/
         void getFieldsByPosition() {}
 
-        /*
+        /**
 		Inquiry method that retrieves the name of the item to which this update pertains.
 
         The name will be None if the related Subscription was initialized using an "Item Group".
 
-        :return: The name of the item to which this update pertains.
+        @return: The name of the item to which this update pertains.
 
-        .. seealso:: :meth:`.Subscription.setItemGroup`
-        .. seealso:: :meth:`.Subscription.setItems`
-        */
+        .. seealso:: \ref `.Subscription.setItemGroup`
+        .. seealso:: \ref `.Subscription.setItems`
+        **/
         void getItemName() {}
 
-        /*
+        /**
 		Inquiry method that retrieves the position in the "Item List" or "Item Group" of the item to which this update pertains.
 
-        :return: The 1-based position of the item to which this update pertains.
+        @return: The 1-based position of the item to which this update pertains.
 
-        .. seealso:: :meth:`.Subscription.setItemGroup`
-        .. seealso:: :meth:`.Subscription.setItems`
-        */
+        .. seealso:: \ref `.Subscription.setItemGroup`
+        .. seealso:: \ref `.Subscription.setItems`
+        **/
         void getItemPos() {}
 
-        /*
+        /**
 		Inquiry method that gets the value for a specified field, as received from the Server with the current or
         previous update.
 
-        :raises IllegalArgumentException: if the specified field is not part of the Subscription.
+        @throw IllegalArgumentException: if the specified field is not part of the Subscription.
 
-        :param fieldNameOrPos: The field name or the 1-based position of the field within the "Field List" or
+        @param fieldNameOrPos: The field name or the 1-based position of the field within the "Field List" or
         "Field Schema".
 
-        :return: The value of the specified field; it can be None in the following cases:
+        @return: The value of the specified field; it can be None in the following cases:
 
-                * a None value has been received from the Server, as None is a possible value for a field;
+        * a None value has been received from the Server, as None is a possible value for a field;
         * no value has been received for the field yet;
         * the item is subscribed to with the COMMAND mode and a DELETE command is received (only the fields used to
         carry key and command information are valued).
 
-        .. seealso:: :meth:`.Subscription.setFieldSchema`
-        .. seealso:: :meth:`.Subscription.setFields`
-        */
+        .. seealso:: \ref `.Subscription.setFieldSchema`
+        .. seealso:: \ref `.Subscription.setFields`
+        **/
         void getValue(FieldNameOrPos fieldnameorpos) {}
 
-        /*
+        /**
 		Inquiry method that gets the difference between the new value and the previous one as a JSON Patch structure,
         provided that the Server has used the JSON Patch format to send this difference, as part of the "delta delivery"
         mechanism. This, in turn, requires that:
@@ -170,25 +170,25 @@ namespace Lightstreamer::Cpp::ItemUpdate {
         flag, so that the availability of the JSON Patch form would only depend on the Client and the Data Adapter.
 
         When the above conditions are not met, the method just returns None; in this case, the new value can only be
-        determined through :meth:`ItemUpdate.getValue`. For instance, this will always be needed to get the first value
+        determined through \ref `ItemUpdate.getValue`. For instance, this will always be needed to get the first value
          received.
 
-        :raises IllegalArgumentException: if the specified field is not part of the Subscription.
+        @throw IllegalArgumentException: if the specified field is not part of the Subscription.
 
-        :param fieldNameOrPos: The field name or the 1-based position of the field within the "Field List" or
+        @param fieldNameOrPos: The field name or the 1-based position of the field within the "Field List" or
         "Field Schema".
 
-        :return: A JSON Patch structure representing the difference between the new value and the previous one, or None
+        @return: A JSON Patch structure representing the difference between the new value and the previous one, or None
          if the difference in JSON Patch format is not available for any reason.
 
-        .. seealso:: :meth:`ItemUpdate.getValue`
-        */
+        .. seealso:: \ref `ItemUpdate.getValue`
+        **/
         void getValueAsJSONPatchIfAvailable(FieldNameOrPos fieldnameorpos) {}
 
-        /*
+        /**
 		Inquiry method that asks whether the current update belongs to the item snapshot (which carries the current
         item state at the time of Subscription). Snapshot events are sent only if snapshot information was requested
-        for the items through :meth:`.Subscription.setRequestedSnapshot` and precede the real time events. Snapshot
+        for the items through \ref `.Subscription.setRequestedSnapshot` and precede the real time events. Snapshot
         information take different forms in different subscription modes and can be spanned across zero, one or several
         update events. In particular:
 
@@ -196,7 +196,7 @@ namespace Lightstreamer::Cpp::ItemUpdate {
         * if the item is subscribed to with the MERGE subscription mode, then the snapshot consists of exactly one
         event, carrying the current value for all fields;
         * if the item is subscribed to with the DISTINCT subscription mode, then the snapshot consists of some of the
-        most recent updates; these updates are as many as specified through :meth:`.Subscription.setRequestedSnapshot`,
+        most recent updates; these updates are as many as specified through \ref `.Subscription.setRequestedSnapshot`,
         unless fewer are available;
         * if the item is subscribed to with the COMMAND subscription mode, then the snapshot consists of an "ADD" event
         for each key that is currently present.
@@ -204,17 +204,17 @@ namespace Lightstreamer::Cpp::ItemUpdate {
         Note that, in case of two-level behavior, snapshot-related updates for both the first-level item (which is in
         COMMAND mode) and any second-level items (which are in MERGE mode) are qualified with this flag.
 
-        :return: true if the current update event belongs to the item snapshot; false otherwise.
-        */
+        @return: true if the current update event belongs to the item snapshot; false otherwise.
+        **/
         void isSnapshot() {}
 
-        /*
+        /**
 		Inquiry method that asks whether the value for a field has changed after the reception of the last update from
         the Server for an item. If the Subscription mode is COMMAND then the change is meant as relative to the same key.
 
-        :param fieldNameOrPos: The field name or the 1-based position of the field within the field list or field schema.
+        @param fieldNameOrPos: The field name or the 1-based position of the field within the field list or field schema.
 
-        :return: Unless the Subscription mode is COMMAND, the return value is true in the following cases:
+        @return: Unless the Subscription mode is COMMAND, the return value is true in the following cases:
 
         * It is the first update for the item;
         * the new field value is different than the previous field value received for the item.
@@ -229,8 +229,8 @@ namespace Lightstreamer::Cpp::ItemUpdate {
 
         In all other cases, the return value is false.
 
-        :raises IllegalArgumentException: if the specified field is not part of the Subscription.
-        */
+        @throw IllegalArgumentException: if the specified field is not part of the Subscription.
+        **/
         void isValueChanged(FieldNameOrPos fieldnameorpos) {}
     };
 

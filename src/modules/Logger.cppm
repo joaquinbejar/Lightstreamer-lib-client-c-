@@ -26,20 +26,129 @@ export module Logger;
 import <string>;
 
 export namespace Lightstreamer::Cpp::Logger {
+
+    /**
+	Interface to be implemented to consume log from the library.
+
+    Instances of implemented classes are obtained by the library through the LoggerProvider instance set on :meth:`.LightstreamerClient.setLoggerProvider`.
+    **/
     class Logger {
     public:
         virtual ~Logger() = default;
+
+        /**
+		Receives log messages at Error level.
+
+        @param line: The message to be logged.
+
+        @param exception: An Exception instance related to the current log message.
+        **/
         virtual void Error(const std::string& message) = 0;
+
+        /**
+		Receives log messages at Warn level and a related exception.
+
+        @param line: The message to be logged.
+
+        @param exception: An Exception instance related to the current log message.
+        **/
         virtual void Warn(const std::string& message) = 0;
+
+        /**
+		Receives log messages at Trace level and a related exception.
+
+        @param line: The message to be logged.
+
+        @param exception: An Exception instance related to the current log message.
+        **/
+        virtual void Trace(const std::string& message) = 0;
+
+        /**
+		Receives log messages at Info level and a related exception.
+
+        @param line: The message to be logged.
+
+        @param exception: An Exception instance related to the current log message.
+        **/
         virtual void Info(const std::string& message) = 0;
+
+        /**
+		Receives log messages at Debug level and a related exception.
+
+        @param line: The message to be logged.
+
+        @param exception: An Exception instance related to the current log message.
+        **/
         virtual void Debug(const std::string& message) = 0;
+
+        /**
+		Receives log messages at Fatal level and a related exception.
+
+        @param line: The message to be logged.
+
+        @param exception: An Exception instance related to the current log message.
+        **/
         virtual void Fatal(const std::string& message) = 0;
 
+        /**
+		Checks if this logger is enabled for the Debug level.
+
+        The property should be true if this logger is enabled for Debug events, false otherwise.
+
+        This property is intended to lessen the computational cost of disabled log Debug statements. Note
+        that even if the property is false, Debug log lines may be received anyway by the Debug methods.
+        **/
         virtual bool IsDebugEnabled() const = 0;
+
+        /**
+		Checks if this logger is enabled for the Info level.
+
+        The property should be true if this logger is enabled for Info events, false otherwise.
+
+        This property is intended to lessen the computational cost of disabled log Info statements. Note
+                that even if the property is false, Info log lines may be received anyway by the Info methods.
+        **/
         virtual bool IsInfoEnabled() const = 0;
+
+        /**
+		Checks if this logger is enabled for the Warn level.
+
+        The property should be true if this logger is enabled for Warn events, false otherwise.
+
+        This property is intended to lessen the computational cost of disabled log Warn statements. Note
+                that even if the property is false, Warn log lines may be received anyway by the Warn methods.
+        **/
         virtual bool IsWarnEnabled() const = 0;
+
+        /**
+		Checks if this logger is enabled for the Error level.
+
+        The property should be true if this logger is enabled for Error events, false otherwise.
+
+        This property is intended to lessen the computational cost of disabled log Error statements. Note
+                that even if the property is false, Error log lines may be received anyway by the Error methods.
+        **/
         virtual bool IsErrorEnabled() const = 0;
+
+        /**
+		Checks if this logger is enabled for the Fatal level.
+
+        The property should be true if this logger is enabled for Fatal events, false otherwise.
+
+        This property is intended to lessen the computational cost of disabled log Fatal statements. Note
+                that even if the property is false, Fatal log lines may be received anyway by the Fatal methods.
+        **/
         virtual bool IsFatalEnabled() const = 0;
+
+        /**
+		Checks if this logger is enabled for the Trace level.
+
+        The property should be true if this logger is enabled for Trace events, false otherwise.
+
+        This property is intended to lessen the computational cost of disabled log Trace statements. Note
+                that even if the property is false, Trace log lines may be received anyway by the Trace methods.
+        **/
+        virtual bool IsTraceEnabled() const = 0;
     };
 
     class ILogEmpty : Logger {
@@ -111,8 +220,11 @@ export namespace Lightstreamer::Cpp::Logger {
     public:
         virtual ~LoggerProvider() = default;
 
-        // Request for a Logger instance that will be used for logging occurring on the given category.
-        // It is suggested, but not mandatory, that subsequent calls to this method related to the same category return the same Logger instance.
+        /**
+        Request for a Logger instance that will be used for logging occurring on the given category.
+        It is suggested, but not mandatory, that subsequent calls to this method related to the same category
+        @return the same Logger instance.
+         **/
         virtual Logger *GetLogger(const std::string &category) = 0;
     };
 

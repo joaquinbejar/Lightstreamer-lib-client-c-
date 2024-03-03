@@ -26,6 +26,17 @@ namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
     typedef int Category; // TODO: Define Category type
     typedef int ConsoleLogger; // TODO: Define ConsoleLogger type
 
+    /*
+    This LoggerProvider rests on the logging facility provided by the standard module *logging*. The log events are
+    forwarded to the logger named *lightstreamer*.
+
+    If you need further customizations, you can leverage the features of module *logging* through,
+    for example, *logging.basicConfig*::
+
+    logging.basicConfig(level=logging.DEBUG, format="%(message)s", stream=sys.stdout)
+
+    :param level: the threshold of the loggers created by this provider (see :class:`ConsoleLogLevel`)
+    */
      class ConsoleLoggerProvider {
     public:
          ConsoleLogger getLogger(Category category) {

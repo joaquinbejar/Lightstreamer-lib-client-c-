@@ -22,8 +22,10 @@
  ******************************************************************************/
 
 export module ConsoleLogLevel;
+import <string>;
+import <map>;
 namespace Lightstreamer::Cpp::ConsoleLogLevel {
-    enum class ConsoleLogLevel {
+    export enum class ConsoleLogLevel {
         NONE = 0, // This level disables all logging.
         TRACE = 1, //  This level enables all logging.
         DEBUG = 2, // This level enables logging for debug, information, warnings, errors and fatal errors.
@@ -32,4 +34,24 @@ namespace Lightstreamer::Cpp::ConsoleLogLevel {
         ERROR = 5, // This level enables logging for errors and fatal errors.
         FATAL = 6 // This level enables logging for fatal errors.
     };
+
+    static const std::map<ConsoleLogLevel, std::string> ConsoleLogLevelStrings{
+            {ConsoleLogLevel::NONE,     "none"},
+            {ConsoleLogLevel::TRACE,    "trace"},
+            {ConsoleLogLevel::DEBUG,    "debug"},
+            {ConsoleLogLevel::INFO,     "info"},
+            {ConsoleLogLevel::WARN,     "warn"},
+            {ConsoleLogLevel::ERROR,    "error"},
+            {ConsoleLogLevel::FATAL,    "fatal"}
+    };
+
+    std::string ConsoleLogLevel2String(ConsoleLogLevel level) {
+        auto it = ConsoleLogLevelStrings.find(level);
+        if (it != ConsoleLogLevelStrings.end()) {
+            return it->second;
+        } else {
+            throw std::runtime_error("ConsoleLogLevel2String: Unknown log level");
+        }
+    }
+
 }

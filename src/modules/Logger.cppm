@@ -158,76 +158,14 @@ export namespace Lightstreamer::Cpp::Logger {
         virtual bool IsTraceEnabled() const = 0;
     };
 
-    class ILogEmpty : Logger {
-    public:
-        void Error(const std::string &message) override {}
-
-        void Error(const std::string &message, const std::exception &e) {}
-
-        void Warn(const std::string &message) override {}
-
-        void Warn(const std::string &message, const std::exception &e) {}
-
-        void Info(const std::string &message) override {}
-
-        void Info(const std::string &message, const std::exception &e) {}
-
-        void Debug(const std::string &message) override {}
-
-        void Debug(const std::string &message, const std::exception &e) {}
-
-        void Fatal(const std::string &message) override {}
-
-        void Fatal(const std::string &message, const std::exception &e) {}
-
-        bool IsDebugEnabled() const override {
-            return false;
-        }
-
-        bool IsInfoEnabled() const override {
-            return false;
-        }
-
-        bool IsWarnEnabled() const override {
-            return false;
-        }
-
-        bool IsErrorEnabled() const override {
-            return false;
-        }
-
-        bool IsFatalEnabled() const override {
-            return false;
-        }
-    };
-
-    class ILog : Logger {
-
-    public:
-
-        ILog() = default;
-
-        void Error(const std::string &message) override {
-        }
-
-        void Warn(const std::string &message) override {
-        }
-
-        void Info(const std::string &message) override {
-        }
-
-        void Debug(const std::string &message) override {
-        }
-
-        void Fatal(const std::string &message) override {
-        }
-    };
 
     export class ConsoleLogger : public Logger {
     private:
+        static std::shared_ptr<ConsoleLogger> instance;
+        static std::mutex singleton_mutex;
+
         std::mutex m_mutex;
         std::atomic<bool> last_was_flush = false;
-
         ConsoleLogLevel level = ConsoleLogLevel::NONE;
         std::string category;
         bool traceEnabled;
@@ -265,8 +203,6 @@ export namespace Lightstreamer::Cpp::Logger {
             m_safe_cout(time_prefix.str(), flush, out);
         }
 
-
-    public:
         ConsoleLogger(ConsoleLogLevel level, const std::string &category) : level(level), category(category) {
             traceEnabled = level <= ConsoleLogLevel::TRACE;
             debugEnabled = level <= ConsoleLogLevel::DEBUG;
@@ -274,6 +210,21 @@ export namespace Lightstreamer::Cpp::Logger {
             warnEnabled = level <= ConsoleLogLevel::WARN;
             errorEnabled = level <= ConsoleLogLevel::ERROR;
             fatalEnabled = level <= ConsoleLogLevel::FATAL;
+        }
+
+    public:
+        ConsoleLogger(const ConsoleLogger&) = delete;
+        ConsoleLogger& operator=(const ConsoleLogger&) = delete;
+        ConsoleLogger(ConsoleLogger&&) = delete;
+        ConsoleLogger& operator=(ConsoleLogger&&) = delete;
+
+
+        static std::shared_ptr<ConsoleLogger> getInstance(ConsoleLogLevel level, const std::string &category) {
+            std::lock_guard<std::mutex> lock(singleton_mutex);
+            if (!instance) {
+                instance = std::shared_ptr<ConsoleLogger>(new ConsoleLogger(level, category));
+            }
+            return instance;
         }
 
 
@@ -349,8 +300,6 @@ export namespace Lightstreamer::Cpp::Logger {
         bool IsTraceEnabled() const override {
             return traceEnabled;
         }
-
-
     };
 
 

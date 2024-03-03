@@ -24,12 +24,12 @@
 export module ConsoleLogLevel;
 namespace Lightstreamer::Cpp::ConsoleLogLevel {
     enum class ConsoleLogLevel {
-        NONE = 0,
-        TRACE = 1,
-        DEBUG = 2,
-        INFO = 3,
-        WARN = 4,
-        ERROR = 5,
-        FATAL = 6
+        NONE = 0, // This level disables all logging.
+        TRACE = 1, //  This level enables all logging.
+        DEBUG = 2, // This level enables logging for debug, information, warnings, errors and fatal errors.
+        INFO = 3, // This level enables logging for information, warnings, errors and fatal errors.
+        WARN = 4, //  This level enables logging for warnings, errors and fatal errors.
+        ERROR = 5, // This level enables logging for errors and fatal errors.
+        FATAL = 6 // This level enables logging for fatal errors.
     };
 }

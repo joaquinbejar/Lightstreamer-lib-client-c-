@@ -79,7 +79,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
         the application can be added (or replaced if already present) to the cookie set used by the library to access
          the Server. Obviously, only cookies whose domain is compatible with the Server domain will be used internally.
 
-        **lifecycle** This method should be invoked before calling the \ref `LightstreamerClient.connect` method.
+        @b lifecycle This method should be invoked before calling the \ref `LightstreamerClient.connect` method.
         However it can be invoked at any time; it will affect the internal cookie set immediately and the sending of
         cookies on the next HTTP request or WebSocket establishment.
 
@@ -96,7 +96,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
 
         The same listener can be added to several different LightstreamerClient instances.
 
-        **lifecycle** A listener can be added at any time. A call to add a listener already
+        @b lifecycle A listener can be added at any time. A call to add a listener already
                 present will be ignored.
 
         @param listener: An object that will receive the events as documented in the \ref `.ClientListener` interface.
@@ -118,7 +118,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
         Note that as "polling connection" we mean a loop of polling requests, each of which requires opening a
         synchronous (i.e. not streaming) connection to Lightstreamer Server.
 
-        **lifecycle** Note that the request to connect is accomplished by the client in a separate thread; this means
+        @b lifecycle Note that the request to connect is accomplished by the client in a separate thread; this means
                 that an invocation to \ref `getStatus` right after connect() might not reflect the change yet.
 
         When the request to connect is finally being executed, if the current status
@@ -142,7 +142,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
         Note that active Subscription instances, associated with this LightstreamerClient instance, are preserved
                 to be re-subscribed to on future Sessions.
 
-        **lifecycle**  Note that the request to disconnect is accomplished by the client in a separate thread; this
+        @b lifecycle  Note that the request to disconnect is accomplished by the client in a separate thread; this
         means that an invocation to \ref `getStatus` right after disconnect() might not reflect the change yet.
 
         When the request to disconnect is finally being executed, if the status of the client is "DISCONNECTED",
@@ -214,7 +214,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
         /**
 		 Removes a listener from the LightstreamerClient instance so that it will not receive events anymore.
 
-        **lifecycle** a listener can be removed at any time.
+        @b lifecycle a listener can be removed at any time.
 
         @param listener: The listener to be removed.
 
@@ -262,7 +262,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
         is assumed. In this case, no checks on missing, duplicated or overtaken messages are performed at all,
         so as to optimize the processing and allow the highest possible throughput.
 
-        **lifecycle** Since a message is handled by the Metadata Adapter associated to the current connection, a
+        @b lifecycle Since a message is handled by the Metadata Adapter associated to the current connection, a
                 message can be sent only if a connection is currently active. If the special enqueueWhileDisconnected
         flag is specified it is possible to call the method at any time and the client will take care of sending
         the message as soon as a connection is available, otherwise, if the current status is "DISCONNECTED*",
@@ -322,7 +322,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
         /**
 		Provides a mean to control the way TLS certificates are evaluated, with the possibility to accept untrusted ones.
 
-        **lifecycle** May be called only once before creating any LightstreamerClient instance.
+        @b lifecycle May be called only once before creating any LightstreamerClient instance.
 
         @param factory: an instance of ssl.SSLContext
                 @throw IllegalArgumentException: if the factory is None
@@ -338,7 +338,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
         session available). Active Subscription are automatically persisted across different sessions as long as a
         related unsubscribe call is not issued.
 
-        **lifecycle** Subscriptions can be given to the LightstreamerClient at any time. Once done the Subscription
+        @b lifecycle Subscriptions can be given to the LightstreamerClient at any time. Once done the Subscription
         immediately enters the "active" state.
 
         Once "active", a Subscription instance cannot be provided again to a LightstreamerClient unless it is
@@ -361,7 +361,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
         By bringing back a Subscription to the "inactive" state, the unsubscription from all its items is
         requested to Lightstreamer Server.
 
-        **lifecycle** Subscription can be unsubscribed from at any time. Once done the Subscription immediately
+        @b lifecycle Subscription can be unsubscribed from at any time. Once done the Subscription immediately
         exits the "active" state.
 
         Note that forwarding of the unsubscription to the server is made in a separate thread.

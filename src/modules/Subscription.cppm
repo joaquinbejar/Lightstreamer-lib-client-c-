@@ -406,7 +406,7 @@ namespace Lightstreamer::Cpp::Subscription {
         file that defines the Adapter Set (a missing attribute configures the
         "DEFAULT" name).
 
-        **default** The default Data Adapter for the Adapter Set,
+        @b default The default Data Adapter for the Adapter Set,
         configured as "DEFAULT" on the Server.
 
         @b lifecycle This method can only be called while the Subscription
@@ -510,7 +510,7 @@ namespace Lightstreamer::Cpp::Subscription {
                 items of the set in a single Subscription. Multiple Subscriptions
         have to be defined.
 
-        **default** The default Data Adapter for the Adapter Set,
+        @b default The default Data Adapter for the Adapter Set,
         configured as "DEFAULT" on the Server.
 
         @b lifecycle This method can only be called while the Subscription
@@ -600,7 +600,7 @@ namespace Lightstreamer::Cpp::Subscription {
         not been requested. Note that the Server may pose an upper limit on the
                 size of its internal buffers.
 
-        **default** None, meaning to lean on the Server default based on the subscription
+        @b default None, meaning to lean on the Server default based on the subscription
         mode. This means that the buffer size will be 1 for MERGE
                 subscriptions and "unlimited" for DISTINCT subscriptions. See
                 the "General Concepts" document for further details.
@@ -641,7 +641,7 @@ namespace Lightstreamer::Cpp::Subscription {
         To know what features are enabled by your license, please see the License tab of the
                 Monitoring Dashboard (by default, available at /dashboard).
 
-        **default** None, meaning to lean on the Server default based on the subscription
+        @b default None, meaning to lean on the Server default based on the subscription
         mode. This consists, for all modes, in not applying any frequency
                 limit to the subscription (the same as "unlimited"); see the "General Concepts"
         document for further details.
@@ -665,7 +665,7 @@ namespace Lightstreamer::Cpp::Subscription {
         items in the Subscription. The snapshot can be requested only if the
                 Subscription mode is MERGE, DISTINCT or COMMAND.
 
-        **default** "yes" if the Subscription mode is not "RAW",
+        @b default "yes" if the Subscription mode is not "RAW",
         None otherwise.
 
         @b lifecycle This method can only be called while the Subscription
@@ -690,7 +690,7 @@ namespace Lightstreamer::Cpp::Subscription {
         Subscription. The selector is a filter on the updates received. It is
         executed on the Server and implemented by the Metadata Adapter.
 
-        **default** None (no selector).
+        @b default None (no selector).
 
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.

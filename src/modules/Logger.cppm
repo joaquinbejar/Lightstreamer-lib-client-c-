@@ -1,3 +1,5 @@
+#include <utility>
+
 /******************************************************************************
     Author: Joaquin Bejar Garcia 
     Email: jb@taunais.com 
@@ -25,10 +27,20 @@ module;
 export module Logger;
 
 import <string>;
+import <format>;
+import <mutex>;
+import <memory>;
+import <atomic>;
+import <exception>;
+import <iomanip>;
+import <ctime>;
+import <sstream>;
 import <iostream>;
+
 import ConsoleLogLevel;
 
-export namespace Lightstreamer::Cpp::Logger {
+namespace Lightstreamer::Cpp::Logger {
+    using Lightstreamer::Cpp::ConsoleLogLevel::ConsoleLogLevel;
 
     std::string FormatMessageWithException(const std::string &message, const std::exception &e) {
         return std::format("{} With Exception: {}", message, e.what());
@@ -175,7 +187,7 @@ export namespace Lightstreamer::Cpp::Logger {
         bool errorEnabled;
         bool fatalEnabled;
 
-        void m_safe_cout(const std::string &s, bool flush, std::iostream &out) {
+        void m_safe_cout(const std::string &s, bool flush, std::ostream &out) {
             std::string ss = s;
             if (flush) {
                 ss = "\r" + s;
@@ -195,7 +207,7 @@ export namespace Lightstreamer::Cpp::Logger {
 
         }
 
-        void m_log(const std::string &s, bool flush, std::iostream &out) {
+        void m_log(const std::string &s, bool flush, std::ostream &out) {
             std::time_t t = std::time(nullptr);
             std::tm tm = *std::localtime(&t);
             std::ostringstream time_prefix;
@@ -203,7 +215,7 @@ export namespace Lightstreamer::Cpp::Logger {
             m_safe_cout(time_prefix.str(), flush, out);
         }
 
-        ConsoleLogger(ConsoleLogLevel level, const std::string &category) : level(level), category(category) {
+        ConsoleLogger(ConsoleLogLevel level, const std::string& category) : level(level), category(category) {
             traceEnabled = level <= ConsoleLogLevel::TRACE;
             debugEnabled = level <= ConsoleLogLevel::DEBUG;
             infoEnabled = level <= ConsoleLogLevel::INFO;
@@ -232,7 +244,7 @@ export namespace Lightstreamer::Cpp::Logger {
             m_log(message, false, std::cerr);
         }
 
-        void Error(const std::string &message, const std::exception &e) override {
+        void Error(const std::string &message, const std::exception &e) {
             m_log(FormatMessageWithException(message, e), false, std::cerr);
         }
 
@@ -240,7 +252,7 @@ export namespace Lightstreamer::Cpp::Logger {
             m_log(message, false, std::cerr);
         }
 
-        void Warn(const std::string &message, const std::exception &e) override {
+        void Warn(const std::string &message, const std::exception &e)  {
             m_log(FormatMessageWithException(message, e), false, std::cerr);
         }
 
@@ -248,7 +260,7 @@ export namespace Lightstreamer::Cpp::Logger {
             m_log(message, false, std::cout);
         }
 
-        void Info(const std::string &message, const std::exception &e) override {
+        void Info(const std::string &message, const std::exception &e)  {
             m_log(FormatMessageWithException(message, e), false, std::cout);
         }
 
@@ -256,7 +268,7 @@ export namespace Lightstreamer::Cpp::Logger {
             m_log(message, false, std::cout);
         }
 
-        void Debug(const std::string &message, const std::exception &e) override {
+        void Debug(const std::string &message, const std::exception &e)  {
             m_log(FormatMessageWithException(message, e), false, std::cout);
         }
 
@@ -264,7 +276,7 @@ export namespace Lightstreamer::Cpp::Logger {
             m_log(message, false, std::cerr);
         }
 
-        void Fatal(const std::string &message, const std::exception &e) override {
+        void Fatal(const std::string &message, const std::exception &e)  {
             m_log(FormatMessageWithException(message, e), false, std::cerr);
         }
 
@@ -272,7 +284,7 @@ export namespace Lightstreamer::Cpp::Logger {
             m_log(message, false, std::cout);
         }
 
-        void Trace(const std::string &message, const std::exception &e) override {
+        void Trace(const std::string &message, const std::exception &e)  {
             m_log(FormatMessageWithException(message, e), false, std::cout);
         }
 

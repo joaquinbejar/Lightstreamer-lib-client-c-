@@ -35,7 +35,7 @@ namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
 
     logging.basicConfig(level=logging.DEBUG, format="%(message)s", stream=sys.stdout)
 
-    :param level: the threshold of the loggers created by this provider (see :class:`ConsoleLogLevel`)
+    @param level: the threshold of the loggers created by this provider (see \ref `ConsoleLogLevel`)
     */
      class ConsoleLoggerProvider {
     public:

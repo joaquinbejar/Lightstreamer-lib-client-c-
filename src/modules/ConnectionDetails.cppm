@@ -38,7 +38,7 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
     Data object that contains the configuration settings needed
     to connect to a Lightstreamer Server.
 
-    An instance of this class is attached to every :class:`LightstreamerClient`
+    An instance of this class is attached to every \ref `LightstreamerClient`
     as \ref `LightstreamerClient.connectionDetails`
 
     .. seealso:: \ref `LightstreamerClient`
@@ -243,7 +243,7 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
         http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]
                 http://[2001:0db8:85a3::8a2e:0370:7334]:8080
 
-        @raises IllegalArgumentException: if the given address is not valid.
+        @throw IllegalArgumentException: if the given address is not valid.
         **/
         void setServerAddress(ServerAddress serveraddress) {}
 

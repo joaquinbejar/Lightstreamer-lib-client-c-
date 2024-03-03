@@ -94,9 +94,9 @@ namespace Lightstreamer::Cpp::Subscription {
     @param fields: an array of fields for the items to be subscribed to through Lightstreamer Server. It is also 
      possible to specify the "Field List" or "Field Schema" later through \ref `setFields` and \ref `setFieldSchema`.
 
-    @raises IllegalArgumentException: If no or invalid subscription mode is passed.
-    @raises IllegalArgumentException: If either the items or the fields array is left None.
-    @raises IllegalArgumentException: If the specified "Item List" or "Field List" is not valid; see \ref `setItems` 
+    @throw IllegalArgumentException: If no or invalid subscription mode is passed.
+    @throw IllegalArgumentException: If either the items or the fields array is left None.
+    @throw IllegalArgumentException: If the specified "Item List" or "Field List" is not valid; see \ref `setItems` 
      and \ref `setFields` for details.
     **/
     class Subscription {
@@ -125,9 +125,9 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can be called at any time after the first
                 \ref `.SubscriptionListener.onSubscription` event.
 
-        @raises IllegalStateException: if the Subscription mode is not COMMAND or if the
+        @throw IllegalStateException: if the Subscription mode is not COMMAND or if the
          \ref `.SubscriptionListener.onSubscription` event for this Subscription was not yet fired.
-        @raises IllegalStateException: if a "Field List" was specified.
+        @throw IllegalStateException: if a "Field List" was specified.
 
         @return: the 1-based position of the "command" field within the "Field Schema".
         **/
@@ -139,7 +139,7 @@ namespace Lightstreamer::Cpp::Subscription {
 
         @b lifecycle This method can be called at any time.
 
-        @raises IllegalStateException: if the Subscription mode is not COMMAND
+        @throw IllegalStateException: if the Subscription mode is not COMMAND
         @return: the name of the second-level Data Adapter.
 
         .. seealso:: \ref `setCommandSecondLevelDataAdapter`
@@ -153,7 +153,7 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called if the second-level of this Subscription
                 has been initialized using a "Field List"
 
-        @raises IllegalStateException: if the Subscription mode is not COMMAND
+        @throw IllegalStateException: if the Subscription mode is not COMMAND
         @return: the list of fields to be subscribed to through the server, or None if the Subscription was initialized with a "Field Schema" or was not initialized at all.
 
         .. seealso:: \ref `Subscription.setCommandSecondLevelFields`
@@ -167,7 +167,7 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called if the second-level of this Subscription has
         been initialized using a "Field Schema".
 
-        @raises IllegalStateException: if the Subscription mode is not COMMAND
+        @throw IllegalStateException: if the Subscription mode is not COMMAND
         @return: the "Field Schema" to be subscribed to through the server, or None if the Subscription was initialized with a "Field List" or was not initialized at all.
 
         .. seealso:: \ref `Subscription.setCommandSecondLevelFieldSchema`
@@ -177,14 +177,14 @@ namespace Lightstreamer::Cpp::Subscription {
         /**
 		Returns the latest value received for the specified item/key/field combination. This method can only be used if the Subscription mode is COMMAND. Subscriptions with two-level behavior are also supported, hence the specified field can be either a first-level or a second-level one.
 
-        It is suggested to consume real-time data by implementing and adding a proper :class:`.SubscriptionListener` rather than probing this method.
+        It is suggested to consume real-time data by implementing and adding a proper \ref `.SubscriptionListener` rather than probing this method.
 
         Note that internal data is cleared when the Subscription is unsubscribed from.
 
         @b lifecycle This method can be called at any time; if called to retrieve a value that has not been received yet, then it will return None.
 
-        @raises IllegalArgumentException: if an invalid item name or field name is specified or if the specified item position or field position is out of bounds.
-        @raises IllegalStateException: if the Subscription mode is not COMMAND.
+        @throw IllegalArgumentException: if an invalid item name or field name is specified or if the specified item position or field position is out of bounds.
+        @throw IllegalStateException: if the Subscription mode is not COMMAND.
 
         @param itemIdentifier: a String representing an item in the configured item list or a Number representing the 1-based position of the item in the specified item group. (In case an item list was specified, passing the item position is also possible).
 
@@ -255,14 +255,14 @@ namespace Lightstreamer::Cpp::Subscription {
 
         @b lifecycle This method can be called at any time.
 
-        @raises IllegalStateException: if the Subscription mode is not COMMAND or if the \ref `.SubscriptionListener.onSubscription` event for this Subscription was not yet fired.
+        @throw IllegalStateException: if the Subscription mode is not COMMAND or if the \ref `.SubscriptionListener.onSubscription` event for this Subscription was not yet fired.
 
         @return: the 1-based position of the "key" field within the "Field Schema".
         **/
         void getKeyPosition() {}
 
         /**
-		Returns a list containing the :class:`.SubscriptionListener` instances that were
+		Returns a list containing the \ref `.SubscriptionListener` instances that were
         added to this client.
 
         @return: a list containing the listeners that were added to this client.
@@ -328,7 +328,7 @@ namespace Lightstreamer::Cpp::Subscription {
 		Returns the latest value received for the specified item/field pair.
 
         It is suggested to consume real-time data by implementing and adding
-                a proper :class:`.SubscriptionListener` rather than probing this method.
+                a proper \ref `.SubscriptionListener` rather than probing this method.
         In case of COMMAND Subscriptions, the value returned by this
         method may be misleading, as in COMMAND mode all the keys received, being
                 part of the same item, will overwrite each other; for COMMAND Subscriptions,
@@ -340,7 +340,7 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can be called at any time; if called
                 to retrieve a value that has not been received yet, then it will return None.
 
-        @raises IllegalArgumentException: if an invalid item name or field name is specified or if the specified item position or field position is out of bounds.
+        @throw IllegalArgumentException: if an invalid item name or field name is specified or if the specified item position or field position is out of bounds.
 
         @param itemNameOrPos: a String representing an item in the configured item list or a Number representing the 1-based position of the item in the specified item group. (In case an item list was specified, passing the item position is also possible).
 
@@ -412,8 +412,8 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalStateException: if the Subscription is currently "active".
-        @raises IllegalStateException: if the Subscription mode is not "COMMAND".
+        @throw IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalStateException: if the Subscription mode is not "COMMAND".
 
         @param dataAdapter: the name of the Data Adapter. A None value is equivalent to the "DEFAULT" name.
 
@@ -449,9 +449,9 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalArgumentException: if any of the field names in the "Field List" contains a space or is empty/None.
-        @raises IllegalStateException: if the Subscription is currently "active".
-        @raises IllegalStateException: if the Subscription mode is not "COMMAND".
+        @throw IllegalArgumentException: if any of the field names in the "Field List" contains a space or is empty/None.
+        @throw IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalStateException: if the Subscription mode is not "COMMAND".
 
         @param fields: An array of Strings containing a list of fields to be subscribed to through the server. Ensure that no name conflict is generated between first-level and second-level fields. In case of conflict, the second-level field will not be accessible by name, but only by position.
 
@@ -486,8 +486,8 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalStateException: if the Subscription is currently "active".
-        @raises IllegalStateException: if the Subscription mode is not "COMMAND".
+        @throw IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalStateException: if the Subscription mode is not "COMMAND".
 
         @param schemaName: A String to be expanded into a field list by the Metadata Adapter.
 
@@ -516,7 +516,7 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalStateException: if the Subscription is currently "active".
 
         @param dataAdapter: the name of the Data Adapter. A None value is equivalent to the "DEFAULT" name.
 
@@ -534,8 +534,8 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalArgumentException: if any of the field names in the list contains a space or is empty/None.
-        @raises IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalArgumentException: if any of the field names in the list contains a space or is empty/None.
+        @throw IllegalStateException: if the Subscription is currently "active".
 
         @param fields: an array of fields to be subscribed to through the server.
         **/
@@ -551,7 +551,7 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalStateException: if the Subscription is currently "active".
 
         @param schemaName: A String to be expanded into a field list by the Metadata Adapter.
         **/
@@ -567,7 +567,7 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalStateException: if the Subscription is currently "active".
 
         @param groupName: A String to be expanded into an item list by the Metadata Adapter.
         **/
@@ -583,8 +583,8 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalArgumentException: if any of the item names in the "Item List" contains a space or is a number or is empty/None.
-        @raises IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalArgumentException: if any of the item names in the "Item List" contains a space or is a number or is empty/None.
+        @throw IllegalStateException: if the Subscription is currently "active".
 
         @param items: an array of items to be subscribed to through the server.
         **/
@@ -608,8 +608,8 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalStateException: if the Subscription is currently "active".
-        @raises IllegalArgumentException: if the specified value is not None nor "unlimited" nor a valid positive integer number.
+        @throw IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalArgumentException: if the specified value is not None nor "unlimited" nor a valid positive integer number.
 
         @param size:  An integer number, representing the length of the internal queuing buffers to be used in the Server. If the string "unlimited" is supplied, then no buffer size limit is requested (the check is case insensitive). It is also possible to supply a None value to stick to the Server default (which currently depends on the subscription mode).
 
@@ -652,9 +652,9 @@ namespace Lightstreamer::Cpp::Subscription {
                 * If the Subscription instance is in its "inactive" state then this method can be called at will.
         * If the Subscription instance is in its "active" state then the method can still be called unless the current value is "unfiltered" or the supplied value is "unfiltered" or None. If the Subscription instance is in its "active" state and the connection to the server is currently open, then a request to change the frequency of the Subscription on the fly is sent to the server.
 
-        @raises IllegalStateException: if the Subscription is currently "active" and the current value of this property is "unfiltered".
-        @raises IllegalStateException: if the Subscription is currently "active" and the given parameter is None or "unfiltered".
-        @raises IllegalArgumentException: if the specified value is not None nor one of the special "unlimited" and "unfiltered" values nor a valid positive number.
+        @throw IllegalStateException: if the Subscription is currently "active" and the current value of this property is "unfiltered".
+        @throw IllegalStateException: if the Subscription is currently "active" and the given parameter is None or "unfiltered".
+        @throw IllegalArgumentException: if the specified value is not None nor one of the special "unlimited" and "unfiltered" values nor a valid positive number.
 
         @param freq:  A decimal number, representing the maximum update frequency (expressed in updates per second) for each item in the Subscription; for instance, with a setting of 0.5, for each single item, no more than one update every 2 seconds will be received. If the string "unlimited" is supplied, then no frequency limit is requested. It is also possible to supply the string "unfiltered", to ask for unfiltered dispatching, if it is allowed for the items, or a None value to stick to the Server default (which currently corresponds to "unlimited"). The check for the string constants is case insensitive.
         **/
@@ -671,9 +671,9 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalStateException: if the Subscription is currently "active".
-        @raises IllegalArgumentException: if the specified value is not "yes" nor "no" nor None nor a valid integer positive number.
-        @raises IllegalArgumentException: if the specified value is not compatible with the mode of the Subscription:
+        @throw IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalArgumentException: if the specified value is not "yes" nor "no" nor None nor a valid integer positive number.
+        @throw IllegalArgumentException: if the specified value is not compatible with the mode of the Subscription:
 
                 * In case of a RAW Subscription only None is a valid value;
         * In case of a non-DISTINCT Subscription only None "yes" and "no" are valid values.
@@ -695,7 +695,7 @@ namespace Lightstreamer::Cpp::Subscription {
         @b lifecycle This method can only be called while the Subscription
         instance is in its "inactive" state.
 
-        @raises IllegalStateException: if the Subscription is currently "active".
+        @throw IllegalStateException: if the Subscription is currently "active".
 
         @param selector: name of a selector, to be recognized by the Metadata Adapter, or None to unset the selector.
         **/

@@ -27,23 +27,23 @@ import <string>;
 
 namespace Lightstreamer::Cpp::ConnectionOptions {
 
-    typedef void ContentLength; // TODO: Implement this type
-    typedef void FirstRetryMaxDelay; // TODO: Implement this type
-    typedef void ForcedTransport; // TODO: Implement this type
-    typedef void HttpExtraHeaders; // TODO: Implement this type
-    typedef void HttpExtraHeadersOnSessionCreationOnly; // TODO: Implement this type
-    typedef void IdleTimeout; // TODO: Implement this type
-    typedef void KeepaliveInterval; // TODO: Implement this type
-    typedef void PollingInterval; // TODO: Implement this type
-    typedef void Proxy; // TODO: Implement this type
-    typedef void ReconnectTimeout; // TODO: Implement this type
-    typedef void MaxBandwidth; // TODO: Implement this type
-    typedef void RetryDelay; // TODO: Implement this type
-    typedef void ReverseHeartbeatInterval; // TODO: Implement this type
-    typedef void ServerInstanceAddressIgnored; // TODO: Implement this type
-    typedef void SessionRecoveryTimeout; // TODO: Implement this type
-    typedef void SlowingEnabled; // TODO: Implement this type
-    typedef void StalledTimeout; // TODO: Implement this type
+    typedef int ContentLength; // TODO: Implement this type
+    typedef int FirstRetryMaxDelay; // TODO: Implement this type
+    typedef int ForcedTransport; // TODO: Implement this type
+    typedef int HttpExtraHeaders; // TODO: Implement this type
+    typedef int HttpExtraHeadersOnSessionCreationOnly; // TODO: Implement this type
+    typedef int IdleTimeout; // TODO: Implement this type
+    typedef int KeepaliveInterval; // TODO: Implement this type
+    typedef int PollingInterval; // TODO: Implement this type
+    typedef int Proxy; // TODO: Implement this type
+    typedef int ReconnectTimeout; // TODO: Implement this type
+    typedef int MaxBandwidth; // TODO: Implement this type
+    typedef int RetryDelay; // TODO: Implement this type
+    typedef int ReverseHeartbeatInterval; // TODO: Implement this type
+    typedef int ServerInstanceAddressIgnored; // TODO: Implement this type
+    typedef int SessionRecoveryTimeout; // TODO: Implement this type
+    typedef int SlowingEnabled; // TODO: Implement this type
+    typedef int StalledTimeout; // TODO: Implement this type
 
 
     /**

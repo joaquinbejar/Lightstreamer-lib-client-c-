@@ -171,7 +171,7 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         @b default The default Adapter Set, configured as "DEFAULT" on the Server.
 
-        @b lifecycle The Adapter Set name should be set on the :attr:`LightstreamerClient.connectionDetails` object
+        @b lifecycle The Adapter Set name should be set on the \ref `LightstreamerClient.connectionDetails` object
         before calling the \ref `LightstreamerClient.connect` method. However, the value can be changed at any time:
         the supplied value will be used for the next time a new session is requested to the server.
 
@@ -192,7 +192,7 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
         @b default  If no password is supplied, no password information will be sent at session initiation.
         The Metadata Adapter, however, may still allow the session.
 
-        @b lifecycle The username should be set on the :attr:`LightstreamerClient.connectionDetails` object before calling
+        @b lifecycle The username should be set on the \ref `LightstreamerClient.connectionDetails` object before calling
         the \ref `LightstreamerClient.connect` method. However, the value can be changed at any time: the supplied
         value will be used for the next time a new session is requested to the server.
 
@@ -254,7 +254,7 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
         @b default If no username is supplied, no user information will be sent at session initiation.
         The Metadata Adapter, however, may still allow the session.
 
-        @b lifecycle The username should be set on the :attr:`LightstreamerClient.connectionDetails` object before
+        @b lifecycle The username should be set on the \ref `LightstreamerClient.connectionDetails` object before
         calling the \ref `LightstreamerClient.connect` method. However, the value can be changed at any time: the
         supplied value will be used for the next time a new session is requested to the server.
 

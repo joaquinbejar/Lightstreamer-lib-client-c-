@@ -162,9 +162,7 @@ namespace Lightstreamer::Cpp::LightstreamerClient {
 
         @param uri: the URI to which the cookies should be sent, or None.
 
-        @return: a list with the various cookies that can be sent in a HTTP request for the specified URI. If a None
-         URI was supplied, all available non-expired cookies will be returned.
-        :rtype: http.cookies.SimpleCookie
+        @return: a list with the various cookies that can be sent in a HTTP request for the specified URI. If a None URI was supplied, all available non-expired cookies will be returned. \ref  http.cookies.SimpleCookie
         **/
         void getCookies() {}
 

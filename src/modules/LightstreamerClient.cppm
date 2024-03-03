@@ -23,8 +23,33 @@
 
 export module LightstreamerClient;
 namespace Lightstreamer::Cpp::LightstreamerClient {
+    typedef int Cookies; // TODO: Define Cookies type
+    typedef int Listener; // TODO: Define Listener type
+    typedef int Message; // TODO: Define Message type
+    typedef int Sequence; // TODO: Define Sequence type
+    typedef int DelayTimeout; // TODO: Define DelayTimeout type
+    typedef int EnqueueWhileDisconnected; // TODO: Define EnqueueWhileDisconnected type
+    typedef int Provider; // TODO: Define Provider type
+    typedef int Factory; // TODO: Define Factory type
+    typedef int Subscription; // TODO: Define Subscription type
+
     class LightstreamerClient {
     public:
+
+        void addCookies(Cookies cookies) {}
+        void addListener(Listener listener) {}
+        void connect() {}
+        void disconnect() {}
+        void getCookies() {}
+        void getListeners() {}
+        void getStatus() {}
+        void getSubscriptions() {}
+        void removeListener(Listener listener) {}
+        void sendMessage(Message message,Sequence sequence,DelayTimeout delaytimeout,Listener listener,EnqueueWhileDisconnected enqueuewhiledisconnected) {}
+        void setLoggerProvider( Provider provider) {}
+        void setTrustManagerFactory(Factory factory) {}
+        void subscribe(Subscription subscription) {}
+        void unsubscribe(Subscription subscription) {}
 
     };
 

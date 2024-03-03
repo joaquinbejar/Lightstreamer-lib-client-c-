@@ -30,7 +30,7 @@ export namespace Lightstreamer::Cpp::Logger {
     /**
 	Interface to be implemented to consume log from the library.
 
-    Instances of implemented classes are obtained by the library through the LoggerProvider instance set on :meth:`.LightstreamerClient.setLoggerProvider`.
+    Instances of implemented classes are obtained by the library through the LoggerProvider instance set on \ref `.LightstreamerClient.setLoggerProvider`.
     **/
     class Logger {
     public:

@@ -27,7 +27,7 @@ namespace Lightstreamer::Cpp::Proxy {
     /**
     Simple class representing a Proxy configuration.
 
-    An instance of this class can be used through :meth:`ConnectionOptions.setProxy` to
+    An instance of this class can be used through \ref `ConnectionOptions.setProxy` to
             instruct a LightstreamerClient to connect to the Lightstreamer Server passing through a proxy.
 
     @param type: the proxy type. Supported values are HTTP, SOCKS4 and SOCKS5.

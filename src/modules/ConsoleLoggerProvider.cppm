@@ -22,7 +22,7 @@
  ******************************************************************************/
 
 export module ConsoleLoggerProvider;
-import ConsoleLogLevel;
+#include <ConsoleLogLevel.hpp>
 namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
     typedef int Category; // TODO: Define Category type
     typedef int ConsoleLogger; // TODO: Define ConsoleLogger type
@@ -36,13 +36,13 @@ namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
 
     logging.basicConfig(level=logging.DEBUG, format="%(message)s", stream=sys.stdout)
 
-    @param level: the threshold of the loggers created by this provider (see \ref `ConsoleLogLevel`)
+    @param level: the threshold of the loggers created by this provider (see \ref `Level`)
     */
      class ConsoleLoggerProvider {
      private:
-        ConsoleLogLevel::ConsoleLogLevel consoleloglevel;
+        ConsoleLogLevel::Level consoleloglevel;
     public:
-        ConsoleLoggerProvider(ConsoleLogLevel::ConsoleLogLevel consoleloglevel) : consoleloglevel(consoleloglevel) {}
+        ConsoleLoggerProvider(ConsoleLogLevel::Level consoleloglevel) : consoleloglevel(consoleloglevel) {}
 
 
          ConsoleLogger getLogger(Category category) {

@@ -1,9 +1,3 @@
-/******************************************************************************
-    Author: Joaquin Bejar Garcia 
-    Email: jb@taunais.com 
-    Date: 2/3/24
- ******************************************************************************/
-
 /*******************************************************************************
  Copyright (c) 2024.
 
@@ -20,32 +14,50 @@
  You should have received a copy of the GNU General Public License along
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
-module;
 
-export module Logger;
+/******************************************************************************
+    Author: Joaquin Bejar Garcia 
+    Email: jb@taunais.com 
+    Date: 2/3/24
+ ******************************************************************************/
+#ifndef LOGGER_HPP
+#define LOGGER_HPP
 
-import <string>;
-import <format>;
-import <mutex>;
-import <memory>;
-import <atomic>;
-import <exception>;
-import <iomanip>;
-import <ctime>;
-import <sstream>;
-import <iostream>;
-import <utility>;
+#include <simple_color/color.h>
+#include <ConsoleLogLevel.hpp>
+#include <string>
+#include  <iomanip>
+#include  <sstream>
+#include  <iostream>
 
-import ConsoleLogLevel;
 
 namespace Lightstreamer::Cpp::Logger {
-    using ConsoleLogLevel::ConsoleLogLevel;
+    using ConsoleLogLevel::Level;
 
-    std::string FormatMessageWithException(const std::string &message, const std::exception &e) {
-         std::ostringstream oss;
-         oss << message << " With Exception: " << e.what();
-         return oss.str();
-     }
+    inline std::string formatMessageWithException(const std::string &message, const std::exception &e) {
+        std::ostringstream oss;
+        oss << message << " With Exception: " << e.what();
+        return oss.str();
+    }
+
+    inline std::string getColoredLevel(const std::string &message, const Level level) {
+        switch (level) {
+            case Level::INFO:
+                return give_color(simple_color::Colors::WHITE, "[INFO]: ") + message;
+            case Level::DEBUG:
+                return give_color(simple_color::Colors::SKYBLUE1, "[DEBUG]: ") + message;
+            case Level::ERROR:
+                return give_color(simple_color::Colors::RED, "[ERROR]: ") + message;
+            case Level::FATAL:
+                return give_color(simple_color::Colors::LIGHTCORAL, "[FATAL]: ", true) + message;
+            case Level::WARN:
+                return give_color(simple_color::Colors::YELLOW, "[WARNING]: ") + message;
+            case Level::TRACE:
+                return give_color(simple_color::Colors::LIGHTGREEN, "[TRACE]: ") + message;
+            default:
+                return give_color(simple_color::Colors::GREY54, "[UNKNOWN]: ") + message;
+        }
+    }
 
 
     /**
@@ -68,7 +80,7 @@ namespace Lightstreamer::Cpp::Logger {
          * This flag is used in the ConsoleLogger class to determine whether to flush the output stream after writing a log message. It is an atomic flag that can be accessed from multiple threads concurrently.
          */
         std::atomic<bool> last_was_flush = false;
-                /**
+        /**
          * Prints a string to the specified output stream with thread-safe handling of flushing.
          *
          * @param s The string to be printed.
@@ -82,8 +94,8 @@ namespace Lightstreamer::Cpp::Logger {
          * After printing the string, the method will flush the output stream and unlock the internal mutex used for thread-safety.
          *
          * Note: This method assumes that the caller has already acquired the necessary lock on the cout stream to avoid inconsistent output.
-         */
-        void m_safe_cout(const std::string &s, bool flush, std::ostream &out) {
+         **/
+        void m_safe_cout(const std::string &s, const bool flush, std::ostream &out) {
             std::string ss = s;
             if (flush) {
                 ss = "\r" + s;
@@ -117,60 +129,49 @@ namespace Lightstreamer::Cpp::Logger {
             time_prefix << std::put_time(&tm, "%d-%m-%Y %H:%M:%S") << " " << s;
             m_safe_cout(time_prefix.str(), flush, out);
         }
+
     public:
         virtual ~Logger() = default;
 
         /**
 		Receives log messages at Error level.
 
-        @param line: The message to be logged.
-
-        @param exception: An Exception instance related to the current log message.
+        @param message: The message to be logged.
         **/
         virtual void Error(const std::string &message) = 0;
 
         /**
 		Receives log messages at Warn level and a related exception.
 
-        @param line: The message to be logged.
-
-        @param exception: An Exception instance related to the current log message.
+        @param message: The message to be logged.
         **/
         virtual void Warn(const std::string &message) = 0;
 
         /**
 		Receives log messages at Trace level and a related exception.
 
-        @param line: The message to be logged.
-
-        @param exception: An Exception instance related to the current log message.
+        @param message: The message to be logged.
         **/
         virtual void Trace(const std::string &message) = 0;
 
         /**
 		Receives log messages at Info level and a related exception.
 
-        @param line: The message to be logged.
-
-        @param exception: An Exception instance related to the current log message.
+        @param message: The message to be logged.
         **/
         virtual void Info(const std::string &message) = 0;
 
         /**
 		Receives log messages at Debug level and a related exception.
 
-        @param line: The message to be logged.
-
-        @param exception: An Exception instance related to the current log message.
+        @param message: The message to be logged.
         **/
         virtual void Debug(const std::string &message) = 0;
 
         /**
 		Receives log messages at Fatal level and a related exception.
 
-        @param line: The message to be logged.
-
-        @param exception: An Exception instance related to the current log message.
+        @param message: The message to be logged.
         **/
         virtual void Fatal(const std::string &message) = 0;
 
@@ -236,7 +237,6 @@ namespace Lightstreamer::Cpp::Logger {
     };
 
 
-    export
     /**
      * @class ConsoleLogger
      * @brief Implementation of the Logger interface for logging to the console.
@@ -277,7 +277,7 @@ namespace Lightstreamer::Cpp::Logger {
         static std::mutex singleton_mutex;
 
         /**
-         * The `ConsoleLogLevel` enum class represents the different levels of logging for the console logger.
+         * The `Level` enum class represents the different levels of logging for the console logger.
          *
          * The possible values are:
          * - `ConsoleLogLevel::NONE`: This level disables all logging.
@@ -288,7 +288,7 @@ namespace Lightstreamer::Cpp::Logger {
          * - `ConsoleLogLevel::ERROR`: This level enables logging for errors and fatal errors.
          * - `ConsoleLogLevel::FATAL`: This level enables logging for fatal errors.
          */
-        ConsoleLogLevel level = ConsoleLogLevel::NONE;
+        Level level = Level::NONE;
         /**
          This variable represents the category for logging purposes.
          It is of type `std::string` and is used by the `ConsoleLogger` class for categorizing log messages.
@@ -364,13 +364,13 @@ namespace Lightstreamer::Cpp::Logger {
          * @param level The log level for this logger instance.
          * @param category The category for this logger instance.
          */
-        ConsoleLogger(ConsoleLogLevel level, const std::string &category) : level(level), category(category) {
-            traceEnabled = level <= ConsoleLogLevel::TRACE;
-            debugEnabled = level <= ConsoleLogLevel::DEBUG;
-            infoEnabled = level <= ConsoleLogLevel::INFO;
-            warnEnabled = level <= ConsoleLogLevel::WARN;
-            errorEnabled = level <= ConsoleLogLevel::ERROR;
-            fatalEnabled = level <= ConsoleLogLevel::FATAL;
+        ConsoleLogger(const Level level, const std::string &category) : level(level), category(category) {
+            traceEnabled = level <= Level::TRACE;
+            debugEnabled = level <= Level::DEBUG;
+            infoEnabled = level <= Level::INFO;
+            warnEnabled = level <= Level::WARN;
+            errorEnabled = level <= Level::ERROR;
+            fatalEnabled = level <= Level::FATAL;
         }
 
     public:
@@ -385,7 +385,7 @@ namespace Lightstreamer::Cpp::Logger {
          @param other The instance of ConsoleLogger to be copied. This parameter is not used and should be ignored.
          @return This method does not return a value.
          */
-        ConsoleLogger(const ConsoleLogger &) = delete;
+        ConsoleLogger(const ConsoleLogger &other) = delete;
 
         /**
          * @brief Assignment operator.
@@ -395,14 +395,14 @@ namespace Lightstreamer::Cpp::Logger {
          * @param other The `ConsoleLogger` object to be assigned.
          * @return Returns a reference to the assigned `ConsoleLogger` object.
          */
-        ConsoleLogger &operator=(const ConsoleLogger &) = delete;
+        ConsoleLogger &operator=(const ConsoleLogger &other) = delete;
 
         /**
          * \brief ConsoleLogger class
          *
          * The ConsoleLogger class provides logging functionality to the console.
          */
-        ConsoleLogger(ConsoleLogger &&) = delete;
+        ConsoleLogger(ConsoleLogger &&other) = delete;
 
         /**
          * @brief Assignment operator.
@@ -413,7 +413,7 @@ namespace Lightstreamer::Cpp::Logger {
          *
          * @return The reference to the modified `ConsoleLogger` object.
          */
-        ConsoleLogger &operator=(ConsoleLogger &&) = delete;
+        ConsoleLogger &operator=(ConsoleLogger &&other) = delete;
 
 
         /**
@@ -424,7 +424,7 @@ namespace Lightstreamer::Cpp::Logger {
          *
          * @return A shared pointer to the ConsoleLogger instance.
          */
-        static std::shared_ptr<ConsoleLogger> getInstance(ConsoleLogLevel level, const std::string &category) {
+        static std::shared_ptr<ConsoleLogger> getInstance(Level level, const std::string &category) {
             std::lock_guard<std::mutex> lock(singleton_mutex);
             if (!instance) {
                 instance = std::shared_ptr<ConsoleLogger>(new ConsoleLogger(level, category));
@@ -441,7 +441,7 @@ namespace Lightstreamer::Cpp::Logger {
          * @param message The error message to be logged.
          */
         void Error(const std::string &message) override {
-            m_log(message, false, std::cerr);
+            m_log(getColoredLevel(message, Level::ERROR), false, std::cerr);
         }
 
         /**
@@ -451,7 +451,8 @@ namespace Lightstreamer::Cpp::Logger {
          * @param e The exception associated with the error.
          */
         void Error(const std::string &message, const std::exception &e) {
-            m_log(FormatMessageWithException(message, e), false, std::cerr);
+            m_log(getColoredLevel(formatMessageWithException(message, e), Level::ERROR),
+                  false, std::cerr);
         }
 
         /**
@@ -460,7 +461,7 @@ namespace Lightstreamer::Cpp::Logger {
          * @param message The warning message to be logged.
          */
         void Warn(const std::string &message) override {
-            m_log(message, false, std::cerr);
+            m_log(getColoredLevel(message, Level::WARN), false, std::cerr);
         }
 
         /**
@@ -470,7 +471,8 @@ namespace Lightstreamer::Cpp::Logger {
          * @param e The exception to be logged.
          */
         void Warn(const std::string &message, const std::exception &e) {
-            m_log(FormatMessageWithException(message, e), false, std::cerr);
+            m_log(getColoredLevel(formatMessageWithException(message, e), Level::WARN),
+                  false, std::cerr);
         }
 
         /**
@@ -481,7 +483,7 @@ namespace Lightstreamer::Cpp::Logger {
          * @param message The message to be written to the log.
          */
         void Info(const std::string &message) override {
-            m_log(message, false, std::cout);
+            m_log(getColoredLevel(message, Level::INFO), false, std::cout);
         }
 
         /**
@@ -491,7 +493,8 @@ namespace Lightstreamer::Cpp::Logger {
          * @param e The exception to be logged along with the message.
          */
         void Info(const std::string &message, const std::exception &e) {
-            m_log(FormatMessageWithException(message, e), false, std::cout);
+            m_log(getColoredLevel(formatMessageWithException(message, e), Level::INFO),
+                  false, std::cout);
         }
 
         /**
@@ -504,7 +507,7 @@ namespace Lightstreamer::Cpp::Logger {
          * it is a debug message and the output stream to use is `std::cout`.
          */
         void Debug(const std::string &message) override {
-            m_log(message, false, std::cout);
+            m_log(getColoredLevel(message, Level::DEBUG), false, std::cout);
         }
 
         /**
@@ -520,9 +523,10 @@ namespace Lightstreamer::Cpp::Logger {
          @see m_log
 
          @note This method is a member of the `ConsoleLogger` class.
-         */
+         **/
         void Debug(const std::string &message, const std::exception &e) {
-            m_log(FormatMessageWithException(message, e), false, std::cout);
+            m_log(getColoredLevel(formatMessageWithException(message, e), Level::DEBUG),
+                  false, std::cout);
         }
 
         /**
@@ -531,9 +535,9 @@ namespace Lightstreamer::Cpp::Logger {
          * This method is called to log a fatal message. The message is sent to the logger specified in the `m_log` member variable.
          *
          * @param message The message to be logged.
-         */
+         **/
         void Fatal(const std::string &message) override {
-            m_log(message, false, std::cerr);
+            m_log(getColoredLevel(message, Level::FATAL), false, std::cerr);
         }
 
         /**
@@ -545,18 +549,19 @@ namespace Lightstreamer::Cpp::Logger {
          * @param e The exception associated with the error.
          *
          * @see setLoggerProvider()
-         */
+         **/
         void Fatal(const std::string &message, const std::exception &e) {
-            m_log(FormatMessageWithException(message, e), false, std::cerr);
+            m_log(getColoredLevel(formatMessageWithException(message, e), Level::FATAL),
+                  false, std::cerr);
         }
 
         /**
          * Trace method sends the given message to the logging system.
          *
          * @param message The message to be logged.
-         */
+         **/
         void Trace(const std::string &message) override {
-            m_log(message, false, std::cout);
+            m_log(getColoredLevel(message, Level::TRACE), false, std::cout);
         }
 
         /**
@@ -564,9 +569,10 @@ namespace Lightstreamer::Cpp::Logger {
          *
          * @param message The message to be logged.
          * @param e The exception to be logged.
-         */
+         **/
         void Trace(const std::string &message, const std::exception &e) {
-            m_log(FormatMessageWithException(message, e), false, std::cout);
+            m_log(getColoredLevel(formatMessageWithException(message, e), Level::TRACE),
+                  false, std::cout);
         }
 
 
@@ -646,5 +652,6 @@ namespace Lightstreamer::Cpp::Logger {
          **/
         virtual Logger *GetLogger(const std::string &category) = 0;
     };
-
 }
+
+#endif //LOGGER_HPP

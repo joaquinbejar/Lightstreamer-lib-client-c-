@@ -36,3 +36,6 @@
 .run
 .temp
 .env
+
+# build
+cmake-build-*

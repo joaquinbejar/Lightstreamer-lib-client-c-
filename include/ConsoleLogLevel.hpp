@@ -21,11 +21,14 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-export module ConsoleLogLevel;
-import <string>;
-import <map>;
+#ifndef CONSOLELOGLEVEL_HPP
+#define CONSOLELOGLEVEL_HPP
+
+#include <string>
+#include <map>
+
 namespace Lightstreamer::Cpp::ConsoleLogLevel {
-    export enum class ConsoleLogLevel {
+    enum class Level {
         NONE = 0, // This level disables all logging.
         TRACE = 1, //  This level enables all logging.
         DEBUG = 2, // This level enables logging for debug, information, warnings, errors and fatal errors.
@@ -35,17 +38,17 @@ namespace Lightstreamer::Cpp::ConsoleLogLevel {
         FATAL = 6 // This level enables logging for fatal errors.
     };
 
-    static const std::map<ConsoleLogLevel, std::string> ConsoleLogLevelStrings{
-            {ConsoleLogLevel::NONE,     "none"},
-            {ConsoleLogLevel::TRACE,    "trace"},
-            {ConsoleLogLevel::DEBUG,    "debug"},
-            {ConsoleLogLevel::INFO,     "info"},
-            {ConsoleLogLevel::WARN,     "warn"},
-            {ConsoleLogLevel::ERROR,    "error"},
-            {ConsoleLogLevel::FATAL,    "fatal"}
+    static const std::map<Level, std::string> ConsoleLogLevelStrings{
+            {Level::NONE,     "none"},
+            {Level::TRACE,    "trace"},
+            {Level::DEBUG,    "debug"},
+            {Level::INFO,     "info"},
+            {Level::WARN,     "warn"},
+            {Level::ERROR,    "error"},
+            {Level::FATAL,    "fatal"}
     };
 
-    std::string ConsoleLogLevel2String(ConsoleLogLevel level) {
+    std::string ConsoleLogLevel2String(Level level) {
         auto it = ConsoleLogLevelStrings.find(level);
         if (it != ConsoleLogLevelStrings.end()) {
             return it->second;
@@ -55,3 +58,5 @@ namespace Lightstreamer::Cpp::ConsoleLogLevel {
     }
 
 }
+
+#endif //CONSOLELOGLEVEL_HPP

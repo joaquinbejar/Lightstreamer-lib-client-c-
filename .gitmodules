@@ -2,3 +2,9 @@
 	path = extern/beast
 	url = https://github.com/boostorg/beast.git
     # Use tag boost-1.84.0 for this submodule
+[submodule "extern/simple_color"]
+	path = extern/simple_color
+	url = https://github.com/joaquinbejar/simple_color.git
+[submodule "extern/nlohmann_json"]
+	path = extern/nlohmann_json
+	url = https://github.com/nlohmann/json.git

@@ -30,26 +30,39 @@ using Lightstreamer::Cpp::ConsoleLogLevel::Level;
 using namespace Lightstreamer::Cpp::Logger;
 
 namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
-    /*
-    This LoggerProvider rests on the logging facility provided by the standard module *logging*. The log events are
-    forwarded to the logger named *lightstreamer*.
-
-    If you need further customizations, you can leverage the features of module *logging* through,
-    for example, *logging.basicConfig*::
-
-    logging.basicConfig(level=logging.DEBUG, format="%(message)s", stream=sys.stdout)
-
-    @param level: the threshold of the loggers created by this provider (see \ref `Level`)
-    */
+    /**
+     * @class ConsoleLoggerProvider
+    * @brief  This ConsoleLoggerProvider rests on the logging facility provided by the standard module @b logging. The log events are forwarded to the logger named @b lightstreamer.
+     *
+     * The ConsoleLoggerProvider class provides a way to obtain a console logger.
+     */
     class ConsoleLoggerProvider {
     private:
         Level m_consoleloglevel;
 
     public:
-        ConsoleLoggerProvider(Level consoleloglevel) : m_consoleloglevel(consoleloglevel) {
+        /**
+         * @brief Constructs a ConsoleLoggerProvider object with the specified console log level.
+         *
+         * @param consoleloglevel The console log level to be set for the logger provider.
+         */
+        explicit ConsoleLoggerProvider(const Level consoleloglevel) : m_consoleloglevel(consoleloglevel) {
         }
 
-        std::shared_ptr<ConsoleLogger> getLogger(const Category &category) {
+        /**
+         * @brief Retrieves a shared pointer to a ConsoleLogger instance.
+         *
+         * This method retrieves a shared pointer to a ConsoleLogger instance
+         * associated with the given category. The ConsoleLogger instance is
+         * created using the current console log level and the specified category.
+         *
+         * @param category The category associated with the ConsoleLogger instance.
+         * @return A shared pointer to the ConsoleLogger instance.
+         * @note The returned shared pointer should be managed by the caller.
+         * @warning Calling this method without setting the console log level
+         *          may result in an unexpected behavior.
+         */
+        [[nodiscard]] std::shared_ptr<ConsoleLogger> getLogger(const Category &category) const {
             return ConsoleLogger::getInstance(m_consoleloglevel, category);
         }
     };

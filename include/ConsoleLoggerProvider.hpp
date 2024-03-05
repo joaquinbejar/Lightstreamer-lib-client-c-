@@ -1,9 +1,3 @@
-/******************************************************************************
-    Author: Joaquin Bejar Garcia 
-    Email: jb@taunais.com 
-    Date: 2/3/24
- ******************************************************************************/
-
 /*******************************************************************************
  Copyright (c) 2024.
 
@@ -21,12 +15,21 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-export module ConsoleLoggerProvider;
-#include <ConsoleLogLevel.hpp>
-namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
-    typedef int Category; // TODO: Define Category type
-    typedef int ConsoleLogger; // TODO: Define ConsoleLogger type
+/******************************************************************************
+    Author: Joaquin Bejar Garcia 
+    Email: jb@taunais.com 
+    Date: 2/3/24
+ ******************************************************************************/
+#ifndef CONSOLELOGGGERPROVIDER_HPP
+#define CONSOLELOGGGERPROVIDER_HPP
 
+#include <ConsoleLogLevel.hpp>
+#include <Logger.hpp>
+
+using Lightstreamer::Cpp::ConsoleLogLevel::Level;
+using namespace Lightstreamer::Cpp::Logger;
+
+namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
     /*
     This LoggerProvider rests on the logging facility provided by the standard module *logging*. The log events are
     forwarded to the logger named *lightstreamer*.
@@ -38,17 +41,17 @@ namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
 
     @param level: the threshold of the loggers created by this provider (see \ref `Level`)
     */
-     class ConsoleLoggerProvider {
-     private:
-        ConsoleLogLevel::Level consoleloglevel;
+    class ConsoleLoggerProvider {
+    private:
+        Level m_consoleloglevel;
+
     public:
-        ConsoleLoggerProvider(ConsoleLogLevel::Level consoleloglevel) : consoleloglevel(consoleloglevel) {}
+        ConsoleLoggerProvider(Level consoleloglevel) : m_consoleloglevel(consoleloglevel) {
+        }
 
-
-         ConsoleLogger getLogger(Category category) {
-                return {};
-         }
-
+        std::shared_ptr<ConsoleLogger> getLogger(const Category &category) {
+            return ConsoleLogger::getInstance(m_consoleloglevel, category);
+        }
     };
-
 }
+#endif //CONSOLELOGGGERPROVIDER_HPP

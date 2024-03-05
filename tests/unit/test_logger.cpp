@@ -24,9 +24,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <Logger.hpp>
 #include <ConsoleLogLevel.hpp>
+#include <ConsoleLoggerProvider.hpp>
 
 using namespace Lightstreamer::Cpp::Logger ;
 using namespace Lightstreamer::Cpp::ConsoleLogLevel;
+using namespace Lightstreamer::Cpp::ConsoleLoggerProvider;
 
 auto logger = ConsoleLogger::getInstance(Level::TRACE, "category");
 
@@ -34,5 +36,14 @@ TEST_CASE("Logger Level::TRACE", "[Logger]") {
     logger->Debug("I'm logger debug");
     REQUIRE(logger->IsDebugEnabled());
     REQUIRE(logger->getLevel() == Level::TRACE);
+}
+
+TEST_CASE("Logger Level::DEBUG", "[Logger]") {
+    ConsoleLoggerProvider consoleLoggerProvider(Level::DEBUG); // logger is already instanciated with Level::TRACE
+    auto logger_by_provider = consoleLoggerProvider.getLogger("category");
+    logger_by_provider->Debug("I'm logger_by_provider debug");
+    REQUIRE(logger_by_provider->IsDebugEnabled());
+    REQUIRE(logger_by_provider->getLevel() == Level::TRACE);
+
 }
 

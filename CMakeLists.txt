@@ -16,13 +16,13 @@ add_library(Logging SHARED
         src/modules/SubscriptionListener.cppm
         src/modules/ConnectionDetails.cppm
         src/modules/ConnectionOptions.cppm
-        src/modules/ConsoleLoggerProvider.cppm
         src/modules/LightstreamerClient.cppm
         src/modules/Proxy.cppm
         src/modules/Subscription.cppm
 
         include/ConsoleLogLevel.hpp
         include/Logger.hpp
+        include/ConsoleLoggerProvider.hpp
 )
 target_sources(Logging
         PUBLIC
@@ -33,7 +33,6 @@ target_sources(Logging
         src/modules/SubscriptionListener.cppm
         src/modules/ConnectionDetails.cppm
         src/modules/ConnectionOptions.cppm
-        src/modules/ConsoleLoggerProvider.cppm
         src/modules/LightstreamerClient.cppm
         src/modules/Proxy.cppm
         src/modules/Subscription.cppm

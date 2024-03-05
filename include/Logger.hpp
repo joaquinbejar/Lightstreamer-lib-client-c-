@@ -33,6 +33,7 @@
 
 namespace Lightstreamer::Cpp::Logger {
     using ConsoleLogLevel::Level;
+    typedef std::string Category;
 
     inline std::string formatMessageWithException(const std::string &message, const std::exception &e) {
         std::ostringstream oss;
@@ -83,7 +84,7 @@ namespace Lightstreamer::Cpp::Logger {
          This variable represents the category for logging purposes.
          It is of type `std::string` and is used by the `ConsoleLogger` class for categorizing log messages.
          **/
-        std::string category;
+        Category category;
 
         /**
          * @brief A mutex object to ensure exclusive access to shared data.
@@ -151,7 +152,7 @@ namespace Lightstreamer::Cpp::Logger {
         }
 
     public:
-        Logger(const Level level, const std::string &category) : level(level), category(category){}
+        Logger(const Level level, const Category &category) : level(level), category(category){}
 
         virtual ~Logger() = default;
 
@@ -373,7 +374,7 @@ namespace Lightstreamer::Cpp::Logger {
          * @param level The log level for this logger instance.
          * @param category The category for this logger instance.
          */
-        ConsoleLogger(const Level level, const std::string &category) : Logger(level, category) {
+        ConsoleLogger(const Level level, const Category &category) : Logger(level, category) {
             traceEnabled = level <= Level::TRACE;
             debugEnabled = level <= Level::DEBUG;
             infoEnabled = level <= Level::INFO;
@@ -433,7 +434,7 @@ namespace Lightstreamer::Cpp::Logger {
          *
          * @return A shared pointer to the ConsoleLogger instance.
          */
-        static std::shared_ptr<ConsoleLogger> getInstance(const Level level, const std::string &category) {
+        static std::shared_ptr<ConsoleLogger> getInstance(const Level level, const Category &category) {
             std::lock_guard<std::mutex> lock(singleton_mutex);
             if (!instance) {
                 instance = std::shared_ptr<ConsoleLogger>(new ConsoleLogger(level, category));
@@ -671,7 +672,7 @@ namespace Lightstreamer::Cpp::Logger {
         It is suggested, but not mandatory, that subsequent calls to this method related to the same category
         @return the same Logger instance.
          **/
-        virtual Logger *GetLogger(const std::string &category) = 0;
+        virtual Logger *GetLogger(const Category &category) = 0;
     };
 }
 

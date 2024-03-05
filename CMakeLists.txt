@@ -9,7 +9,7 @@ project(Lightstreamer-lib-client-cpp VERSION 0.1.0 LANGUAGES C CXX)
 add_subdirectory(extern/simple_color)
 
 
-add_library(Logging SHARED
+add_library(Lightstreamer SHARED
         src/modules/ClientListener.cppm
         src/modules/ClientMessageListener.cppm
         src/modules/ItemUpdate.cppm
@@ -17,14 +17,14 @@ add_library(Logging SHARED
         src/modules/ConnectionDetails.cppm
         src/modules/ConnectionOptions.cppm
         src/modules/LightstreamerClient.cppm
-        src/modules/Proxy.cppm
         src/modules/Subscription.cppm
 
         include/ConsoleLogLevel.hpp
         include/Logger.hpp
         include/ConsoleLoggerProvider.hpp
+        include/Proxy.hpp
 )
-target_sources(Logging
+target_sources(Lightstreamer
         PUBLIC
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
         src/modules/ClientListener.cppm
@@ -34,15 +34,14 @@ target_sources(Logging
         src/modules/ConnectionDetails.cppm
         src/modules/ConnectionOptions.cppm
         src/modules/LightstreamerClient.cppm
-        src/modules/Proxy.cppm
         src/modules/Subscription.cppm
 )
-target_compile_features(Logging PUBLIC cxx_std_20)
-target_compile_options(Logging PRIVATE -fmodules -std=gnu++20)
+target_compile_features(Lightstreamer PUBLIC cxx_std_20)
+target_compile_options(Lightstreamer PRIVATE -fmodules -std=gnu++20)
 
-target_link_libraries(Logging PRIVATE simple_color)
+target_link_libraries(Lightstreamer PRIVATE simple_color)
 
-target_include_directories(Logging
+target_include_directories(Lightstreamer
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -51,6 +50,7 @@ target_include_directories(Logging
         src
         )
 set(LIGHTSTREAMER_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(LIGHTSTREAMER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 option(LIGHTSTREAMER_BUILD_TESTS "Build the Lightstreamer tests" ON)
 

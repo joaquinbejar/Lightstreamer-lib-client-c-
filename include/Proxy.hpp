@@ -20,10 +20,12 @@
  You should have received a copy of the GNU General Public License along
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
+#ifndef PROXY_HPP
+#define PROXY_HPP
+#include <string>
+#include <utility>
 
-export module Proxy;
 namespace Lightstreamer::Cpp::Proxy {
-
     /**
     Simple class representing a Proxy configuration.
 
@@ -38,7 +40,34 @@ namespace Lightstreamer::Cpp::Proxy {
     **/
     class Proxy {
     public:
+        std::string type;
+        std::string host;
+        int port;
+        std::string user;
+        std::string password;
 
+        Proxy(std::string type, std::string host, int port, std::string user, std::string password) : type(std::move(type)),
+            host(std::move(host)), port(port), user(std::move(user)), password(std::move(password)) {
+        }
+
+        operator std::string() const {
+            if (user.empty()) {
+                return type + " " + host + ":" + std::to_string(port);
+            }
+            return type + " " + user + "@" + host + ":" + std::to_string(port);
+        }
+
+        std::string operator()() const {
+            return this->operator std::string();
+        }
+
+        bool operator==(const Proxy &other) const {
+            if (this->type == other.type && this->host == other.host && this->port == other.port &&
+                this->user == other.user && this->password == other.password) {
+                return true;
+            }
+            return false;
+        }
     };
-
 }
+#endif //PROXY_HPP

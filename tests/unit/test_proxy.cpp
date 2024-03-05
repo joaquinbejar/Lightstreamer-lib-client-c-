@@ -27,8 +27,7 @@
 
 using namespace Lightstreamer::Cpp::Proxy;
 
-TEST_CASE("Proxy class tests", "[proxy]")
-{
+TEST_CASE("Proxy class tests", "[proxy]") {
     SECTION("Constructor and getter tests") {
         std::string type = "HTTP";
         std::string host = "localhost";
@@ -59,7 +58,6 @@ TEST_CASE("Proxy class tests", "[proxy]")
         REQUIRE(proxy.user == user);
         REQUIRE(proxy.password == password);
     }
-
 
 
     SECTION("Equality operator tests") {

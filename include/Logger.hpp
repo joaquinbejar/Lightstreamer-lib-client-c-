@@ -135,7 +135,6 @@ namespace Lightstreamer::Cpp::Logger {
         }
 
     protected:
-
         /**
          * Logs a message with a timestamp prefix. The message can be flushed immediately to the output stream if desired.
          *
@@ -152,7 +151,8 @@ namespace Lightstreamer::Cpp::Logger {
         }
 
     public:
-        Logger(const Level level, const Category &category) : level(level), category(category){}
+        Logger(const Level level, const Category &category) : level(level), category(category) {
+        }
 
         virtual ~Logger() = default;
 

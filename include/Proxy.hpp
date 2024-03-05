@@ -23,7 +23,6 @@
 #ifndef PROXY_HPP
 #define PROXY_HPP
 #include <string>
-#include <utility>
 
 namespace Lightstreamer::Cpp::Proxy {
     /**
@@ -46,8 +45,10 @@ namespace Lightstreamer::Cpp::Proxy {
         std::string user;
         std::string password;
 
-        Proxy(std::string type, std::string host, int port, std::string user, std::string password) : type(std::move(type)),
-            host(std::move(host)), port(port), user(std::move(user)), password(std::move(password)) {
+        Proxy(std::string type, std::string host, int port, std::string user,
+              std::string password) : type(std::move(type)),
+                                      host(std::move(host)), port(port), user(std::move(user)),
+                                      password(std::move(password)) {
         }
 
         operator std::string() const {

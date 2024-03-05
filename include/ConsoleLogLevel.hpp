@@ -39,13 +39,13 @@ namespace Lightstreamer::Cpp::ConsoleLogLevel {
     };
 
     static const std::map<Level, std::string> ConsoleLogLevelStrings{
-            {Level::NONE,     "none"},
-            {Level::TRACE,    "trace"},
-            {Level::DEBUG,    "debug"},
-            {Level::INFO,     "info"},
-            {Level::WARN,     "warn"},
-            {Level::ERROR,    "error"},
-            {Level::FATAL,    "fatal"}
+        {Level::NONE, "none"},
+        {Level::TRACE, "trace"},
+        {Level::DEBUG, "debug"},
+        {Level::INFO, "info"},
+        {Level::WARN, "warn"},
+        {Level::ERROR, "error"},
+        {Level::FATAL, "fatal"}
     };
 
     std::string ConsoleLogLevel2String(Level level) {
@@ -56,7 +56,6 @@ namespace Lightstreamer::Cpp::ConsoleLogLevel {
             throw std::runtime_error("ConsoleLogLevel2String: Unknown log level");
         }
     }
-
 }
 
 #endif //CONSOLELOGLEVEL_HPP

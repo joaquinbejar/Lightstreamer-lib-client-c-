@@ -44,6 +44,4 @@ TEST_CASE("Logger Level::DEBUG", "[Logger]") {
     logger_by_provider->Debug("I'm logger_by_provider debug");
     REQUIRE(logger_by_provider->IsDebugEnabled());
     REQUIRE(logger_by_provider->getLevel() == Level::TRACE);
-
 }
-

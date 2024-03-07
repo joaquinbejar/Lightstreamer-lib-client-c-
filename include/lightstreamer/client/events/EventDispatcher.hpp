@@ -29,10 +29,9 @@
 #include <functional>
 #include <thread>
 #include <mutex>
-#include <lightstreamer/client/events/Event.hpp>
-#include "Event.hpp"
+#include "lightstreamer/client/events/Event.hpp"
 #include <lightstreamer/client/events/EventsThread.hpp>
-#include "Logger.hpp"
+#include <Logger.hpp>
 #include <vector>
 #include <lightstreamer/client/Constants.hpp>
 

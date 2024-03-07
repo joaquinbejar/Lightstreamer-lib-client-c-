@@ -120,7 +120,7 @@ namespace Logger {
      *
      * @param message The error message to be logged.
      */
-    void ConsoleLogger::Error(const std::string &message) override {
+    void ConsoleLogger::Error(const std::string &message)  {
         if (errorEnabled)
             m_log(getColoredLevel(message, Level::ERROR), false, std::cerr);
     }
@@ -142,7 +142,7 @@ namespace Logger {
      *
      * @param message The warning message to be logged.
      */
-    void ConsoleLogger::Warn(const std::string &message) override {
+    void ConsoleLogger::Warn(const std::string &message)  {
         if (warnEnabled)
             m_log(getColoredLevel(message, Level::WARN), false, std::cerr);
     }
@@ -166,7 +166,7 @@ namespace Logger {
      *
      * @param message The message to be written to the log.
      */
-    void ConsoleLogger::Info(const std::string &message) override {
+    void ConsoleLogger::Info(const std::string &message)  {
         if (infoEnabled)
             m_log(getColoredLevel(message, Level::INFO), false, std::cout);
     }
@@ -192,7 +192,7 @@ namespace Logger {
      * and is then passed to the `m_log` function along with `false` and `std::cout` as arguments to indicate that
      * it is a debug message and the output stream to use is `std::cout`.
      */
-    void ConsoleLogger::Debug(const std::string &message) override {
+    void ConsoleLogger::Debug(const std::string &message)  {
         if (debugEnabled)
             m_log(getColoredLevel(message, Level::DEBUG), false, std::cout);
     }
@@ -224,7 +224,7 @@ namespace Logger {
      *
      * @param message The message to be logged.
      **/
-    void ConsoleLogger::Fatal(const std::string &message) override {
+    void ConsoleLogger::Fatal(const std::string &message)  {
         if (fatalEnabled)
             m_log(getColoredLevel(message, Level::FATAL), false, std::cerr);
     }
@@ -250,7 +250,7 @@ namespace Logger {
      *
      * @param message The message to be logged.
      **/
-    void ConsoleLogger::Trace(const std::string &message) override {
+    void ConsoleLogger::Trace(const std::string &message)  {
         if (traceEnabled)
             m_log(getColoredLevel(message, Level::TRACE), false, std::cout);
     }
@@ -273,7 +273,7 @@ namespace Logger {
      *
      * @return true if debug mode is enabled, false otherwise.
      */
-    bool ConsoleLogger::IsDebugEnabled() const override {
+    bool ConsoleLogger::IsDebugEnabled() const  {
         return debugEnabled;
     }
 
@@ -284,7 +284,7 @@ namespace Logger {
      *
      * @return True if the information level logging is enabled, false otherwise.
      */
-    bool ConsoleLogger::IsInfoEnabled() const override {
+    bool ConsoleLogger::IsInfoEnabled() const  {
         return infoEnabled;
     }
 
@@ -293,7 +293,7 @@ namespace Logger {
      *
      * @return True if warning level log is enabled, false otherwise.
      */
-    bool ConsoleLogger::IsWarnEnabled() const override {
+    bool ConsoleLogger::IsWarnEnabled() const  {
         return warnEnabled;
     }
 
@@ -302,7 +302,7 @@ namespace Logger {
 
      \return True if error logging is enabled, false otherwise.
      */
-    bool ConsoleLogger::IsErrorEnabled() const override {
+    bool ConsoleLogger::IsErrorEnabled() const  {
         return errorEnabled;
     }
 
@@ -315,7 +315,7 @@ namespace Logger {
      *
      * @return bool - Returns true if the fatal logging level is enabled, false otherwise.
      */
-    bool ConsoleLogger::IsFatalEnabled() const override {
+    bool ConsoleLogger::IsFatalEnabled() const  {
         return fatalEnabled;
     }
 
@@ -324,7 +324,7 @@ namespace Logger {
      *
      * @return True if trace logging is enabled, false otherwise.
      */
-    bool ConsoleLogger::IsTraceEnabled() const override {
+    bool ConsoleLogger::IsTraceEnabled() const  {
         return traceEnabled;
     }
 };

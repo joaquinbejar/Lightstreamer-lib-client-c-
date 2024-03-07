@@ -32,8 +32,8 @@
 #include <condition_variable>
 #include <atomic>
 #include <Logger.hpp>
-#include "ConsoleLogLevel.hpp"
-#include <>
+#include <ConsoleLogLevel.hpp>
+
 
 namespace lightstreamer::client::events {
 class EventsThread {

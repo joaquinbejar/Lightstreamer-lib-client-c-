@@ -35,6 +35,7 @@ add_library(Lightstreamer SHARED
 message(STATUS "LIGHTSTREAMER_INCLUDE_DIR: ${LIGHTSTREAMER_INCLUDE_DIR}")
 target_include_directories(Lightstreamer
         PUBLIC
+        ${LIGHTSTREAMER_HEADER_FILES}
         ${LIGHTSTREAMER_INCLUDE_DIR}/
         ${LIGHTSTREAMER_INCLUDE_DIR}/lightstreamer
         ${LIGHTSTREAMER_INCLUDE_DIR}/lightstreamer/client

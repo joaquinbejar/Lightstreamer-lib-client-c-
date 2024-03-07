@@ -21,31 +21,57 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-export module ConnectionDetails;
+#ifndef CONNECTIONDETAILS_HPP
+#define CONNECTIONDETAILS_HPP
 
-import <string>;
+#include <string>
+
 
 namespace Lightstreamer::Cpp::ConnectionDetails {
-    typedef int AdapterSet;  // TODO:  Define the type of AdapterSet
     typedef std::string Password; // TODO:  Define the type of Password
     typedef std::string User; // TODO:  Define the type of User
     typedef std::string ServerAddress; // TODO:  Define the type of ServerAddress
+    typedef std::string ClientIp; // TODO:  Define the type of ClientIp
+    typedef std::string ServerInstanceAddress; // TODO:  Define the type of ServerInstanceAddress
+    typedef std::string ServerSocketName; // TODO:  Define the type of getServerSocketName
+    typedef std::string SessionId; // TODO:  Define the type of getSessionId
+
+    struct AdapterSet {
+        std::string name = "DEFAULT";
+    };
+
+    class ConnectionDetailsInterface {
+    protected:
+        AdapterSet m_adapterSet;
+        User m_user;
+        Password m_password;
+        ClientIp m_clientIp;
+        ServerAddress m_serverAddress;
+        ServerInstanceAddress m_serverInstanceAddress;
+        ServerSocketName m_serverSocketName;
+        SessionId m_sessionId;
+    public:
+        virtual void setAdapterSet(const AdapterSet &adapterset) = 0;
+        virtual void setPassword(const Password &password) = 0;
+        virtual void setServerAddress(const ServerAddress &serveraddress) = 0;
+        virtual void setUser(const User &user) = 0;
+        virtual ~ConnectionDetailsInterface() = default;
+    };
 
 
     /**
     Used by LightstreamerClient to provide a basic connection properties data object.
 
-    Data object that contains the configuration settings needed
-    to connect to a Lightstreamer Server.
+    Data object that contains the configuration settings needed to connect to a Lightstreamer Server.
 
     An instance of this class is attached to every \ref `LightstreamerClient`
     as \ref `LightstreamerClient.connectionDetails`
 
     .. seealso:: \ref `LightstreamerClient`
     **/
-    class ConnectionDetails {
-    public:
+    class ConnectionDetails : ConnectionDetailsInterface {
 
+    public:
         /**
         Inquiry method that gets the name of the Adapter Set (which defines the Metadata Adapter and one or several
         Data Adapters) mounted on Lightstreamer Server that supply all the items used in this application.
@@ -55,7 +81,9 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         .. seealso:: \ref `setAdapterSet`
         **/
-        void getAdapterSet() {}
+        [[nodiscard]] AdapterSet getAdapterSet() const {
+            return m_adapterSet;
+        }
 
         /**
         Inquiry method that gets the IP address of this client as seen by the Server which is serving
@@ -76,14 +104,18 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         @return:  A canonical representation of an IP address (it can be either IPv4 or IPv6), or None.
         **/
-        void getClientIp() {}
+        [[nodiscard]] ClientIp getClientIp() const {
+            return m_clientIp;
+        }
 
         /**
         Inquiry method that gets the configured address of Lightstreamer Server.
 
         @return: the serverAddress the configured address of Lightstreamer Server.
         **/
-        void getServerAddress() {}
+        [[nodiscard]] ServerAddress getServerAddress() const {
+            return m_serverAddress;
+        }
 
         /**
         Inquiry method that gets the server address to be used to issue all requests related to the current session.
@@ -110,7 +142,9 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         @return: address used to issue all requests related to the current session, or None.
         **/
-        void getServerInstanceAddress() {}
+        [[nodiscard]] ServerInstanceAddress getServerInstanceAddress() const {
+            return m_serverInstanceAddress;
+        }
 
         /**
         Inquiry method that gets the instance name of the Server which is serving the current session. To be more
@@ -136,7 +170,9 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         @return: name configured for the Server instance which is managing the current session, or None.
         **/
-        void getServerSocketName() {}
+        [[nodiscard]] ServerSocketName getServerSocketName() const {
+            return m_serverSocketName;
+        }
 
         /**
         Inquiry method that gets the ID associated by the server to this client session.
@@ -150,7 +186,9 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         @return: ID assigned by the Server to this client session, or None.
         **/
-        void getSessionId() {}
+        [[nodiscard]] SessionId getSessionId() const {
+            return m_sessionId;
+        }
 
         /**
         Inquiry method that gets the username to be used for the authentication on Lightstreamer Server when
@@ -159,7 +197,9 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
         @return: the username to be used for the authentication on Lightstreamer Server; returns None if no user name
          has been configured.
         **/
-        void getUser() {}
+        [[nodiscard]] User getUser() const {
+            return m_user;
+        }
 
         /**
         Setter method that sets the name of the Adapter Set mounted on Lightstreamer Server to be used to handle
@@ -181,9 +221,11 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
                 \ref `.ClientListener.onPropertyChange` with argument "adapterSet" on any
         ClientListener listening to the related LightstreamerClient.
 
-        @param adapterSet: The name of the Adapter Set to be used. A None value is equivalent to the "DEFAULT" name.
+        @param adapterset: The name of the Adapter Set to be used. A None value is equivalent to the "DEFAULT" name.
         **/
-        void setAdapterSet(AdapterSet adapterset) {}
+        void setAdapterSet(const AdapterSet &adapterset) override {
+            m_adapterSet = adapterset;
+        }
 
         /**
         Setter method that sets the password to be used for the authentication on Lightstreamer Server when initiating
@@ -210,7 +252,9 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         .. seealso:: \ref `setUser`
         **/
-        void setPassword(Password password) {}
+        void setPassword(const Password &password) override {
+            m_password = password;
+        }
 
         /**
         Setter method that sets the address of Lightstreamer Server.
@@ -233,7 +277,7 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
                 \ref `.ClientListener.onPropertyChange` with argument "serverAddress" on any
         ClientListener listening to the related LightstreamerClient.
 
-        @param serverAddress: The full address of Lightstreamer Server. A None value can also be used, to restore the default value.
+        @param serveraddress: The full address of Lightstreamer Server. A None value can also be used, to restore the default value.
 
         An IPv4 or IPv6 can also be used in place of a hostname. Some examples of valid values include: ::
 
@@ -245,7 +289,10 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         @throw IllegalArgumentException: if the given address is not valid.
         **/
-        void setServerAddress(ServerAddress serveraddress) {}
+        void setServerAddress(const ServerAddress &serveraddress) override {
+            // TODO: check if the address is valid
+            m_serverAddress = serveraddress;
+        }
 
         /**
         Setter method that sets the username to be used for the authentication on Lightstreamer Server when initiating
@@ -266,8 +313,34 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
 
         .. seealso:: \ref `setPassword`
         **/
-        void setUser(User user) {}
+        void setUser(const User &user) override {
+            m_user = user;
+        }
+    };
 
+    class ConnectionDetailsBuilder {
+    private:
+        ConnectionDetails m_details;
+    public:
+        ConnectionDetailsBuilder& setAdapterSet(const AdapterSet &adapterset) {
+            m_details.setAdapterSet(adapterset);
+            return *this;
+        }
+        ConnectionDetailsBuilder& setPassword(const Password &password) {
+            m_details.setPassword(password);
+            return *this;
+        }
+        ConnectionDetailsBuilder& setServerAddress(const ServerAddress &serveraddress) {
+            m_details.setServerAddress(serveraddress);
+            return *this;
+        }
+        ConnectionDetailsBuilder& setUser(const User &user) {
+            m_details.setUser(user);
+            return *this;
+        }
 
+        ConnectionDetails build() {return m_details;}
     };
 }
+
+#endif //CONNECTIONDETAILS_HPP

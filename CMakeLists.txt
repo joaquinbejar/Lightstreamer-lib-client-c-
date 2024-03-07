@@ -14,7 +14,6 @@ add_library(Lightstreamer SHARED
         src/modules/ClientMessageListener.cppm
         src/modules/ItemUpdate.cppm
         src/modules/SubscriptionListener.cppm
-        src/modules/ConnectionDetails.cppm
         src/modules/ConnectionOptions.cppm
         src/modules/LightstreamerClient.cppm
         src/modules/Subscription.cppm
@@ -23,6 +22,7 @@ add_library(Lightstreamer SHARED
         include/Logger.hpp
         include/ConsoleLoggerProvider.hpp
         include/Proxy.hpp
+        include/ConnectionDetails.hpp
 )
 target_sources(Lightstreamer
         PUBLIC
@@ -31,7 +31,7 @@ target_sources(Lightstreamer
         src/modules/ClientMessageListener.cppm
         src/modules/ItemUpdate.cppm
         src/modules/SubscriptionListener.cppm
-        src/modules/ConnectionDetails.cppm
+
         src/modules/ConnectionOptions.cppm
         src/modules/LightstreamerClient.cppm
         src/modules/Subscription.cppm

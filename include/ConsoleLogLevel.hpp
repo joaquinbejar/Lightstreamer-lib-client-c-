@@ -27,7 +27,7 @@
 #include <string>
 #include <map>
 
-namespace Lightstreamer::Cpp::ConsoleLogLevel {
+namespace ConsoleLogLevel {
     enum class Level {
         NONE = 0, // This level disables all logging.
         TRACE = 1, //  This level enables all logging.
@@ -48,7 +48,7 @@ namespace Lightstreamer::Cpp::ConsoleLogLevel {
         {Level::FATAL, "fatal"}
     };
 
-    std::string ConsoleLogLevel2String(Level level) {
+    inline std::string ConsoleLogLevel2String(const Level level) {
         auto it = ConsoleLogLevelStrings.find(level);
         if (it != ConsoleLogLevelStrings.end()) {
             return it->second;

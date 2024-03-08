@@ -23,11 +23,12 @@
 #ifndef CONSOLELOGGGERPROVIDER_HPP
 #define CONSOLELOGGGERPROVIDER_HPP
 
-#include <ConsoleLogLevel.hpp>
-#include <Logger.hpp>
 
-using Lightstreamer::Cpp::ConsoleLogLevel::Level;
-using namespace Lightstreamer::Cpp::Logger;
+#include "ConsoleLogLevel.hpp"
+#include "Logger.hpp"
+
+using ConsoleLogLevel::Level;
+using namespace Logger;
 
 namespace Lightstreamer::Cpp::ConsoleLoggerProvider {
     /**

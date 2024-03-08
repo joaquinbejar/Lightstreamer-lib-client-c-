@@ -42,7 +42,7 @@ class EventsThread {
     std::condition_variable condition;
     std::atomic<bool> stop;
     std::thread worker_thread;
-    auto logger = Logger::ConsoleLogger::getInstance(ConsoleLogLevel::Level::TRACE, "category");
+    std::shared_ptr<Logger::ConsoleLogger> logger = Logger::ConsoleLogger::getInstance(ConsoleLogLevel::Level::TRACE, "category");
 
 
     void worker() {

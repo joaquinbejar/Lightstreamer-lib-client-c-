@@ -43,6 +43,8 @@ target_include_directories(Lightstreamer
         ${LIGHTSTREAMER_INCLUDE_DIR}/lightstreamer/events
         extern/simple_color/include
 )
+#include_directories(BEFORE
+#        ${LIGHTSTREAMER_INCLUDE_DIR})
 
 
 #target_compile_features(Lightstreamer PUBLIC cxx_std_20)

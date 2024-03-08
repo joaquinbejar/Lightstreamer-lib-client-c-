@@ -27,7 +27,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace com::lightstreamer::client {
+namespace lightstreamer::client {
 
 class Constants {
 public:

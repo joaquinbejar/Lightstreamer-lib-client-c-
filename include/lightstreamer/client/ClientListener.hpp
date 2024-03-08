@@ -24,6 +24,7 @@
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENER_HPP
 
+// TODO: subclasses and methods
 namespace lightstreamer::client {
     class ClientListener {
     public:

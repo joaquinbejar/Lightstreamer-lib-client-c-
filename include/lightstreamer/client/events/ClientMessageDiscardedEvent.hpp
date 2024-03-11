@@ -21,8 +21,8 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDENYEVENT_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDENYEVENT_HPP
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDISCARDEDEVENT_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDISCARDEDEVENT_HPP
 
 #include <string>
 #include <memory>
@@ -32,21 +32,19 @@
 
 namespace lightstreamer::client::events {
 
-    class ClientMessageDenyEvent : public Event<ClientMessageListener> {
+    class ClientMessageDiscardedEvent : public Event<ClientMessageListener> {
     private:
         std::string originalMessage;
-        int code;
-        std::string error;
 
     public:
-        ClientMessageDenyEvent(std::string originalMessage, int code, std::string error)
-                : originalMessage(std::move(originalMessage)), code(code), error(std::move(error)) {}
+        explicit ClientMessageDiscardedEvent(std::string originalMessage)
+                : originalMessage(std::move(originalMessage)) {}
 
         void applyTo(ClientMessageListener &listener) const override {
-            listener.onDeny(originalMessage, code, error);
+            listener.onDiscarded(originalMessage);
         }
     };
 
 } // namespace lightstreamer::client::events
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDENYEVENT_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDISCARDEDEVENT_HPP

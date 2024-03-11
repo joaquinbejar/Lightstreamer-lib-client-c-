@@ -24,12 +24,14 @@
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENER_HPP
 
+#include <lightstreamer/client/LightstreamerClient.hpp>
+
 // TODO: subclasses and methods
 namespace lightstreamer::client {
     class ClientListener {
     public:
-        virtual void onListenEnd(LightstreamerClient* client) = 0;
-        virtual void onListenStart(LightstreamerClient* client) = 0;
+        virtual void onListenEnd(std::shared_ptr<LightstreamerClient> client) = 0;
+        virtual void onListenStart(std::shared_ptr<LightstreamerClient> client) = 0;
         virtual void onServerError(int errorCode, const std::string& errorMessage) = 0;
         virtual void onStatusChange(const std::string& status) = 0;
         virtual void onPropertyChange(const std::string& property) = 0;

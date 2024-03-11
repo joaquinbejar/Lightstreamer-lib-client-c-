@@ -33,12 +33,7 @@
 #include <future>
 #include <map>
 #include <functional>
-#include "EventDispatcher.hpp" // Supone la existencia de una implementación adaptada de EventDispatcher
-#include "SessionManager.hpp"  // y otras clases necesarias adaptadas de la versión en C#
-#include "ConnectionOptions.hpp"
-#include "SubscriptionManager.hpp"
-#include "MessageManager.hpp"
-#include "LightstreamerEngine.hpp"
+
 
 #include <lightstreamer/client/ConnectionDetails.hpp>
 #include <lightstreamer/client/ClientListener.hpp>
@@ -46,7 +41,8 @@
 #include <Logger.hpp>
 #include <lightstreamer/client/Constants.hpp>
 #include <lightstreamer/client/events/EventDispatcher.hpp>
-
+#include <lightstreamer/client/events/ClientListenerStartEvent.hpp>
+#include <lightstreamer/client/events/ClientListenerEndEvent.hpp>
 
 // TODO: subclasses and methods
 
@@ -63,7 +59,6 @@ namespace lightstreamer::client {
 
         void initializeInstanceFields() {
             if (!instanceFieldsInitialized) {
-                // Inicialización de campos
                 instanceFieldsInitialized = true;
             }
         }
@@ -76,17 +71,20 @@ namespace lightstreamer::client {
 
         LightstreamerClient(const std::string &serverAddress, const std::string &adapterSet) {
             initializeInstanceFields();
-            // Inicialización específica y configuraciones
+            // TODO: Inicialización específica y configuraciones
         }
 
         void addListener(ClientListener *listener) {
             std::lock_guard<std::mutex> lock(mutex_);
-            dispatcher.addListener(listener, new ClientListenerStartEvent(this));
+            dispatcher.addListener(listener, new ClientListenerStartEvent(this)); // TODO: turn this into a shared pointer
+
+
+
         }
 
         void removeListener(ClientListener *listener) {
             std::lock_guard<std::mutex> lock(mutex_);
-            dispatcher.removeListener(listener, new ClientListenerEndEvent(this));
+            dispatcher.removeListener(listener, new ClientListenerEndEvent(this)); // TODO: turn this into a shared pointer
         }
 
         // Otros métodos públicos adaptados de la clase original en C#

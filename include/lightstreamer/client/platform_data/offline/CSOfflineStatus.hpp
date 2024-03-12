@@ -26,19 +26,22 @@
 #include <curl/curl.h>
 #include <iostream>
 #include <memory>
-#include "Logger.hpp" // Assume this is your logging setup.
+#include <Logger.hpp>
+#include <ConsoleLogLevel.hpp>
+#include <ConsoleLoggerProvider.hpp>
 #include <lightstreamer/client/platform_data/offline/OfflineStatusInterface.hpp>
+#include <Constants.hpp>
 
 namespace lightstreamer::client::platform_data::offline  {
 
     class CSOfflineStatus : public OfflineStatusInterface {
     public:
-        static Logger log; // Assume Logger is a class in your project for logging, similar to LogManager in the C# example.
+         std::shared_ptr<ConsoleLogger> log = ConsoleLogger::getInstance(Level::TRACE, Constants::TRANSPORT_LOG);
 
-        virtual bool isOffline(const std::string& server) {
+         bool isOffline(const std::string& server) override {
             CURL *curl = curl_easy_init();
             if (!curl) {
-                log.debug("CURL initialization failed");
+                log->Debug("CURL initialization failed");
                 return true; // Assume offline if we can't even start CURL
             }
 
@@ -46,23 +49,21 @@ namespace lightstreamer::client::platform_data::offline  {
             curl_easy_setopt(curl, CURLOPT_NOBODY, 1L); // We don't need the body for a status check
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L); // Timeout for the operation, to not block indefinitely
 
-            log.debug("IsOffline check now ...");
+             log->Debug(("IsOffline check now ...");
 
             CURLcode res = curl_easy_perform(curl);
             curl_easy_cleanup(curl);
 
             if (res == CURLE_OK) {
-                log.debug(" ... online, go!");
+                log->Debug((" ... online, go!");
                 return false;
             } else {
-                log.debug(" ... offline!");
+                log->Debug((" ... offline!");
                 return true;
             }
         }
     };
 
-// Define the static logger
-    Logger CSOfflineStatus::log = LogManager::getLogger("TRANSPORT_LOG");
 
 } // namespace
 

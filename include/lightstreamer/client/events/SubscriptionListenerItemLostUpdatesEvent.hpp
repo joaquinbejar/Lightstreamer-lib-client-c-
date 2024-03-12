@@ -21,31 +21,32 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERENDEVENT_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERENDEVENT_HPP
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMLOSTUPDATESEVENT_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMLOSTUPDATESEVENT_HPP
+
 #include <string>
 #include <memory>
 #include <lightstreamer/client/ClientMessageListener.hpp>
 #include <lightstreamer/client/events/Event.hpp>
 #include <utility>
 #include <lightstreamer/client/SubscriptionListener.hpp>
-#include <lightstreamer/client/Subscription.hpp>
+#include <lightstreamer/client/ItemUpdate.hpp>
 
 namespace lightstreamer::client::events {
 
-    class SubscriptionListenerEndEvent : public Event<SubscriptionListener> {
+    class SubscriptionListenerItemUpdateEvent : public Event<SubscriptionListener> {
     private:
-        std::shared_ptr<Subscription> subscription;
+        std::shared_ptr<ItemUpdate> itemUpdate;
 
     public:
-        explicit SubscriptionListenerEndEvent(std::shared_ptr<Subscription> subscription)
-                : subscription(std::move(subscription)) {}
+        explicit SubscriptionListenerItemUpdateEvent(std::shared_ptr<ItemUpdate> itemUpdate)
+                : itemUpdate(std::move(itemUpdate)) {}
 
-        void applyTo(SubscriptionListener& listener) const override {
-            listener.onListenEnd(*subscription);
+        void applyTo(SubscriptionListener &listener) const override {
+            listener.onItemUpdate(*itemUpdate);
         }
     };
 
 } // namespace lightstreamer::client::events
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERENDEVENT_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMLOSTUPDATESEVENT_HPP

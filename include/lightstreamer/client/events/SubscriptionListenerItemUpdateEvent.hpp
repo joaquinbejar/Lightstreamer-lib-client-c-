@@ -21,31 +21,32 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERENDEVENT_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERENDEVENT_HPP
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMUPDATEEVENT_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMUPDATEEVENT_HPP
 #include <string>
 #include <memory>
 #include <lightstreamer/client/ClientMessageListener.hpp>
 #include <lightstreamer/client/events/Event.hpp>
 #include <utility>
 #include <lightstreamer/client/SubscriptionListener.hpp>
-#include <lightstreamer/client/Subscription.hpp>
 
 namespace lightstreamer::client::events {
 
-    class SubscriptionListenerEndEvent : public Event<SubscriptionListener> {
+    class SubscriptionListenerItemLostUpdatesEvent : public Event<SubscriptionListener> {
     private:
-        std::shared_ptr<Subscription> subscription;
+        int itemPos;
+        int lostUpdates;
+        std::string itemName;
 
     public:
-        explicit SubscriptionListenerEndEvent(std::shared_ptr<Subscription> subscription)
-                : subscription(std::move(subscription)) {}
+        SubscriptionListenerItemLostUpdatesEvent(std::string  itemName, int itemPos, int lostUpdates)
+                : itemPos(itemPos), lostUpdates(lostUpdates), itemName(std::move(itemName)) {}
 
         void applyTo(SubscriptionListener& listener) const override {
-            listener.onListenEnd(*subscription);
+            listener.onItemLostUpdates(itemName, itemPos, lostUpdates);
         }
     };
 
 } // namespace lightstreamer::client::events
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERENDEVENT_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMUPDATEEVENT_HPP

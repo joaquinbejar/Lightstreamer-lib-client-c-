@@ -1,7 +1,7 @@
 /******************************************************************************
     Author: Joaquin Bejar Garcia 
     Email: jb@taunais.com 
-    Date: 8/3/24
+    Date: 12/3/24
  ******************************************************************************/
 
 /*******************************************************************************
@@ -21,27 +21,31 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
-
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERCOMMANDSECONDLEVELITEMLOSTUPDATESEVENT_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERCOMMANDSECONDLEVELITEMLOSTUPDATESEVENT_HPP
+#include <string>
 #include <memory>
-#include <lightstreamer/client/ClientListener.hpp>
+#include <lightstreamer/client/ClientMessageListener.hpp>
 #include <lightstreamer/client/events/Event.hpp>
 #include <utility>
+#include <lightstreamer/client/SubscriptionListener.hpp>
 
 namespace lightstreamer::client::events {
-    class ClientListenerEndEvent : public Event<ClientListener> {
+
+    class SubscriptionListenerCommandSecondLevelItemLostUpdatesEvent : public Event<SubscriptionListener> {
     private:
-        std::shared_ptr<LightstreamerClient> client;
+        std::string key;
+        int lostUpdates;
 
     public:
-        explicit ClientListenerEndEvent(std::shared_ptr<LightstreamerClient> &client) : client(client) {}
+        SubscriptionListenerCommandSecondLevelItemLostUpdatesEvent(int lostUpdates, std::string  key)
+                : lostUpdates(lostUpdates), key(std::move(key)) {}
 
-        void applyTo(ClientListener &listener) const override {
-            listener.onListenEnd(client);
+        void applyTo(SubscriptionListener& listener) const override {
+            listener.onCommandSecondLevelItemLostUpdates(lostUpdates, key);
         }
     };
-}
 
+} // namespace lightstreamer::client::events
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERCOMMANDSECONDLEVELITEMLOSTUPDATESEVENT_HPP

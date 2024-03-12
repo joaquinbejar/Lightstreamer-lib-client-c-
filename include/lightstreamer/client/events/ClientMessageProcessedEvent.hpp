@@ -1,7 +1,7 @@
 /******************************************************************************
     Author: Joaquin Bejar Garcia 
     Email: jb@taunais.com 
-    Date: 8/3/24
+    Date: 12/3/24
  ******************************************************************************/
 
 /*******************************************************************************
@@ -21,27 +21,29 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
-
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEPROCESSEDEVENT_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEPROCESSEDEVENT_HPP
+#include <string>
 #include <memory>
-#include <lightstreamer/client/ClientListener.hpp>
+#include <lightstreamer/client/ClientMessageListener.hpp>
 #include <lightstreamer/client/events/Event.hpp>
 #include <utility>
 
 namespace lightstreamer::client::events {
-    class ClientListenerEndEvent : public Event<ClientListener> {
+
+    class ClientMessageProcessedEvent : public Event<ClientMessageListener> {
     private:
-        std::shared_ptr<LightstreamerClient> client;
+        std::string originalMessage;
 
     public:
-        explicit ClientListenerEndEvent(std::shared_ptr<LightstreamerClient> &client) : client(client) {}
+        explicit ClientMessageProcessedEvent(std::string  originalMessage)
+                : originalMessage(std::move(originalMessage)) {}
 
-        void applyTo(ClientListener &listener) const override {
-            listener.onListenEnd(client);
+        void applyTo(ClientMessageListener& listener) const override {
+            listener.onProcessed(originalMessage);
         }
     };
-}
 
+} // namespace lightstreamer::client::events
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEPROCESSEDEVENT_HPP

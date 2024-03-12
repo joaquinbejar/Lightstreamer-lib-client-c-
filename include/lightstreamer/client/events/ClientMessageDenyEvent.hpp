@@ -1,7 +1,7 @@
 /******************************************************************************
     Author: Joaquin Bejar Garcia 
     Email: jb@taunais.com 
-    Date: 8/3/24
+    Date: 11/3/24
  ******************************************************************************/
 
 /*******************************************************************************
@@ -21,27 +21,32 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDENYEVENT_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDENYEVENT_HPP
 
+#include <string>
 #include <memory>
-#include <lightstreamer/client/ClientListener.hpp>
+#include <lightstreamer/client/ClientMessageListener.hpp>
 #include <lightstreamer/client/events/Event.hpp>
 #include <utility>
 
 namespace lightstreamer::client::events {
-    class ClientListenerEndEvent : public Event<ClientListener> {
+
+    class ClientMessageDenyEvent : public Event<ClientMessageListener> {
     private:
-        std::shared_ptr<LightstreamerClient> client;
+        std::string originalMessage;
+        int code;
+        std::string error;
 
     public:
-        explicit ClientListenerEndEvent(std::shared_ptr<LightstreamerClient> &client) : client(client) {}
+        ClientMessageDenyEvent(std::string originalMessage, int code, std::string error)
+                : originalMessage(std::move(originalMessage)), code(code), error(std::move(error)) {}
 
-        void applyTo(ClientListener &listener) const override {
-            listener.onListenEnd(client);
+        void applyTo(ClientMessageListener &listener) const override {
+            listener.onDeny(originalMessage, code, error);
         }
     };
-}
 
+} // namespace lightstreamer::client::events
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTMESSAGEDENYEVENT_HPP

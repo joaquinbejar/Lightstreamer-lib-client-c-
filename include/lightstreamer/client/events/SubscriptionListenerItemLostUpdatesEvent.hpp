@@ -1,7 +1,7 @@
 /******************************************************************************
     Author: Joaquin Bejar Garcia 
     Email: jb@taunais.com 
-    Date: 8/3/24
+    Date: 12/3/24
  ******************************************************************************/
 
 /*******************************************************************************
@@ -21,27 +21,32 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMLOSTUPDATESEVENT_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMLOSTUPDATESEVENT_HPP
 
+#include <string>
 #include <memory>
-#include <lightstreamer/client/ClientListener.hpp>
+#include <lightstreamer/client/ClientMessageListener.hpp>
 #include <lightstreamer/client/events/Event.hpp>
 #include <utility>
+#include <lightstreamer/client/SubscriptionListener.hpp>
+#include <lightstreamer/client/ItemUpdate.hpp>
 
 namespace lightstreamer::client::events {
-    class ClientListenerEndEvent : public Event<ClientListener> {
+
+    class SubscriptionListenerItemUpdateEvent : public Event<SubscriptionListener> {
     private:
-        std::shared_ptr<LightstreamerClient> client;
+        std::shared_ptr<ItemUpdate> itemUpdate;
 
     public:
-        explicit ClientListenerEndEvent(std::shared_ptr<LightstreamerClient> &client) : client(client) {}
+        explicit SubscriptionListenerItemUpdateEvent(std::shared_ptr<ItemUpdate> itemUpdate)
+                : itemUpdate(std::move(itemUpdate)) {}
 
-        void applyTo(ClientListener &listener) const override {
-            listener.onListenEnd(client);
+        void applyTo(SubscriptionListener &listener) const override {
+            listener.onItemUpdate(*itemUpdate);
         }
     };
-}
 
+} // namespace lightstreamer::client::events
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENERITEMLOSTUPDATESEVENT_HPP

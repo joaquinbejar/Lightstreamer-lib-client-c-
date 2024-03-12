@@ -1,7 +1,7 @@
 /******************************************************************************
     Author: Joaquin Bejar Garcia 
     Email: jb@taunais.com 
-    Date: 8/3/24
+    Date: 11/3/24
  ******************************************************************************/
 
 /*******************************************************************************
@@ -21,27 +21,27 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERSTATUSCHANGEEVENT_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERSTATUSCHANGEEVENT_HPP
 
-#include <memory>
 #include <lightstreamer/client/ClientListener.hpp>
 #include <lightstreamer/client/events/Event.hpp>
-#include <utility>
 
 namespace lightstreamer::client::events {
-    class ClientListenerEndEvent : public Event<ClientListener> {
+
+    class ClientListenerStatusChangeEvent : public Event<ClientListener> {
     private:
-        std::shared_ptr<LightstreamerClient> client;
+        std::string status;
 
     public:
-        explicit ClientListenerEndEvent(std::shared_ptr<LightstreamerClient> &client) : client(client) {}
+        explicit ClientListenerStatusChangeEvent(std::string &status) : status(status) {}
 
         void applyTo(ClientListener &listener) const override {
-            listener.onListenEnd(client);
+            listener.onStatusChange(status);
         }
     };
-}
+
+} // namespace lightstreamer::client::events
 
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERENDEVENT_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CLIENTLISTENERSTATUSCHANGEEVENT_HPP

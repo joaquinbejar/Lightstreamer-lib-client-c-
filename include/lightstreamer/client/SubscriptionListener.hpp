@@ -25,8 +25,8 @@
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_SUBSCRIPTIONLISTENER_HPP
 
 #include <string>
-#include "ItemUpdate.hpp" // Assuming ItemUpdate is a class that encapsulates an item update.
-#include "Subscription.hpp" // Assuming Subscription is a class that represents a subscription.
+#include <lightstreamer/client/ItemUpdate.hpp>
+#include <lightstreamer/client/Subscription.hpp>
 
 namespace lightstreamer::client {
 

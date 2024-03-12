@@ -58,7 +58,6 @@ namespace Lightstreamer::Cpp::ConnectionDetails {
         virtual ~ConnectionDetailsInterface() = default;
     };
 
-
     /**
     Used by LightstreamerClient to provide a basic connection properties data object.
 

@@ -49,7 +49,7 @@
 namespace lightstreamer::client {
     using namespace events;
 
-    class LightstreamerClient {
+    class LightstreamerClient : public std::enable_shared_from_this<LightstreamerClient> {
     private:
 
         bool instanceFieldsInitialized = false;
@@ -76,7 +76,7 @@ namespace lightstreamer::client {
 
         void addListener(ClientListener *listener) {
             std::lock_guard<std::mutex> lock(mutex_);
-            dispatcher.addListener(listener, new ClientListenerStartEvent(this)); // TODO: turn this into a shared pointer
+            dispatcher.addListener(listener, new ClientListenerStartEvent(shared_from_this())); // TODO: turn this into a shared pointer
 
 
 

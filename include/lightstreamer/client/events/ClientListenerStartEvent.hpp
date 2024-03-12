@@ -37,6 +37,11 @@ namespace lightstreamer::client::events {
         std::shared_ptr<LightstreamerClient> client;
 
     public:
+        ClientListenerStartEvent() = delete;
+
+        ClientListenerStartEvent(const ClientListenerStartEvent &) = delete;
+
+        ClientListenerStartEvent &operator=(const ClientListenerStartEvent &) = delete;
 
         explicit ClientListenerStartEvent(std::shared_ptr<LightstreamerClient> &client) : client(client) {}
 

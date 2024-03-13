@@ -24,19 +24,19 @@
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_REQUESTOBJECTS_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_REQUESTOBJECTS_HPP
 
-#include "LightstreamerRequest.hpp" // Include the header file where LightstreamerRequest is defined.
-#include "RequestTutor.hpp" // Include the header file where RequestTutor is defined.
-#include "RequestListener.hpp" // Include the header file where RequestListener is defined.
+#include <lightstreamer/client/requests/LightstreamerRequest.hpp>
+#include <lightstreamer/client/requests/RequestTutor.hpp>
+#include <lightstreamer/client/transport/RequestListener.hpp>
 
 namespace lightstreamer::client::protocol {
 
     class RequestObjects {
     public:
-        const LightstreamerRequest* request; // TODO: Replace with the actual type of LightstreamerRequest
-        const RequestTutor* tutor; // TODO: Replace with the actual type of RequestTutor
-        const RequestListener* listener; // TODO: Replace with the actual type of RequestListener
+        const LightstreamerRequest *request; // TODO: Replace with the actual type of LightstreamerRequest
+        const RequestTutor *tutor; // TODO: Replace with the actual type of RequestTutor
+        const RequestListener *listener; // TODO: Replace with the actual type of RequestListener
 
-        RequestObjects(const LightstreamerRequest* request, const RequestTutor* tutor, const RequestListener* listener)
+        RequestObjects(const LightstreamerRequest *request, const RequestTutor *tutor, const RequestListener *listener)
                 : request(request), tutor(tutor), listener(listener) {
         }
 
@@ -45,12 +45,14 @@ namespace lightstreamer::client::protocol {
         // For this example, the class does not take ownership, assuming these objects are managed elsewhere.
 
         // Prevent copying to enforce ownership semantics (optional, depending on your use case)
-        RequestObjects(const RequestObjects&) = delete;
-        RequestObjects& operator=(const RequestObjects&) = delete;
+        RequestObjects(const RequestObjects &) = delete;
+
+        RequestObjects &operator=(const RequestObjects &) = delete;
 
         // Allow move semantics (optional, depending on your use case)
-        RequestObjects(RequestObjects&&) noexcept = default;
-        RequestObjects& operator=(RequestObjects&&) noexcept = default;
+        RequestObjects(RequestObjects &&) noexcept = default;
+
+        RequestObjects &operator=(RequestObjects &&) noexcept = default;
 
         virtual ~RequestObjects() = default;
     };

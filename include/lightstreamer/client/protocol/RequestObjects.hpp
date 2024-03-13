@@ -23,7 +23,6 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_REQUESTOBJECTS_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_REQUESTOBJECTS_HPP
-#pragma once
 
 #include "LightstreamerRequest.hpp" // Include the header file where LightstreamerRequest is defined.
 #include "RequestTutor.hpp" // Include the header file where RequestTutor is defined.

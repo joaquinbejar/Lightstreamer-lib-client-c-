@@ -24,7 +24,7 @@
 #define PROXY_HPP
 #include <string>
 
-namespace Lightstreamer::Cpp::Proxy {
+namespace lightstreamer::client {
     /**
     Simple class representing a Proxy configuration.
 

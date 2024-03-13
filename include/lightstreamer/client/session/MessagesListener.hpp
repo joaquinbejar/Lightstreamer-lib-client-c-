@@ -34,17 +34,20 @@ namespace lightstreamer::client::session {
         virtual ~MessagesListener() = default;
 
         virtual void onSessionStart() = 0;
+
         virtual void onSessionClose() = 0;
 
-        virtual void onMessageAck(const std::string& sequence, int number) = 0;
+        virtual void onMessageAck(const std::string &sequence, int number) = 0;
 
-        virtual void onMessageOk(const std::string& sequence, int number) = 0;
+        virtual void onMessageOk(const std::string &sequence, int number) = 0;
 
-        virtual void onMessageDeny(const std::string& sequence, int denyCode, const std::string& denyMessage, int number) = 0;
+        virtual void
+        onMessageDeny(const std::string &sequence, int denyCode, const std::string &denyMessage, int number) = 0;
 
-        virtual void onMessageDiscarded(const std::string& sequence, int number) = 0;
+        virtual void onMessageDiscarded(const std::string &sequence, int number) = 0;
 
-        virtual void onMessageError(const std::string& sequence, int errorCode, const std::string& errorMessage, int number) = 0;
+        virtual void
+        onMessageError(const std::string &sequence, int errorCode, const std::string &errorMessage, int number) = 0;
     };
 
 } // namespace lightstreamer::client::session

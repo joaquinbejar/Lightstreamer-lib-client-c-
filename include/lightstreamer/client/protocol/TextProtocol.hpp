@@ -38,6 +38,7 @@
 #include "RequestManager.h"
 #include "HttpTransport.h"
 #include "ReverseHeartbeatTimer.h"
+#include <lightstreamer/client/transport/RequestListener.hpp>
 
 namespace lightstreamer::client::protocol {
     class TextProtocol {
@@ -143,7 +144,7 @@ namespace lightstreamer::client::protocol {
         // Abstract method to dispatch control requests to the transport layer
         virtual void
         sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor,
-                           std::shared_ptr<RequestListener> reqListener) = 0;
+                           std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         // Method to handle reverse heartbeat
         void handleReverseHeartbeat() {
@@ -168,7 +169,7 @@ namespace lightstreamer::client::protocol {
 
         // Abstract method to forward Destroy request to the derived class for custom handling
         virtual void forwardDestroyRequest(std::shared_ptr<DestroyRequest> request, std::shared_ptr<RequestTutor> tutor,
-                                           std::shared_ptr<RequestListener> reqListener) = 0;
+                                           std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         // Method to send a Message request
         void sendMessageRequest(std::shared_ptr<MessageRequest> request, std::shared_ptr<RequestTutor> tutor) {
@@ -214,7 +215,7 @@ namespace lightstreamer::client::protocol {
             sendControlRequest(request, tutor, reqListener);
         }
 
-        class BaseControlRequestListener : public RequestListener {
+        class BaseControlRequestListener : public transport::RequestListener {
         protected:
             TextProtocol *outerInstance;
             std::shared_ptr<RequestTutor> tutor;
@@ -334,7 +335,7 @@ namespace lightstreamer::client::protocol {
             // Implementation
         }
 
-        class ControlRequestListener : public RequestListener {
+        class ControlRequestListener : public transport::RequestListener {
         public:
             virtual void onOK() override = 0;
 
@@ -344,7 +345,7 @@ namespace lightstreamer::client::protocol {
         // Abstract method for sending control requests, to be implemented by derived classes
         virtual void
         sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor,
-                           std::shared_ptr<RequestListener> reqListener) = 0;
+                           std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         std::smatch matchLine(const std::regex& pattern, const std::string& message) {
             std::smatch matcher;

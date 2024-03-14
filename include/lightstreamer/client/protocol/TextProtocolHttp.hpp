@@ -28,11 +28,12 @@
 #include <lightstreamer/client/protocol/TextProtocol.hpp>
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
 #include "RequestTutor.hpp"
-#include <lightstreamer/client/transport/RequestListener.hpp>
 #include "Http.hpp" // Assuming Http is a class representing HTTP transport
 #include <lightstreamer/util/ListenableFuture.hpp>
 #include <cassert>
 #include <memory>
+#include <lightstreamer/client/transport/RequestListener.hpp>
+
 
 namespace lightstreamer::client::protocol {
 
@@ -47,7 +48,7 @@ namespace lightstreamer::client::protocol {
             return this->httpRequestManager;
         }
 
-        void sendControlRequest(requests::LightstreamerRequest& request, RequestTutor& tutor, RequestListener& reqListener) override {
+        void sendControlRequest(requests::LightstreamerRequest& request, RequestTutor& tutor, transport::RequestListener& reqListener) override {
             httpRequestManager.addRequest(request, tutor, reqListener);
         }
 
@@ -79,7 +80,7 @@ namespace lightstreamer::client::protocol {
             reverseHeartbeatTimer.onBindSession(false);
         }
 
-        void forwardDestroyRequest(DestroyRequest& request, RequestTutor& tutor, RequestListener& reqListener) override {
+        void forwardDestroyRequest(DestroyRequest& request, RequestTutor& tutor, transport::RequestListener& reqListener) override {
             // Don't send destroy request when transport is http
         }
 

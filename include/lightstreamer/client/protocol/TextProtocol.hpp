@@ -135,6 +135,24 @@ namespace lightstreamer::client::protocol {
             httpRequestManager.addRequest(request, tutor, reqListener);
         }
 
+        // Method to send a Destroy request
+        void sendDestroy(std::shared_ptr<DestroyRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass2>(this, tutor);
+            // Assuming httpRequestManager is an object that can manage HTTP requests
+            // httpRequestManager.addRequest(request, tutor, reqListener); // Uncomment if httpRequestManager is implemented
+            forwardDestroyRequest(request, tutor, reqListener);
+        }
+
+        // Abstract method to forward Destroy request to the derived class for custom handling
+        virtual void forwardDestroyRequest(std::shared_ptr<DestroyRequest> request, std::shared_ptr<RequestTutor> tutor, std::shared_ptr<RequestListener> reqListener) = 0;
+
+        // Method to send a Message request
+        void sendMessageRequest(std::shared_ptr<MessageRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass3>(this, tutor, request);
+            sendControlRequest(request, tutor, reqListener);
+        }
+
+
     protected:
         // Protected methods and utilities
 
@@ -142,6 +160,7 @@ namespace lightstreamer::client::protocol {
         void onProtocolMessage(const std::string &message) {
             // Implementation
         }
+
 
         class ControlRequestListener : public RequestListener {
         public:
@@ -176,6 +195,42 @@ namespace lightstreamer::client::protocol {
                 tutor->discard();
                 // Log error, assuming a logging mechanism exists
                 std::cerr << "force_rebind request caused the error: " << code << " " << message << " - The error will be silently ignored." << std::endl;
+            }
+        };
+        class ControlRequestListenerAnonymousInnerClass2 : public ControlRequestListener {
+            TextProtocol* outerInstance;
+            std::shared_ptr<RequestTutor> tutor;
+
+        public:
+            ControlRequestListenerAnonymousInnerClass2(TextProtocol* outerInstance, std::shared_ptr<RequestTutor> tutor) : outerInstance(outerInstance), tutor(tutor) {}
+
+            void onOK() override {
+                // Empty implementation, can be customized as needed
+            }
+
+            void onError(int code, const std::string& message) override {
+                // Log error, assuming a logging mechanism exists
+                std::cerr << "destroy request caused the error: " << code << " " << message << " - The error will be silently ignored." << std::endl;
+            }
+        };
+
+        class ControlRequestListenerAnonymousInnerClass3 : public ControlRequestListener {
+            TextProtocol* outerInstance;
+            std::shared_ptr<MessageRequest> request;
+
+        public:
+            ControlRequestListenerAnonymousInnerClass3(TextProtocol* outerInstance, std::shared_ptr<RequestTutor> tutor, std::shared_ptr<MessageRequest> request) : ControlRequestListener(outerInstance, tutor), request(request) {}
+
+            void onOK() override {
+                if (request->needsAck()) {
+                    outerInstance->session.onMessageAck(request->getSequence(), request->getMessageNumber(), ProtocolConstants::SYNC_RESPONSE);
+                } else {
+                    // Handling of unneeded acks
+                }
+            }
+
+            void onError(int code, const std::string& message) override {
+                outerInstance->session.onMessageError(request->getSequence(), code, message, request->getMessageNumber(), ProtocolConstants::SYNC_RESPONSE);
             }
         };
 

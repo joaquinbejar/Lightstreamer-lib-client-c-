@@ -152,6 +152,44 @@ namespace lightstreamer::client::protocol {
             sendControlRequest(request, tutor, reqListener);
         }
 
+        // Method to send a subscription request
+        void sendSubscriptionRequest(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            if (log.isDebugEnabled()) {
+                // Log debug message about the subscription request
+                std::cout << "Subscription parameters: " << request->getTransportUnawareQueryString() << std::endl;
+            }
+            auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass4>(this, tutor, request);
+            try {
+                sendControlRequest(request, tutor, reqListener);
+            } catch (const std::exception& e) {
+                // Log warning message about the exception
+                std::cerr << "Something went wrong here: " << e.what() << std::endl;
+            }
+        }
+
+        // Método para enviar una solicitud de cambio de configuración de suscripción
+        void sendConfigurationRequest(std::shared_ptr<ChangeSubscriptionRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass5>(this, tutor, request);
+            sendControlRequest(request, tutor, reqListener);
+        }
+
+        // Método para enviar una solicitud de cancelación de suscripción
+        void sendUnsubscriptionRequest(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass6>(this, tutor, request);
+            sendControlRequest(request, tutor, reqListener);
+        }
+
+        // Método para enviar una solicitud de restricción
+        void sendConstrainRequest(std::shared_ptr<ConstrainRequest> request, std::shared_ptr<ConstrainTutor> tutor) {
+            auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass7>(this, tutor, request);
+            sendControlRequest(request, tutor, reqListener);
+        }
+
+        // Método para enviar un latido del corazón inverso
+        void sendReverseHeartbeat(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            auto reqListener = std::make_shared<BaseControlRequestListenerAnonymousInnerClass>(this, tutor);
+            sendControlRequest(request, tutor, reqListener);
+        }
 
     protected:
         // Protected methods and utilities
@@ -161,20 +199,20 @@ namespace lightstreamer::client::protocol {
             // Implementation
         }
 
-
         class ControlRequestListener : public RequestListener {
         public:
             virtual void onOK() override = 0;
             virtual void onError(int code, const std::string& message) override = 0;
         };
 
+        // Abstract method for sending control requests, to be implemented by derived classes
+        virtual void sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor, std::shared_ptr<RequestListener> reqListener) = 0;
 
 
     private:
         bool statusIs(StreamStatus queryStatus) {
             return this->status == queryStatus;
         }
-
 
         void forwardControlResponseError(int errorCode, std::string errorMessage, void* /*Listener type placeholder*/) {
             // Placeholder for handling error forwarding
@@ -197,6 +235,7 @@ namespace lightstreamer::client::protocol {
                 std::cerr << "force_rebind request caused the error: " << code << " " << message << " - The error will be silently ignored." << std::endl;
             }
         };
+
         class ControlRequestListenerAnonymousInnerClass2 : public ControlRequestListener {
             TextProtocol* outerInstance;
             std::shared_ptr<RequestTutor> tutor;
@@ -233,6 +272,25 @@ namespace lightstreamer::client::protocol {
                 outerInstance->session.onMessageError(request->getSequence(), code, message, request->getMessageNumber(), ProtocolConstants::SYNC_RESPONSE);
             }
         };
+
+        class ControlRequestListenerAnonymousInnerClass4 : public ControlRequestListener {
+            TextProtocol* outerInstance;
+            std::shared_ptr<SubscribeRequest> request;
+
+        public:
+            ControlRequestListenerAnonymousInnerClass4(TextProtocol* outerInstance, std::shared_ptr<RequestTutor> tutor, std::shared_ptr<SubscribeRequest> request)
+                    : outerInstance(outerInstance), request(request) {}
+
+            void onOK() override {
+                outerInstance->session.onSubscriptionAck(request->getSubscriptionId());
+            }
+
+            void onError(int code, const std::string& message) override {
+                outerInstance->session.onSubscriptionError(request->getSubscriptionId(), code, message, ProtocolConstants::SYNC_RESPONSE);
+            }
+        };
+
+
 
         static std::regex SUBOK_REGEX;
 

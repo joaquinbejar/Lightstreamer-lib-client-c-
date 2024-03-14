@@ -82,9 +82,6 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        bool statusIs(StreamStatus what) {
-            return this->status == what;
-        }
 
         // Returns the InternalConnectionOptions
         // Note: @deprecated notice adapted as a comment for C++
@@ -122,7 +119,21 @@ namespace lightstreamer::client::protocol {
             this->session = listener;
         }
 
+        // Abstract method to dispatch control requests to the transport layer
+        virtual void sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor, std::shared_ptr<RequestListener> reqListener) = 0;
 
+        // Method to handle reverse heartbeat
+        void handleReverseHeartbeat() {
+            // Assuming reverseHeartbeatTimer is an object of a class that manages reverse heartbeat timing
+            reverseHeartbeatTimer.onChangeInterval();
+        }
+
+        // Method to send a force rebind request
+        void sendForceRebind(std::shared_ptr<ForceRebindRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            // Assuming httpRequestManager is an object that can manage HTTP requests
+            auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass>(this, tutor);
+            httpRequestManager.addRequest(request, tutor, reqListener);
+        }
 
     protected:
         // Protected methods and utilities
@@ -132,21 +143,41 @@ namespace lightstreamer::client::protocol {
             // Implementation
         }
 
-        // More helper functions...
+        class ControlRequestListener : public RequestListener {
+        public:
+            virtual void onOK() override = 0;
+            virtual void onError(int code, const std::string& message) override = 0;
+        };
+
+
 
     private:
         bool statusIs(StreamStatus queryStatus) {
             return this->status == queryStatus;
         }
 
-        void stopActive(bool force) {
-            // Logic to stop active connection/session based on 'force' parameter
-            // Placeholder for actual implementation
-        }
 
         void forwardControlResponseError(int errorCode, std::string errorMessage, void* /*Listener type placeholder*/) {
             // Placeholder for handling error forwarding
         }
+
+        class ControlRequestListenerAnonymousInnerClass : public ControlRequestListener {
+            TextProtocol* outerInstance;
+            std::shared_ptr<RequestTutor> tutor;
+
+        public:
+            ControlRequestListenerAnonymousInnerClass(TextProtocol* outerInstance, std::shared_ptr<RequestTutor> tutor) : outerInstance(outerInstance), tutor(tutor) {}
+
+            void onOK() override {
+                // Empty implementation, can be customized as needed
+            }
+
+            void onError(int code, const std::string& message) override {
+                tutor->discard();
+                // Log error, assuming a logging mechanism exists
+                std::cerr << "force_rebind request caused the error: " << code << " " << message << " - The error will be silently ignored." << std::endl;
+            }
+        };
 
         static std::regex SUBOK_REGEX;
 

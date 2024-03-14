@@ -25,7 +25,7 @@
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_TEXTPROTOCOLHTTP_HPP
 #pragma once
 
-#include "TextProtocol.hpp" // Include the base class definition
+#include <lightstreamer/client/protocol/TextProtocol.hpp>
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
 #include "RequestTutor.hpp"
 #include <lightstreamer/client/transport/RequestListener.hpp>

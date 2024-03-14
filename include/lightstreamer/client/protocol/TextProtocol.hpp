@@ -320,6 +320,11 @@ namespace lightstreamer::client::protocol {
             // Considera cualquier otro estado necesario
         }
 
+        virtual void processREQOK(const std::string& message) = 0;
+
+        virtual void processREQERR(const std::string& message) = 0;
+
+        virtual void processERROR(const std::string& message) = 0;
 
     protected:
         // Protected methods and utilities
@@ -340,6 +345,36 @@ namespace lightstreamer::client::protocol {
         virtual void
         sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor,
                            std::shared_ptr<RequestListener> reqListener) = 0;
+
+        std::smatch matchLine(const std::regex& pattern, const std::string& message) {
+            std::smatch matcher;
+            if (!std::regex_match(message, matcher, pattern)) {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+            return matcher;
+        }
+
+        int myParseInt(const std::string& field, const std::string& description, const std::string& orig) {
+            int value;
+            auto result = std::from_chars(field.data(), field.data() + field.size(), value);
+            if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range) {
+                std::cerr << "myParseInt failure ... " << field << std::endl;
+                onIllegalMessage("Malformed " + description + " in message: " + orig);
+                return 0; // Aunque onIllegalMessage podría terminar la ejecución
+            }
+            return value;
+        }
+
+        long myParseLong(const std::string& field, const std::string& description, const std::string& orig) {
+            long value;
+            auto result = std::from_chars(field.data(), field.data() + field.size(), value);
+            if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range) {
+                onIllegalMessage("Malformed " + description + " in message: " + orig);
+                return 0; // Aunque onIllegalMessage podría terminar la ejecución
+            }
+            return value;
+        }
+
 
 
     private:
@@ -433,6 +468,113 @@ namespace lightstreamer::client::protocol {
                                                            ProtocolConstants::SYNC_RESPONSE);
             }
         };
+
+        void processCLIENTIP(const std::string& message) {
+            std::regex clientIpRegex("CLIENTIP,(.+)");
+            std::smatch match;
+
+            if (std::regex_search(message, match, clientIpRegex) && match.size() > 1) {
+                std::string clientIp = match[1];
+                // session.onClientIp(clientIp); // Asume la existencia de este método
+                std::cout << "Client IP: " << clientIp << std::endl;
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processSERVNAME(const std::string& message) {
+            std::regex serverNameRegex("SERVNAME,(.+)");
+            std::smatch match;
+
+            if (std::regex_search(message, match, serverNameRegex) && match.size() > 1) {
+                std::string serverName = match[1];
+                // session.onServerName(serverName); // Asume la existencia de este método
+                std::cout << "Server Name: " << serverName << std::endl;
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processPROG(const std::string& message) {
+            std::regex progRegex("PROG,(\\d+)");
+            std::smatch match;
+
+            if (std::regex_search(message, match, progRegex) && match.size() > 1) {
+                long prog = std::stol(match[1]);
+                if (!currentProg) {
+                    currentProg = std::make_shared<long>(prog);
+                    long sessionProg = 0; // Aquí deberías obtener el valor real de tu sesión
+                    if (*currentProg > sessionProg) {
+                        onIllegalMessage("Message prog higher than expected. Expected: " + std::to_string(sessionProg) + " but found: " + std::to_string(*currentProg));
+                    }
+                } else {
+                    // Manejo de lógica para prog actualizado
+                }
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void onIllegalMessage(const std::string& message) {
+            std::cerr << message << std::endl;
+        }
+        void processCONF(const std::string& message) {
+            std::smatch match;
+
+            if (std::regex_search(message, match, CONFIGURATION_REGEX) && match.size() > 1) {
+                int table = std::stoi(match[1]);
+                std::string frequency = match[2];
+
+                // Llamada a processCountableNotification() y session.onConfigurationEvent según tu implementación
+                std::cout << "Configuration: table = " << table << ", frequency = " << frequency << std::endl;
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processEND(const std::string& message) {
+
+            std::smatch match;
+
+            if (std::regex_search(message, match, END_REGEX) && match.size() > 1) {
+                int errorCode = std::stoi(match[1]);
+                std::string errorMessage = match[2];
+
+                // Llamada a forwardError según tu implementación
+                std::cout << "End: errorCode = " << errorCode << ", errorMessage = " << errorMessage << std::endl;
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processLOOP(const std::string& message) {
+            std::smatch match;
+
+            if (std::regex_search(message, match, OVERFLOW_REGEX) && match.size() > 1) {
+                int millis = std::stoi(match[1]);
+
+                // session.onLoopReceived(millis); Asume la existencia de este método
+                std::cout << "Loop: millis = " << millis << std::endl;
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processOV(const std::string& message) {
+            std::smatch match;
+
+            if (std::regex_search(message, match, OVERFLOW_REGEX) && match.size() > 1) {
+                int table = std::stoi(match[1]);
+                int item = std::stoi(match[2]);
+                int overflow = std::stoi(match[3]);
+
+                // Llamada a processCountableNotification() y session.onLostUpdatesEvent según tu implementación
+                std::cout << "Overflow: table = " << table << ", item = " << item << ", overflow = " << overflow << std::endl;
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
 
 
 

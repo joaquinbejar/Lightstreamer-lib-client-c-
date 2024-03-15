@@ -40,6 +40,7 @@
 #include "ReverseHeartbeatTimer.h"
 #include <lightstreamer/client/transport/RequestListener.hpp>
 #include <lightstreamer/client/Constants.hpp>
+#include <lightstreamer/client/protocol/ProtocolConstants.hpp>
 
 namespace lightstreamer::client::protocol {
     class TextProtocol {

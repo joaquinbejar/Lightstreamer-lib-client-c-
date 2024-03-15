@@ -37,7 +37,7 @@
 #include "ChangeSubscriptionRequest.h"
 #include "ReverseHeartbeatRequest.h"
 #include "RequestManager.h"
-#include "RequestTutor.h"
+#include <lightstreamer/client/requests/RequestTutor.hpp>
 #include "ConstrainTutor.h"
 #include <lightstreamer/util/ListenableFuture.hpp>
 #include <string>
@@ -66,9 +66,9 @@ namespace lightstreamer::client::protocol {
 
         virtual void setListener(std::shared_ptr<ProtocolListener> listener) = 0;
 
-        virtual void sendForceRebind(const ForceRebindRequest& request, const std::shared_ptr<RequestTutor>& tutor) = 0;
+        virtual void sendForceRebind(const ForceRebindRequest& request, const std::shared_ptr<requests::RequestTutor>& tutor) = 0;
 
-        virtual void sendDestroy(const DestroyRequest& request, const std::shared_ptr<RequestTutor>& tutor) = 0;
+        virtual void sendDestroy(const DestroyRequest& request, const std::shared_ptr<requests::RequestTutor>& tutor) = 0;
 
         virtual void sendConstrainRequest(const ConstrainRequest& request, const std::shared_ptr<ConstrainTutor>& tutor) = 0;
 
@@ -78,15 +78,15 @@ namespace lightstreamer::client::protocol {
 
         virtual void stop(bool waitPendingControlRequests, bool forceConnectionClose) = 0;
 
-        virtual void sendMessageRequest(const MessageRequest& request, const std::shared_ptr<RequestTutor>& tutor) = 0;
+        virtual void sendMessageRequest(const MessageRequest& request, const std::shared_ptr<requests::RequestTutor>& tutor) = 0;
 
-        virtual void sendSubscriptionRequest(const SubscribeRequest& request, const std::shared_ptr<RequestTutor>& tutor) = 0;
+        virtual void sendSubscriptionRequest(const SubscribeRequest& request, const std::shared_ptr<requests::RequestTutor>& tutor) = 0;
 
-        virtual void sendUnsubscriptionRequest(const UnsubscribeRequest& request, const std::shared_ptr<RequestTutor>& tutor) = 0;
+        virtual void sendUnsubscriptionRequest(const UnsubscribeRequest& request, const std::shared_ptr<requests::RequestTutor>& tutor) = 0;
 
-        virtual void sendConfigurationRequest(const ChangeSubscriptionRequest& request, const std::shared_ptr<RequestTutor>& tutor) = 0;
+        virtual void sendConfigurationRequest(const ChangeSubscriptionRequest& request, const std::shared_ptr<requests::RequestTutor>& tutor) = 0;
 
-        virtual void sendReverseHeartbeat(const ReverseHeartbeatRequest& request, const std::shared_ptr<RequestTutor>& tutor) = 0;
+        virtual void sendReverseHeartbeat(const ReverseHeartbeatRequest& request, const std::shared_ptr<requests::RequestTutor>& tutor) = 0;
 
         virtual void copyPendingRequests(std::shared_ptr<Protocol> protocol) = 0;
 

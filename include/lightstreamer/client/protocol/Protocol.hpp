@@ -23,7 +23,6 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_PROTOCOL_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_PROTOCOL_HPP
-#pragma once
 
 #include <memory>
 #include "ProtocolListener.h"

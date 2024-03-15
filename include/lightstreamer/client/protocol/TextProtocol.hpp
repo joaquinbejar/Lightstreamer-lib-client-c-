@@ -216,26 +216,6 @@ namespace lightstreamer::client::protocol {
             sendControlRequest(request, tutor, reqListener);
         }
 
-        class BaseControlRequestListener : public transport::RequestListener {
-        protected:
-            TextProtocol *outerInstance;
-            std::shared_ptr<RequestTutor> tutor;
-
-        public:
-            BaseControlRequestListener(TextProtocol *outerInstance, std::shared_ptr<RequestTutor> tutor)
-                    : outerInstance(outerInstance), tutor(tutor) {
-                // Como optimización para evitar reprogramaciones innecesarias de mensajes de latido de corazón inverso
-                outerInstance->reverseHeartbeatTimer.onControlRequest();
-            }
-
-            virtual void onOK() override {
-                // El latido del corazón no se preocupa por REQOK
-            }
-
-            virtual void onError(int code, const std::string &message) override {
-                // El latido del corazón no se preocupa por REQERR
-            }
-        };
 
         void TextProtocol::sendCreateRequest(std::shared_ptr<CreateSessionRequest> request) {
             activeListener = std::make_shared<OpenSessionListener>(this);
@@ -417,8 +397,7 @@ namespace lightstreamer::client::protocol {
             forwardControlResponseError(61, description, nullptr);
         }
 
-
-
+        virtual void onBindSessionForTheSakeOfReverseHeartbeat() = 0;
 
 
     private:
@@ -1146,6 +1125,75 @@ namespace lightstreamer::client::protocol {
                 // Trigger action related to opening a bind session for reverse heartbeats.
                 // Assuming outerInstance has a method named onBindSessionForTheSakeOfReverseHeartbeat, which should be defined.
                 outerInstance.onBindSessionForTheSakeOfReverseHeartbeat();
+            }
+        };
+
+        class BaseControlRequestListener : public RequestListener {
+        protected:
+            TextProtocol& outerInstance;
+            bool opened = false;
+            bool completed = false;
+            std::unique_ptr<RequestTutor> tutor;
+            std::string response;
+
+        public:
+            BaseControlRequestListener(TextProtocol& outerInstance, std::unique_ptr<RequestTutor>& tutor)
+                    : outerInstance(outerInstance), tutor(std::move(tutor)) {}
+
+            virtual void onOK() = 0;
+            virtual void onError(int code, const std::string& message) = 0;
+
+            virtual void onOpen() {
+                if (tutor) {
+                    opened = true;
+                    tutor->notifySender(false);
+                }
+            }
+
+            virtual void onMessage(const std::string& message) {
+                response += message;
+            }
+
+            virtual void onClosed() {
+                if (completed) return;
+                completed = true;
+                if (!opened && tutor) {
+                    tutor->notifySender(true);
+                } else {
+                    this->onComplete(response);
+                }
+            }
+
+            // Handles the complete response message
+            virtual void onComplete(const std::string& message) {
+                if (message.empty()) {
+                    // An empty message means that the server has probably closed the socket.
+                    // Ignore it and wait for the request timeout to expire and the request to be transmitted again.
+                    return;
+                }
+
+                // Try to parse the response and act accordingly. You'll need to implement the parsing logic
+                // based on the specific content of the response, as done in the original C# code.
+
+                ControlResponseParser parser = ControlResponseParser.parseControlResponse(message);
+                if (parser is REQOKParser) {
+                    this->onOK();
+                } else if (/* parser is REQERRParser */) {
+                    outerInstance.forwardControlResponseError(/* errorCode */, /* errorMsg */, *this);
+                } else if (/* parser is ERRORParser */) {
+                    outerInstance.forwardControlResponseError(/* errorCode */, /* errorMsg */, *this);
+                } else {
+                    // Should not happen
+                    outerInstance.onIllegalMessage("Unexpected response to control request: " + message);
+                }
+            }
+
+            virtual void onBroken() {
+                if (completed) return;
+                completed = true;
+                if (!opened && tutor) {
+                    tutor->notifySender(true);
+                }
             }
         };
 

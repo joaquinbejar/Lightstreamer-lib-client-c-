@@ -309,12 +309,6 @@ namespace lightstreamer::client::protocol {
         virtual void processERROR(const std::string& message) = 0;
 
     protected:
-        class ControlRequestListener : public transport::RequestListener {
-        public:
-            virtual void onOK() override = 0;
-
-            virtual void onError(int code, const std::string &message) override = 0;
-        };
 
         // Abstract method for sending control requests, to be implemented by derived classes
         virtual void
@@ -1198,7 +1192,26 @@ namespace lightstreamer::client::protocol {
         };
 
 
+        // Abstract class ControlRequestListener supporting reverse heartbeats.
+        class ControlRequestListener : public BaseControlRequestListener {
+        protected:
+            TextProtocol& outerInstance; // Reference to the parent TextProtocol object
 
+        public:
+            // Constructor that initializes the external instance and passes the tutor to the base constructor.
+            ControlRequestListener(TextProtocol& outerInstance, std::unique_ptr<RequestTutor> tutor)
+                    : BaseControlRequestListener(outerInstance, std::move(tutor)), outerInstance(outerInstance) {}
+
+            // Overrides the onOpen method to implement ControlRequestListener specific logic.
+            void onOpen() override {
+                BaseControlRequestListener::onOpen(); // First call the base implementation
+                outerInstance.onControlRequestForReverseHeartbeat(); // Trigger reverse heartbeat
+            }
+
+            // Ensure to implement the abstract methods onOK and onError.
+            virtual void onOK() = 0;
+            virtual void onError(int code, const std::string& message) = 0;
+        };
 
     };
 

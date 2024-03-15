@@ -1226,14 +1226,14 @@ namespace lightstreamer::client::protocol {
 
     };
 
-    const std::regex TextProtocol::SUBOK_REGEX("SUBOK,(\\d+),(\\d+),(\\d+)");
-    const std::regex TextProtocol::SUBCMD_REGEX("SUBCMD,(\\d+),(\\d+),(\\d+),(\\d+),(\\d+)");
+    const std::regex TextProtocol::SUBOK_REGEX(R"(SUBOK,(\d+),(\d+),(\d+))");
+    const std::regex TextProtocol::SUBCMD_REGEX(R"(SUBCMD,(\d+),(\d+),(\d+),(\d+),(\d+))");
     const std::regex TextProtocol::UNSUBSCRIBE_REGEX("UNSUB,(\\d+)");
-    const std::regex TextProtocol::CONSTRAIN_REGEX("CONS,(unmanaged|unlimited|(\\d+(\\.\\d+)?))");
+    const std::regex TextProtocol::CONSTRAIN_REGEX(R"(CONS,(unmanaged|unlimited|(\d+(\.\d+)?)))");
     const std::regex TextProtocol::SYNC_REGEX("SYNC,(\\d+)");
     const std::regex TextProtocol::CLEAR_SNAPSHOT_REGEX("CS,(\\d+),(\\d+)");
     const std::regex TextProtocol::END_OF_SNAPSHOT_REGEX("EOS,(\\d+),(\\d+)");
-    const std::regex TextProtocol::OVERFLOW_REGEX("OV,(\\d+),(\\d+),(\\d+)");
+    const std::regex TextProtocol::OVERFLOW_REGEX(R"(OV,(\d+),(\d+),(\d+))");
     const std::regex TextProtocol::CONFIGURATION_REGEX(
             "CONF,(\\d+),(unlimited|(\\d+(\\.\\d+)?)),(filtered|unfiltered)");
     const std::regex TextProtocol::SERVNAME_REGEX("SERVNAME,(.+)");

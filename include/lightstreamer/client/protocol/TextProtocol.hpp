@@ -39,6 +39,7 @@
 #include "HttpTransport.h"
 #include "ReverseHeartbeatTimer.h"
 #include <lightstreamer/client/transport/RequestListener.hpp>
+#include <lightstreamer/client/Constants.hpp>
 
 namespace lightstreamer::client::protocol {
     class TextProtocol {
@@ -576,6 +577,156 @@ namespace lightstreamer::client::protocol {
             }
         }
 
+        void processEOS(const std::string& message) {
+            std::smatch match;
+            if (std::regex_search(message, match, END_OF_SNAPSHOT_REGEX) && match.size() > 1) {
+                int table = std::stoi(match[1].str());
+                int item = std::stoi(match[2].str());
+
+                if (!processCountableNotification()) {
+                    return;
+                }
+
+                // Assuming existence of session.onEndOfSnapshotEvent()
+                session.onEndOfSnapshotEvent(table, item);
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processCS(const std::string& message) {
+            std::smatch match;
+            if (std::regex_search(message, match, CLEAR_SNAPSHOT_REGEX) && match.size() > 1) {
+                int table = std::stoi(match[1].str());
+                int item = std::stoi(match[2].str());
+
+                if (!processCountableNotification()) {
+                    return;
+                }
+
+                // Assuming existence of session.onClearSnapshotEvent()
+                session.onClearSnapshotEvent(table, item);
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processSYNC(const std::string& message) {
+            std::smatch match;
+            if (std::regex_search(message, match, SYNC_REGEX) && match.size() > 1) {
+                long seconds = std::stol(match[1].str());
+
+                // Assuming existence of session.onSyncMessage()
+                session.onSyncMessage(seconds);
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processCONS(const std::string& message) {
+            std::smatch match;
+            if (std::regex_search(message, match, CONSTRAIN_REGEX) && match.size() > 1) {
+                std::string bwType = match[1].str();
+                std::string bandwidth = match.size() > 2 ? match[2].str() : "";
+
+                if (!bandwidth.empty()) {
+                    // Assuming existence of session.onServerSentBandwidth()
+                    session.onServerSentBandwidth(bandwidth);
+                } else {
+                    // Assuming bwType is "unmanaged" or "unlimited"
+                    session.onServerSentBandwidth(bwType);
+                }
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processUNSUB(const std::string& message) {
+            std::smatch match;
+            if (std::regex_search(message, match, UNSUBSCRIBE_REGEX) && match.size() > 1) {
+                int table = std::stoi(match[1].str());
+
+                if (!processCountableNotification()) {
+                    return;
+                }
+
+                // Assuming existence of session.onUnsubscription()
+                session.onUnsubscription(table);
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processSUBOK(const std::string& message) {
+            if (!processCountableNotification()) {
+                return;
+            }
+
+            std::smatch match;
+            if (std::regex_search(message, match, SUBOK_REGEX)) {
+                int table = std::stoi(match[1].str());
+                int totalItems = std::stoi(match[2].str());
+                int totalFields = std::stoi(match[3].str());
+
+                // Assuming existence of session.onSubscription()
+                session.onSubscription(table, totalItems, totalFields, -1, -1);
+            } else if (std::regex_search(message, match, SUBCMD_REGEX)) {
+                int table = std::stoi(match[1].str());
+                int totalItems = std::stoi(match[2].str());
+                int totalFields = std::stoi(match[3].str());
+                int key = std::stoi(match[4].str());
+                int command = std::stoi(match[5].str());
+
+                // Assuming existence of session.onSubscription()
+                session.onSubscription(table, totalItems, totalFields, key, command);
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processUserMessage(const std::string& message) {
+            // a message notification can have the following forms:
+            // 1) MSGDONE,<sequence>,<prog>
+            // 2) MSGFAIL,<sequence>,<prog>,<error-code>,<error-message>
+
+            auto splitted = splitString(message, ','); // TODO: Implement splitString (vector<string> splitString(const string& s, char delimiter))
+
+            logDebug("Process User Message: " + message);
+
+            if (splitted.size() == 3) {
+                if (splitted[0] != "MSGDONE") {
+                    onIllegalMessage("MSGDONE expected: " + message);
+                    return;
+                }
+                if (!processCountableNotification()) {
+                    return;
+                }
+                std::string sequence = splitted[1] == "*" ? Constants::UNORDERED_MESSAGES : splitted[1];
+                int messageNumber = std::stoi(splitted[2]); // Assuming existence of myParseInt
+
+                logDebug("Process User Message (2): " + splitted[0] + ", " + splitted[1] + ", " + splitted[2]);
+
+                session.onMessageOk(sequence, messageNumber);
+
+            } else if (splitted.size() == 5) {
+                if (splitted[0] != "MSGFAIL") {
+                    onIllegalMessage("MSGFAIL expected: " + message);
+                    return;
+                }
+                if (!processCountableNotification()) {
+                    return;
+                }
+                std::string sequence = splitted[1] == "*" ? Constants::UNORDERED_MESSAGES : splitted[1];
+                int messageNumber = std::stoi(splitted[2]);
+                int errorCode = std::stoi(splitted[3]);
+                std::string errorMessage = unquote(splitted[4]); // Assuming existence of EncodingUtils.unquote or similar function
+
+                onMsgErrorMessage(sequence, messageNumber, errorCode, errorMessage, message);
+
+            } else {
+                onIllegalMessage("Wrong number of fields in message: " + message);
+            }
+        }
 
 
 

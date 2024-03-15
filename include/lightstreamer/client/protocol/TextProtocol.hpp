@@ -1004,7 +1004,7 @@ namespace lightstreamer::client::protocol {
         }
 
         // Stops the protocol activities, optionally waiting for pending control requests and forcing connection close.
-        void stop(bool waitPendingControlRequests, bool forceConnectionClose) {
+        virtual void stop(bool waitPendingControlRequests, bool forceConnectionClose) {
             log.Info("Protocol dismissed");
             setStatus(StreamStatus::STREAM_CLOSED, forceConnectionClose);
             reverseHeartbeatTimer->onClose();

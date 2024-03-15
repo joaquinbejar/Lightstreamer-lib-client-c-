@@ -329,13 +329,6 @@ namespace lightstreamer::client::protocol {
         virtual void processERROR(const std::string& message) = 0;
 
     protected:
-        // Protected methods and utilities
-
-        // Helper function to process messages
-        void onProtocolMessage(const std::string &message) {
-            // Implementation
-        }
-
         class ControlRequestListener : public transport::RequestListener {
         public:
             virtual void onOK() override = 0;
@@ -377,16 +370,60 @@ namespace lightstreamer::client::protocol {
             return value;
         }
 
+        // Manages CONERR errors.
+        void forwardError(int code, const std::string& message) {
+            if (code == 41 || code == 40) {
+                // Handle takeover or spurious rebind by attempting to recover
+                session->onTakeover(code);
+            } else if (code == 48) {
+                // Handle session expiry
+                session->onExpiry();
+            } else if (code == 20) {
+                // Handle refusal of control or rebind request due to session not found
+                session->onSyncError(ProtocolConstants::ASYNC_RESPONSE);
+            } else if (code == 4) {
+                // Handle recovery error
+                session->onRecoveryError();
+            } else {
+                // Fallback case for handling fatal errors: close current session, do not create a new session, notify client listeners
+                log.Debug("On Server Error - 1 - " + std::to_string(code) + " - " + message);
+                session->onServerError(code, message);
+            }
+        }
+
+        // Manages REQERR/ERROR errors.
+        void forwardControlResponseError(int code, const std::string& message, BaseControlRequestListener* listener) {
+            if (code == 20) {
+                // Handle synchronization error and implicitly end session
+                this->session->onSyncError(ProtocolConstants::SYNC_RESPONSE);
+                this->status = StreamStatus::STREAM_CLOSED;
+            } else if (code == 11) {
+                // Error 11 is managed as a server error with code 21
+                log.Debug("On Server Error - 21 - " + message);
+                this->session->onServerError(21, message);
+            } else if (listener != nullptr && code != 65) { // 65 is a fatal error
+                // Since there is a listener, do not fallback to the fatal error case
+                listener->onError(code, message);
+            } else {
+                // Fallback case for handling fatal errors: close current session, do not create a new session, notify client listeners
+                log.Debug("On Server Error - 3 - " + std::to_string(code) + " - " + message);
+                this->session->onServerError(code, message);
+                this->status = StreamStatus::STREAM_CLOSED;
+            }
+        }
+
+        // Handles illegal messages by forwarding a control response error with a specific code.
+        void onIllegalMessage(const std::string& description) {
+            forwardControlResponseError(61, description, nullptr);
+        }
+
+
+
 
 
     private:
         bool statusIs(StreamStatus queryStatus) {
             return this->status == queryStatus;
-        }
-
-        void
-        forwardControlResponseError(int errorCode, std::string errorMessage, void * /*Listener type placeholder*/) {
-            // Placeholder for handling error forwarding
         }
 
         class ControlRequestListenerAnonymousInnerClass : public ControlRequestListener {
@@ -902,6 +939,219 @@ namespace lightstreamer::client::protocol {
             session->onMpnSubscribeOK(lsSubId, pnSubId);
         }
 
+        void processMPNDEL(const std::string& message) {
+            if (!processCountableNotification()) {
+                return;
+            }
+            auto firstCommaPos = message.find(',');
+            if (firstCommaPos == std::string::npos) {
+                onIllegalMessage(message);
+                return;
+            }
+            std::string subId = message.substr(firstCommaPos + 1);
+            if (subId.empty()) {
+                onIllegalMessage(message);
+                return;
+            }
+            session->onMpnUnsubscribeOK(subId);
+        }
+
+        void processMPNZERO(const std::string& message) {
+            if (!processCountableNotification()) {
+                return;
+            }
+            auto firstCommaPos = message.find(',');
+            if (firstCommaPos == std::string::npos) {
+                onIllegalMessage(message);
+                return;
+            }
+            std::string deviceId = message.substr(firstCommaPos + 1);
+            if (deviceId.empty()) {
+                onIllegalMessage(message);
+                return;
+            }
+            session->onMpnResetBadgeOK(deviceId);
+        }
+
+        void onMsgErrorMessage(const std::string& sequence, int messageNumber, int errorCode, const std::string& errorMessage, const std::string& orig) {
+            if (errorCode == 39) {
+                // code 39: list of discarded messages, the message is actually a counter
+                int count = std::stoi(errorMessage); // suponiendo una implementación de myParseInt
+                for (int i = messageNumber - count + 1; i <= messageNumber; ++i) {
+                    session->onMessageDiscarded(sequence, i, ProtocolConstants::ASYNC_RESPONSE);
+                }
+            } else if (errorCode == 38) {
+                // just discarded
+                session->onMessageDiscarded(sequence, messageNumber, ProtocolConstants::ASYNC_RESPONSE);
+            } else if (errorCode <= 0) {
+                // Metadata Adapter has refused the message
+                session->onMessageDeny(sequence, errorCode, errorMessage, messageNumber, ProtocolConstants::ASYNC_RESPONSE);
+            } else {
+                // 32 / 33 The specified progressive number is too low
+                // 34 NotificationException from metadata
+                // 35 unexpected processing error
+                // 68 Internal server error
+                session->onMessageError(sequence, errorCode, errorMessage, messageNumber, ProtocolConstants::ASYNC_RESPONSE);
+            }
+        }
+
+        bool processCountableNotification() {
+            if (currentProg.has_value()) {
+                long sessionProg = session->DataNotificationProg();
+                ++(*currentProg);
+                if (*currentProg <= sessionProg) {
+                    // ya visto: debe ser omitido
+                    return false;
+                } else {
+                    session->onDataNotification();
+                    sessionProg = session->DataNotificationProg();
+                    return true;
+                }
+            } else {
+                session->onDataNotification();
+                return true;
+            }
+        }
+
+        // Handles fatal errors and closes the session.
+        void onFatalError(const std::exception& e) {
+            log.Debug("On Server Error - 61.");
+            this->session->onServerError(61, "Internal error");
+            this->status = StreamStatus::STREAM_CLOSED;
+        }
+
+        // Stops the protocol activities, optionally waiting for pending control requests and forcing connection close.
+        void stop(bool waitPendingControlRequests, bool forceConnectionClose) {
+            log.Info("Protocol dismissed");
+            setStatus(StreamStatus::STREAM_CLOSED, forceConnectionClose);
+            reverseHeartbeatTimer->onClose();
+        }
+
+        // Returns the maximum reverse heartbeat interval in milliseconds.
+        long getMaxReverseHeartbeatIntervalMs() const {
+            return reverseHeartbeatTimer->getMaxIntervalMs();
+        }
+
+        class StreamListener {
+        protected:
+            TextProtocol& outerInstance;
+
+            bool disabled = false;
+            bool isOpen = false;
+            bool isInterrupted = false;
+
+        public:
+            StreamListener(TextProtocol& outerInstance) : outerInstance(outerInstance) {}
+
+            virtual ~StreamListener() = default;
+
+            // Disables this listener.
+            void disable() {
+                disabled = true;
+            }
+
+            // Handles an incoming message.
+            virtual void onMessage(const std::string& message) {
+                if (disabled) {
+                    // Log a warning about the discarded message with corresponding object ID.
+                    // Note: Implement logging mechanism as per your application needs.
+                    return;
+                }
+                doMessage(message);
+            }
+
+        protected:
+            // Processes the incoming message.
+            virtual void doMessage(const std::string& message) {
+                outerInstance.onProtocolMessage(message);
+            }
+
+        public:
+            // Notifies this listener that the connection has been opened.
+            virtual void onOpen() {
+                if (!disabled) {
+                    doOpen();
+                }
+            }
+
+        protected:
+            // Handles the connection opening event.
+            virtual void doOpen() {
+                isOpen = true;
+            }
+
+        public:
+            // Notifies this listener that the connection has been closed.
+            virtual void onClosed() {
+                if (!disabled) {
+                    doClosed();
+                }
+            }
+
+        protected:
+            // Handles the connection closing event.
+            virtual void doClosed() {
+                interruptSession(false);
+            }
+
+        public:
+            // Notifies this listener that the connection is broken.
+            virtual void onBroken() {
+                if (!disabled) {
+                    doBroken(false);
+                }
+            }
+
+            // Notifies this listener that the WebSocket connection is broken.
+            virtual void onBrokenWS() {
+                if (!disabled) {
+                    doBroken(true);
+                }
+            }
+
+        protected:
+            // Handles a broken connection.
+            virtual void doBroken(bool wsError) {
+                interruptSession(wsError);
+            }
+
+            // Interrupts the current session in case of an error or unexpected session closure.
+            virtual void interruptSession(bool wsError) {
+                if (!isInterrupted) {
+                    // Assuming session has an onInterrupted method to handle interruption.
+                    // This method needs to be implemented in the TextProtocol or related session management class.
+                    isInterrupted = true;
+                }
+            }
+        };
+
+        // Listener for create_session and recovery requests.
+        class OpenSessionListener : public StreamListener {
+        public:
+            OpenSessionListener(TextProtocol& outerInstance) : StreamListener(outerInstance) {
+                // No additional constructor logic needed for OpenSessionListener.
+            }
+        };
+
+        // Listener for bind_session requests supporting reverse heartbeats.
+        class BindSessionListener : public StreamListener {
+        public:
+            BindSessionListener(TextProtocol& outerInstance) : StreamListener(outerInstance) {
+                // No additional constructor logic needed for BindSessionListener.
+            }
+
+        protected:
+            void doOpen() override {
+                StreamListener::doOpen(); // Call the base class implementation.
+                // Trigger action related to opening a bind session for reverse heartbeats.
+                // Assuming outerInstance has a method named onBindSessionForTheSakeOfReverseHeartbeat, which should be defined.
+                outerInstance.onBindSessionForTheSakeOfReverseHeartbeat();
+            }
+        };
+
+
+
+
     };
 
     const std::regex TextProtocol::SUBOK_REGEX("SUBOK,(\\d+),(\\d+),(\\d+)");
@@ -923,4 +1173,5 @@ namespace lightstreamer::client::protocol {
 
 // Further regex initializations...
 } // namespace lightstreamer::client::protocol
+
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_TEXTPROTOCOL_HPP

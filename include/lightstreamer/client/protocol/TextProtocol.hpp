@@ -33,7 +33,7 @@
 #include "Logger.h" // Assume a logger class is defined elsewhere
 #include "SessionThread.h"
 #include "InternalConnectionOptions.h"
-#include "ProtocolListener.h"
+#include <lightstreamer/client/protocol/ProtocolListener.hpp>
 #include "StreamListener.h"
 #include "RequestManager.h"
 #include "HttpTransport.h"
@@ -73,7 +73,7 @@ namespace lightstreamer::client::protocol {
         Logger log; // Simplified logging mechanism for C++
         SessionThread sessionThread;
         std::unique_ptr<HttpRequestManager> httpRequestManager;
-        ProtocolListener *session = nullptr;
+        std::shared_ptr<ProtocolListener> session = nullptr;
         StreamListener *activeListener = nullptr;
         StreamStatus status = StreamStatus::NO_STREAM;
         long currentProg = 0;

@@ -25,7 +25,7 @@
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_PROTOCOL_HPP
 
 #include <memory>
-#include "ProtocolListener.h"
+#include <lightstreamer/client/protocol/ProtocolListener.hpp>
 #include "ForceRebindRequest.h"
 #include "DestroyRequest.h"
 #include "ConstrainRequest.h"

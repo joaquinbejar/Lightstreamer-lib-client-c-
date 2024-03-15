@@ -28,7 +28,7 @@
 #include <string>
 #include "ConstrainTutor.h"
 
-namespace com::lightstreamer::client::protocol {
+namespace lightstreamer::client::protocol {
 
     class ProtocolListener {
     public:

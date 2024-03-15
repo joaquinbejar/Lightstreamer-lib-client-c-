@@ -807,6 +807,100 @@ namespace lightstreamer::client::protocol {
             }
         }
 
+        void processCONERR(const std::string& message) {
+            std::regex pattern(CONERR_REGEX);
+            std::smatch match;
+            if (std::regex_search(message, match, pattern)) {
+                int errorCode = std::stoi(match[1]);
+                std::string errorMessage = unquote(match[2].str()); // Asume la existencia de la función unquote
+                forwardError(errorCode, errorMessage);
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processCONOK(const std::string& message) {
+            std::regex pattern(CONOK_REGEX);
+            std::smatch match;
+            if (std::regex_search(message, match, pattern)) {
+                std::string sessionId = match[1];
+                long requestLimitLength = std::stol(match[2]);
+                long keepaliveIntervalDefault = std::stol(match[3]);
+                std::string controlLink = match[4].str() == "*" ? "" : unquote(match[4].str()); // Procesar el enlace de control
+
+                // Establecer el límite de solicitudes en el gestor de solicitudes
+                RequestManager::setRequestLimit(requestLimitLength);
+
+                // Notificar a los oyentes
+                session->onOKReceived(sessionId, controlLink, requestLimitLength, keepaliveIntervalDefault);
+            } else {
+                onIllegalMessage("Malformed message received: " + message);
+            }
+        }
+
+        void processMPNREG(const std::string& message) {
+            if (!processCountableNotification()) {
+                return;
+            }
+
+            std::size_t firstComma = message.find(',');
+            if (firstComma == std::string::npos) {
+                onIllegalMessage(message);
+                return;
+            }
+
+            std::size_t secondComma = message.find(',', firstComma + 1);
+            if (secondComma == std::string::npos) {
+                onIllegalMessage(message);
+                return;
+            }
+
+            std::string deviceId = message.substr(firstComma + 1, secondComma - (firstComma + 1));
+            if (deviceId.empty()) {
+                onIllegalMessage(message);
+                return;
+            }
+
+            std::string adapterName = message.substr(secondComma + 1);
+            if (adapterName.empty()) {
+                onIllegalMessage(message);
+                return;
+            }
+
+            session->onMpnRegisterOK(deviceId, adapterName);
+        }
+
+        void processMPNOK(const std::string& message) {
+            if (!processCountableNotification()) {
+                return;
+            }
+
+            std::size_t firstComma = message.find(',');
+            if (firstComma == std::string::npos) {
+                onIllegalMessage(message);
+                return;
+            }
+
+            std::size_t secondComma = message.find(',', firstComma + 1);
+            if (secondComma == std::string::npos) {
+                onIllegalMessage(message);
+                return;
+            }
+
+            std::string lsSubId = message.substr(firstComma + 1, secondComma - (firstComma + 1));
+            if (lsSubId.empty()) {
+                onIllegalMessage(message);
+                return;
+            }
+
+            std::string pnSubId = message.substr(secondComma + 1);
+            if (pnSubId.empty()) {
+                onIllegalMessage(message);
+                return;
+            }
+
+            session->onMpnSubscribeOK(lsSubId, pnSubId);
+        }
 
     };
 

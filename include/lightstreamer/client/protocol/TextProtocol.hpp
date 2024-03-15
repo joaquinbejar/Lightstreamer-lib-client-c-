@@ -728,6 +728,84 @@ namespace lightstreamer::client::protocol {
             }
         }
 
+        /**
+         * @brief Processes an update message.
+         *
+         * This function takes a message as input and processes it accordingly.
+         *
+         * @param message The update message to be processed.
+         *
+         * @return None. This function has no return value.
+         */
+        void processUpdate(const std::string& message) {
+            // La forma del mensaje de actualización es U,<table>,<item>|<field1>|...|<fieldN>
+            // o U,<table>,<item>,<field1>|^<number of unchanged fields>|...|<fieldN>
+            try {
+                /* parse table and item */
+                auto tableIndex = message.find(',') + 1;
+
+                logDebug("Process update, Table Index: " + std::to_string(tableIndex));
+
+                assert(tableIndex == 2); // verificado por el llamador
+                auto itemIndex = message.find(',', tableIndex) + 1;
+                if (itemIndex <= 0) {
+                    onIllegalMessage("Missing subscription field in message: " + message);
+                }
+                auto fieldsIndex = message.find(',', itemIndex) + 1;
+                if (fieldsIndex <= 0) {
+                    onIllegalMessage("Missing item field in message: " + message);
+                }
+                assert(message.substr(0, tableIndex) == "U,"); // verificado por el llamador
+                int table = std::stoi(message.substr(tableIndex, itemIndex - tableIndex - 1));
+                int item = std::stoi(message.substr(itemIndex, fieldsIndex - itemIndex - 1));
+
+                if (!processCountableNotification()) {
+                    return;
+                }
+
+                logDebug("Process update -- Table N. " + std::to_string(table));
+
+                /* parse fields */
+                std::vector<std::string> values;
+                size_t fieldStart = fieldsIndex - 1; // índice del separador que introduce el siguiente campo
+                assert(message[fieldStart] == ','); // verificado arriba
+                while (fieldStart < message.length()) {
+                    auto fieldEnd = message.find('|', fieldStart + 1);
+                    if (fieldEnd == std::string::npos) {
+                        fieldEnd = message.length();
+                    }
+
+                    std::string value = message.substr(fieldStart + 1, fieldEnd - fieldStart - 1);
+                    if (value.empty()) {
+                        values.push_back(ProtocolConstants::UNCHANGED);
+                    } else if (value[0] == '#') {
+                        if (value.length() != 1) {
+                            onIllegalMessage("Wrong field quoting in message: " + message);
+                        }
+                        values.push_back(""); // Considerado como valor nulo
+                    } else if (value[0] == '$') {
+                        if (value.length() != 1) {
+                            onIllegalMessage("Wrong field quoting in message: " + message);
+                        }
+                        values.push_back(""); // Considerado como valor vacío
+                    } else if (value[0] == '^') {
+                        int count = std::stoi(value.substr(1));
+                        while (count-- > 0) {
+                            values.push_back(ProtocolConstants::UNCHANGED);
+                        }
+                    } else {
+                        std::string unquoted = unquote(value); // Asume existencia de función unquote
+                        values.push_back(unquoted);
+                    }
+                    fieldStart = fieldEnd;
+                }
+
+                /* notificar al oyente */
+                session.onUpdateReceived(table, item, values);
+            } catch (const std::exception& e) {
+                logWarn("Error while processing update - " + std::string(e.what()));
+            }
+        }
 
 
     };

@@ -273,7 +273,7 @@ namespace lightstreamer::client::protocol {
             setStatus(StreamStatus::OPENING_STREAM);
         }
 
-        void onProtocolMessage(const std::string& message) {
+        void onProtocolMessage(const std::string &message) {
             // TODO: Implement the rest of the method
             log::debug("New message (" + std::to_string(objectId) + "): " + message);
 
@@ -302,11 +302,11 @@ namespace lightstreamer::client::protocol {
             // Considera cualquier otro estado necesario
         }
 
-        virtual void processREQOK(const std::string& message) = 0;
+        virtual void processREQOK(const std::string &message) = 0;
 
-        virtual void processREQERR(const std::string& message) = 0;
+        virtual void processREQERR(const std::string &message) = 0;
 
-        virtual void processERROR(const std::string& message) = 0;
+        virtual void processERROR(const std::string &message) = 0;
 
     protected:
 
@@ -315,7 +315,7 @@ namespace lightstreamer::client::protocol {
         sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor,
                            std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
-        std::smatch matchLine(const std::regex& pattern, const std::string& message) {
+        std::smatch matchLine(const std::regex &pattern, const std::string &message) {
             std::smatch matcher;
             if (!std::regex_match(message, matcher, pattern)) {
                 onIllegalMessage("Malformed message received: " + message);
@@ -323,7 +323,7 @@ namespace lightstreamer::client::protocol {
             return matcher;
         }
 
-        int myParseInt(const std::string& field, const std::string& description, const std::string& orig) {
+        int myParseInt(const std::string &field, const std::string &description, const std::string &orig) {
             int value;
             auto result = std::from_chars(field.data(), field.data() + field.size(), value);
             if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range) {
@@ -334,7 +334,7 @@ namespace lightstreamer::client::protocol {
             return value;
         }
 
-        long myParseLong(const std::string& field, const std::string& description, const std::string& orig) {
+        long myParseLong(const std::string &field, const std::string &description, const std::string &orig) {
             long value;
             auto result = std::from_chars(field.data(), field.data() + field.size(), value);
             if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range) {
@@ -345,7 +345,7 @@ namespace lightstreamer::client::protocol {
         }
 
         // Manages CONERR errors.
-        void forwardError(int code, const std::string& message) {
+        void forwardError(int code, const std::string &message) {
             if (code == 41 || code == 40) {
                 // Handle takeover or spurious rebind by attempting to recover
                 session->onTakeover(code);
@@ -366,7 +366,7 @@ namespace lightstreamer::client::protocol {
         }
 
         // Manages REQERR/ERROR errors.
-        void forwardControlResponseError(int code, const std::string& message, BaseControlRequestListener* listener) {
+        void forwardControlResponseError(int code, const std::string &message, BaseControlRequestListener *listener) {
             if (code == 20) {
                 // Handle synchronization error and implicitly end session
                 this->session->onSyncError(ProtocolConstants::SYNC_RESPONSE);
@@ -387,7 +387,7 @@ namespace lightstreamer::client::protocol {
         }
 
         // Handles illegal messages by forwarding a control response error with a specific code.
-        void onIllegalMessage(const std::string& description) {
+        void onIllegalMessage(const std::string &description) {
             forwardControlResponseError(61, description, nullptr);
         }
 
@@ -481,7 +481,7 @@ namespace lightstreamer::client::protocol {
             }
         };
 
-        void processCLIENTIP(const std::string& message) {
+        void processCLIENTIP(const std::string &message) {
             std::regex clientIpRegex("CLIENTIP,(.+)");
             std::smatch match;
 
@@ -494,7 +494,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processSERVNAME(const std::string& message) {
+        void processSERVNAME(const std::string &message) {
             std::regex serverNameRegex("SERVNAME,(.+)");
             std::smatch match;
 
@@ -507,7 +507,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processPROG(const std::string& message) {
+        void processPROG(const std::string &message) {
             std::regex progRegex("PROG,(\\d+)");
             std::smatch match;
 
@@ -517,7 +517,8 @@ namespace lightstreamer::client::protocol {
                     currentProg = std::make_shared<long>(prog);
                     long sessionProg = 0; // Aquí deberías obtener el valor real de tu sesión
                     if (*currentProg > sessionProg) {
-                        onIllegalMessage("Message prog higher than expected. Expected: " + std::to_string(sessionProg) + " but found: " + std::to_string(*currentProg));
+                        onIllegalMessage("Message prog higher than expected. Expected: " + std::to_string(sessionProg) +
+                                         " but found: " + std::to_string(*currentProg));
                     }
                 } else {
                     // Manejo de lógica para prog actualizado
@@ -527,10 +528,11 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void onIllegalMessage(const std::string& message) {
+        void onIllegalMessage(const std::string &message) {
             std::cerr << message << std::endl;
         }
-        void processCONF(const std::string& message) {
+
+        void processCONF(const std::string &message) {
             std::smatch match;
 
             if (std::regex_search(message, match, CONFIGURATION_REGEX) && match.size() > 1) {
@@ -544,7 +546,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processEND(const std::string& message) {
+        void processEND(const std::string &message) {
 
             std::smatch match;
 
@@ -559,7 +561,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processLOOP(const std::string& message) {
+        void processLOOP(const std::string &message) {
             std::smatch match;
 
             if (std::regex_search(message, match, OVERFLOW_REGEX) && match.size() > 1) {
@@ -572,7 +574,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processOV(const std::string& message) {
+        void processOV(const std::string &message) {
             std::smatch match;
 
             if (std::regex_search(message, match, OVERFLOW_REGEX) && match.size() > 1) {
@@ -581,13 +583,14 @@ namespace lightstreamer::client::protocol {
                 int overflow = std::stoi(match[3]);
 
                 // Llamada a processCountableNotification() y session.onLostUpdatesEvent según tu implementación
-                std::cout << "Overflow: table = " << table << ", item = " << item << ", overflow = " << overflow << std::endl;
+                std::cout << "Overflow: table = " << table << ", item = " << item << ", overflow = " << overflow
+                          << std::endl;
             } else {
                 onIllegalMessage("Malformed message received: " + message);
             }
         }
 
-        void processEOS(const std::string& message) {
+        void processEOS(const std::string &message) {
             std::smatch match;
             if (std::regex_search(message, match, END_OF_SNAPSHOT_REGEX) && match.size() > 1) {
                 int table = std::stoi(match[1].str());
@@ -604,7 +607,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processCS(const std::string& message) {
+        void processCS(const std::string &message) {
             std::smatch match;
             if (std::regex_search(message, match, CLEAR_SNAPSHOT_REGEX) && match.size() > 1) {
                 int table = std::stoi(match[1].str());
@@ -621,7 +624,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processSYNC(const std::string& message) {
+        void processSYNC(const std::string &message) {
             std::smatch match;
             if (std::regex_search(message, match, SYNC_REGEX) && match.size() > 1) {
                 long seconds = std::stol(match[1].str());
@@ -633,7 +636,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processCONS(const std::string& message) {
+        void processCONS(const std::string &message) {
             std::smatch match;
             if (std::regex_search(message, match, CONSTRAIN_REGEX) && match.size() > 1) {
                 std::string bwType = match[1].str();
@@ -651,7 +654,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processUNSUB(const std::string& message) {
+        void processUNSUB(const std::string &message) {
             std::smatch match;
             if (std::regex_search(message, match, UNSUBSCRIBE_REGEX) && match.size() > 1) {
                 int table = std::stoi(match[1].str());
@@ -667,7 +670,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processSUBOK(const std::string& message) {
+        void processSUBOK(const std::string &message) {
             if (!processCountableNotification()) {
                 return;
             }
@@ -694,12 +697,13 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processUserMessage(const std::string& message) {
+        void processUserMessage(const std::string &message) {
             // a message notification can have the following forms:
             // 1) MSGDONE,<sequence>,<prog>
             // 2) MSGFAIL,<sequence>,<prog>,<error-code>,<error-message>
 
-            auto splitted = splitString(message, ','); // TODO: Implement splitString (vector<string> splitString(const string& s, char delimiter))
+            auto splitted = splitString(message,
+                                        ','); // TODO: Implement splitString (vector<string> splitString(const string& s, char delimiter))
 
             logDebug("Process User Message: " + message);
 
@@ -729,7 +733,8 @@ namespace lightstreamer::client::protocol {
                 std::string sequence = splitted[1] == "*" ? Constants::UNORDERED_MESSAGES : splitted[1];
                 int messageNumber = std::stoi(splitted[2]);
                 int errorCode = std::stoi(splitted[3]);
-                std::string errorMessage = unquote(splitted[4]); // Assuming existence of EncodingUtils.unquote or similar function
+                std::string errorMessage = unquote(
+                        splitted[4]); // Assuming existence of EncodingUtils.unquote or similar function
 
                 onMsgErrorMessage(sequence, messageNumber, errorCode, errorMessage, message);
 
@@ -747,7 +752,7 @@ namespace lightstreamer::client::protocol {
          *
          * @return None. This function has no return value.
          */
-        void processUpdate(const std::string& message) {
+        void processUpdate(const std::string &message) {
             // La forma del mensaje de actualización es U,<table>,<item>|<field1>|...|<fieldN>
             // o U,<table>,<item>,<field1>|^<number of unchanged fields>|...|<fieldN>
             try {
@@ -812,12 +817,12 @@ namespace lightstreamer::client::protocol {
 
                 /* notificar al oyente */
                 session.onUpdateReceived(table, item, values);
-            } catch (const std::exception& e) {
+            } catch (const std::exception &e) {
                 logWarn("Error while processing update - " + std::string(e.what()));
             }
         }
 
-        void processCONERR(const std::string& message) {
+        void processCONERR(const std::string &message) {
             std::regex pattern(CONERR_REGEX);
             std::smatch match;
             if (std::regex_search(message, match, pattern)) {
@@ -829,14 +834,15 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processCONOK(const std::string& message) {
+        void processCONOK(const std::string &message) {
             std::regex pattern(CONOK_REGEX);
             std::smatch match;
             if (std::regex_search(message, match, pattern)) {
                 std::string sessionId = match[1];
                 long requestLimitLength = std::stol(match[2]);
                 long keepaliveIntervalDefault = std::stol(match[3]);
-                std::string controlLink = match[4].str() == "*" ? "" : unquote(match[4].str()); // Procesar el enlace de control
+                std::string controlLink =
+                        match[4].str() == "*" ? "" : unquote(match[4].str()); // Procesar el enlace de control
 
                 // Establecer el límite de solicitudes en el gestor de solicitudes
                 RequestManager::setRequestLimit(requestLimitLength);
@@ -848,7 +854,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void processMPNREG(const std::string& message) {
+        void processMPNREG(const std::string &message) {
             if (!processCountableNotification()) {
                 return;
             }
@@ -880,7 +886,7 @@ namespace lightstreamer::client::protocol {
             session->onMpnRegisterOK(deviceId, adapterName);
         }
 
-        void processMPNOK(const std::string& message) {
+        void processMPNOK(const std::string &message) {
             if (!processCountableNotification()) {
                 return;
             }
@@ -912,7 +918,7 @@ namespace lightstreamer::client::protocol {
             session->onMpnSubscribeOK(lsSubId, pnSubId);
         }
 
-        void processMPNDEL(const std::string& message) {
+        void processMPNDEL(const std::string &message) {
             if (!processCountableNotification()) {
                 return;
             }
@@ -929,7 +935,7 @@ namespace lightstreamer::client::protocol {
             session->onMpnUnsubscribeOK(subId);
         }
 
-        void processMPNZERO(const std::string& message) {
+        void processMPNZERO(const std::string &message) {
             if (!processCountableNotification()) {
                 return;
             }
@@ -946,7 +952,8 @@ namespace lightstreamer::client::protocol {
             session->onMpnResetBadgeOK(deviceId);
         }
 
-        void onMsgErrorMessage(const std::string& sequence, int messageNumber, int errorCode, const std::string& errorMessage, const std::string& orig) {
+        void onMsgErrorMessage(const std::string &sequence, int messageNumber, int errorCode,
+                               const std::string &errorMessage, const std::string &orig) {
             if (errorCode == 39) {
                 // code 39: list of discarded messages, the message is actually a counter
                 int count = std::stoi(errorMessage); // suponiendo una implementación de myParseInt
@@ -958,13 +965,15 @@ namespace lightstreamer::client::protocol {
                 session->onMessageDiscarded(sequence, messageNumber, ProtocolConstants::ASYNC_RESPONSE);
             } else if (errorCode <= 0) {
                 // Metadata Adapter has refused the message
-                session->onMessageDeny(sequence, errorCode, errorMessage, messageNumber, ProtocolConstants::ASYNC_RESPONSE);
+                session->onMessageDeny(sequence, errorCode, errorMessage, messageNumber,
+                                       ProtocolConstants::ASYNC_RESPONSE);
             } else {
                 // 32 / 33 The specified progressive number is too low
                 // 34 NotificationException from metadata
                 // 35 unexpected processing error
                 // 68 Internal server error
-                session->onMessageError(sequence, errorCode, errorMessage, messageNumber, ProtocolConstants::ASYNC_RESPONSE);
+                session->onMessageError(sequence, errorCode, errorMessage, messageNumber,
+                                        ProtocolConstants::ASYNC_RESPONSE);
             }
         }
 
@@ -987,7 +996,7 @@ namespace lightstreamer::client::protocol {
         }
 
         // Handles fatal errors and closes the session.
-        void onFatalError(const std::exception& e) {
+        void onFatalError(const std::exception &e) {
             log.Debug("On Server Error - 61.");
             this->session->onServerError(61, "Internal error");
             this->status = StreamStatus::STREAM_CLOSED;
@@ -1007,14 +1016,14 @@ namespace lightstreamer::client::protocol {
 
         class StreamListener {
         protected:
-            TextProtocol& outerInstance;
+            TextProtocol &outerInstance;
 
             bool disabled = false;
             bool isOpen = false;
             bool isInterrupted = false;
 
         public:
-            StreamListener(TextProtocol& outerInstance) : outerInstance(outerInstance) {}
+            StreamListener(TextProtocol &outerInstance) : outerInstance(outerInstance) {}
 
             virtual ~StreamListener() = default;
 
@@ -1024,7 +1033,7 @@ namespace lightstreamer::client::protocol {
             }
 
             // Handles an incoming message.
-            virtual void onMessage(const std::string& message) {
+            virtual void onMessage(const std::string &message) {
                 if (disabled) {
                     // Log a warning about the discarded message with corresponding object ID.
                     // Note: Implement logging mechanism as per your application needs.
@@ -1035,7 +1044,7 @@ namespace lightstreamer::client::protocol {
 
         protected:
             // Processes the incoming message.
-            virtual void doMessage(const std::string& message) {
+            virtual void doMessage(const std::string &message) {
                 outerInstance.onProtocolMessage(message);
             }
 
@@ -1101,7 +1110,7 @@ namespace lightstreamer::client::protocol {
         // Listener for create_session and recovery requests.
         class OpenSessionListener : public StreamListener {
         public:
-            OpenSessionListener(TextProtocol& outerInstance) : StreamListener(outerInstance) {
+            OpenSessionListener(TextProtocol &outerInstance) : StreamListener(outerInstance) {
                 // No additional constructor logic needed for OpenSessionListener.
             }
         };
@@ -1109,7 +1118,7 @@ namespace lightstreamer::client::protocol {
         // Listener for bind_session requests supporting reverse heartbeats.
         class BindSessionListener : public StreamListener {
         public:
-            BindSessionListener(TextProtocol& outerInstance) : StreamListener(outerInstance) {
+            BindSessionListener(TextProtocol &outerInstance) : StreamListener(outerInstance) {
                 // No additional constructor logic needed for BindSessionListener.
             }
 
@@ -1124,18 +1133,19 @@ namespace lightstreamer::client::protocol {
 
         class BaseControlRequestListener : public RequestListener {
         protected:
-            TextProtocol& outerInstance;
+            TextProtocol &outerInstance;
             bool opened = false;
             bool completed = false;
             std::unique_ptr<RequestTutor> tutor;
             std::string response;
 
         public:
-            BaseControlRequestListener(TextProtocol& outerInstance, std::unique_ptr<RequestTutor>& tutor)
+            BaseControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<RequestTutor> &tutor)
                     : outerInstance(outerInstance), tutor(std::move(tutor)) {}
 
             virtual void onOK() = 0;
-            virtual void onError(int code, const std::string& message) = 0;
+
+            virtual void onError(int code, const std::string &message) = 0;
 
             virtual void onOpen() {
                 if (tutor) {
@@ -1144,7 +1154,7 @@ namespace lightstreamer::client::protocol {
                 }
             }
 
-            virtual void onMessage(const std::string& message) {
+            virtual void onMessage(const std::string &message) {
                 response += message;
             }
 
@@ -1159,7 +1169,7 @@ namespace lightstreamer::client::protocol {
             }
 
             // Handles the complete response message
-            virtual void onComplete(const std::string& message) {
+            virtual void onComplete(const std::string &message) {
                 if (message.empty()) {
                     // An empty message means that the server has probably closed the socket.
                     // Ignore it and wait for the request timeout to expire and the request to be transmitted again.
@@ -1195,11 +1205,11 @@ namespace lightstreamer::client::protocol {
         // Abstract class ControlRequestListener supporting reverse heartbeats.
         class ControlRequestListener : public BaseControlRequestListener {
         protected:
-            TextProtocol& outerInstance; // Reference to the parent TextProtocol object
+            TextProtocol &outerInstance; // Reference to the parent TextProtocol object
 
         public:
             // Constructor that initializes the external instance and passes the tutor to the base constructor.
-            ControlRequestListener(TextProtocol& outerInstance, std::unique_ptr<RequestTutor> tutor)
+            ControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<RequestTutor> tutor)
                     : BaseControlRequestListener(outerInstance, std::move(tutor)), outerInstance(outerInstance) {}
 
             // Overrides the onOpen method to implement ControlRequestListener specific logic.
@@ -1210,7 +1220,8 @@ namespace lightstreamer::client::protocol {
 
             // Ensure to implement the abstract methods onOK and onError.
             virtual void onOK() = 0;
-            virtual void onError(int code, const std::string& message) = 0;
+
+            virtual void onError(int code, const std::string &message) = 0;
         };
 
     };
@@ -1223,7 +1234,8 @@ namespace lightstreamer::client::protocol {
     const std::regex TextProtocol::CLEAR_SNAPSHOT_REGEX("CS,(\\d+),(\\d+)");
     const std::regex TextProtocol::END_OF_SNAPSHOT_REGEX("EOS,(\\d+),(\\d+)");
     const std::regex TextProtocol::OVERFLOW_REGEX("OV,(\\d+),(\\d+),(\\d+)");
-    const std::regex TextProtocol::CONFIGURATION_REGEX("CONF,(\\d+),(unlimited|(\\d+(\\.\\d+)?)),(filtered|unfiltered)");
+    const std::regex TextProtocol::CONFIGURATION_REGEX(
+            "CONF,(\\d+),(unlimited|(\\d+(\\.\\d+)?)),(filtered|unfiltered)");
     const std::regex TextProtocol::SERVNAME_REGEX("SERVNAME,(.+)");
     const std::regex TextProtocol::CLIENTIP_REGEX("CLIENTIP,(.+)");
     const std::regex TextProtocol::PROG_REGEX("PROG,(\\d+)");

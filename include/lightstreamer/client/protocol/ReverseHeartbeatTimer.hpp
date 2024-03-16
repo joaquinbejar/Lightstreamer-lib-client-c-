@@ -43,13 +43,20 @@ namespace lightstreamer::client::protocol {
 
         SessionThread& sessionThread;
         InternalConnectionOptions& options;
-        const long maxIntervalMs;
-        long currentIntervalMs = -1;
+        const long maxIntervalMs; // Maximum interval. Value of LS_inactivity_millis.
+        long currentIntervalMs = -1; // It is the minimum between LS_inactivity_millis and the interval chosen by the user.
         bool disableHeartbeats = false;
         bool closed = false;
-        std::chrono::steady_clock::time_point lastSentTime = std::chrono::steady_clock::now();
+        std::chrono::steady_clock::time_point lastSentTime = std::chrono::steady_clock::now(); // Last time a request has been sent to the server.
+        /*
+        * The timer assures that there is at most one scheduled task by keeping a phase counter
+        * (there is no scheduled task when heartbeats are disabled).
+        * When the user changes the interval (see method onChangeInterval), the counter is incremented
+        * so that if there is a scheduled task, it is discarded since the task phase is less than the phase counter
+        * (see class ScheduledTask).
+        */
         int currentPhase = 0;
-        bool bindSent = false;
+        bool bindSent = false; // True when the bind session request is sent.
 
     public:
         ReverseHeartbeatTimer(SessionThread& sessionThread, InternalConnectionOptions& options)
@@ -58,6 +65,10 @@ namespace lightstreamer::client::protocol {
             setCurrentInterval(maxIntervalMs);
         }
 
+        /*
+        * Must be called just before the sending of a bind session request.
+        * when true the time a bind_session request is sent is recorded as it is a control request
+        */
         void onBindSession(bool bindAsControl) {
             if (bindAsControl) {
                 lastSentTime = std::chrono::steady_clock::now();
@@ -68,15 +79,18 @@ namespace lightstreamer::client::protocol {
             }
         }
 
+        // Must be called when the user modifies the interval.
         void onChangeInterval() {
             long newInterval = options.getReverseHeartbeatInterval();
             setCurrentInterval(newInterval);
         }
 
+        // Must be called when a control request is sent.
         void onControlRequest() {
             lastSentTime = std::chrono::steady_clock::now();
         }
 
+        // Must be called when the session is closed.
         void onClose() {
             closed = true;
         }

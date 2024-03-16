@@ -67,6 +67,7 @@ namespace lightstreamer::client::protocol {
         // Implemented at the end of this file for completeness
     };
 
+
     class REQOKParser : public ControlResponseParser {
         long requestId;
 
@@ -106,8 +107,7 @@ namespace lightstreamer::client::protocol {
     };
 
     class ERRORParser : public ControlResponseParser {
-        int errorCode;
-        std::string errorMsg;
+
 
     public:
         ERRORParser(const std::string &message) {
@@ -118,6 +118,9 @@ namespace lightstreamer::client::protocol {
             errorCode = myParseInt(pieces[1], "error code", message);
             errorMsg = unquote(pieces[2]); // Assume unquote is implemented
         }
+
+        int errorCode;
+        std::string errorMsg;
     };
 
 // Implementation of the factory method

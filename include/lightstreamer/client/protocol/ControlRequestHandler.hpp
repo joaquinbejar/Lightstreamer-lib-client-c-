@@ -27,12 +27,9 @@
 #define CONTROLREQUESTHANDLER_H
 
 #include <memory>
-
-// Forward declarations for classes not defined in the snippet.
-// Replace with actual definitions or include statements as necessary.
-class LightstreamerRequest; // Placeholder
-class RequestTutor; // Placeholder
-class RequestListener; // Placeholder
+#include <lightstreamer/client/requests/LightstreamerRequest.hpp>
+#include <lightstreamer/client/requests/RequestTutor.hpp>
+#include <lightstreamer/client/transport/RequestListener.hpp>
 
 namespace lightstreamer::client::protocol {
 
@@ -50,9 +47,9 @@ namespace lightstreamer::client::protocol {
          * @param tutor The tutor associated with the request.
          * @param reqListener The request listener.
          */
-        virtual void addRequest(std::shared_ptr<LightstreamerRequest> request,
-                                std::shared_ptr<RequestTutor> tutor,
-                                std::shared_ptr<RequestListener> reqListener) = 0;
+        virtual void addRequest(std::shared_ptr<requests::LightstreamerRequest> request,
+                                std::shared_ptr<requests::RequestTutor> tutor,
+                                std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         /**
          * Sets the request limit.

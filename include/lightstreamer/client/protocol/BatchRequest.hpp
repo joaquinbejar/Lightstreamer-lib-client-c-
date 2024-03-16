@@ -23,6 +23,7 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_BATCHREQUEST_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_BATCHREQUEST_HPP
+
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -42,19 +43,20 @@ namespace lightstreamer::client::protocol {
         static constexpr int CONTROL = 4;
 
     private:
-        static constexpr const char* CONSTRAINT_KEY = "C";
-        static constexpr const char* FORCE_REBIND_KEY = "F";
-        static constexpr const char* CHANGE_SUB_KEY = "X";
-        static constexpr const char* MPN_KEY = "M";
+        static constexpr const char *CONSTRAINT_KEY = "C";
+        static constexpr const char *FORCE_REBIND_KEY = "F";
+        static constexpr const char *CHANGE_SUB_KEY = "X";
+        static constexpr const char *MPN_KEY = "M";
 
         std::unordered_map<std::string, std::shared_ptr<RequestObjects>> keys;
         std::vector<std::string> queue;
 
         // Simplified logger; use your actual logging system
-        static void logError(const std::string& message) {
+        static void logError(const std::string &message) {
             std::cerr << "ERROR: " << message << std::endl;
         }
-        static void logDebug(const std::string& message) {
+
+        static void logDebug(const std::string &message) {
             std::cout << "DEBUG: " << message << std::endl;
         }
 
@@ -96,18 +98,19 @@ namespace lightstreamer::client::protocol {
         }
 
     private:
-        void addRequestInternal(const std::string& key, std::shared_ptr<RequestObjects> request) {
+        void addRequestInternal(const std::string &key, std::shared_ptr<RequestObjects> request) {
             keys[key] = request;
             queue.push_back(key);
         }
 
-        void substituteRequest(const std::string& key, std::shared_ptr<RequestObjects> newRequest) {
+        void substituteRequest(const std::string &key, std::shared_ptr<RequestObjects> newRequest) {
             keys[key] = newRequest;
         }
 
     public:
 // Implementation of addRequestToBatch methods
-        bool addRequestToBatch(std::shared_ptr<MessageRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) {
+        bool addRequestToBatch(std::shared_ptr<MessageRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
+                               std::shared_ptr<transport::RequestListener> listener) {
             if (batchType != MESSAGE) {
                 logError("Unexpected request type was given to batch");
                 return false;
@@ -118,7 +121,9 @@ namespace lightstreamer::client::protocol {
             return true;
         }
 
-        bool addRequestToBatch(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) {
+        bool addRequestToBatch(std::shared_ptr<ReverseHeartbeatRequest> request,
+                               std::shared_ptr<requests::RequestTutor> tutor,
+                               std::shared_ptr<transport::RequestListener> listener) {
             if (batchType != HEARTBEAT) {
                 logError("Unexpected request type was given to batch");
                 return false;
@@ -129,7 +134,8 @@ namespace lightstreamer::client::protocol {
             return true;
         }
 
-        bool addRequestToBatch(std::shared_ptr<ConstrainRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) {
+        bool addRequestToBatch(std::shared_ptr<ConstrainRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
+                               std::shared_ptr<transport::RequestListener> listener) {
             if (batchType != CONTROL) {
                 logError("Unexpected request type was given to batch");
                 return false;
@@ -149,7 +155,9 @@ namespace lightstreamer::client::protocol {
             return true;
         }
 
-        bool addRequestToBatch(std::shared_ptr<ForceRebindRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) {
+        bool
+        addRequestToBatch(std::shared_ptr<ForceRebindRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
+                          std::shared_ptr<transport::RequestListener> listener) {
             if (batchType != CONTROL) {
                 logError("Unexpected request type was given to batch");
                 return false;
@@ -169,7 +177,9 @@ namespace lightstreamer::client::protocol {
             return true;
         }
 
-        bool addRequestToBatch(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) {
+        bool
+        addRequestToBatch(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
+                          std::shared_ptr<transport::RequestListener> listener) {
             if (batchType != CONTROL) {
                 logError("Unexpected request type was given to batch");
                 return false;
@@ -191,7 +201,8 @@ namespace lightstreamer::client::protocol {
             return true;
         }
 
-        bool addRequestToBatch(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) {
+        bool addRequestToBatch(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
+                               std::shared_ptr<transport::RequestListener> listener) {
             if (batchType != CONTROL) {
                 logError("Unexpected request type was given to batch");
                 return false;
@@ -212,7 +223,9 @@ namespace lightstreamer::client::protocol {
             return true;
         }
 
-        bool addRequestToBatch(std::shared_ptr<ChangeSubscriptionRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) {
+        bool addRequestToBatch(std::shared_ptr<ChangeSubscriptionRequest> request,
+                               std::shared_ptr<requests::RequestTutor> tutor,
+                               std::shared_ptr<transport::RequestListener> listener) {
             if (batchType != CONTROL) {
                 logError("Unexpected request type was given to batch");
                 return false;
@@ -233,7 +246,8 @@ namespace lightstreamer::client::protocol {
             return true;
         }
 
-        bool addRequestToBatch(std::shared_ptr<DestroyRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) {
+        bool addRequestToBatch(std::shared_ptr<DestroyRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
+                               std::shared_ptr<transport::RequestListener> listener) {
             if (batchType != CONTROL) {
                 logError("Unexpected request type was given to batch");
                 return false;
@@ -253,8 +267,6 @@ namespace lightstreamer::client::protocol {
 
             return true;
         }
-
-
 
     };
 }

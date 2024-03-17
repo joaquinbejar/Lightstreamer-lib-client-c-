@@ -69,10 +69,10 @@ namespace lightstreamer::client::protocol {
 
         void stop(bool waitPendingControlRequests, bool forceConnectionClose) override {
             TextProtocol::stop(waitPendingControlRequests, forceConnectionClose);
-            this->httpRequestManager.close(waitPendingControlRequests);
+            this->httpRequestManager->close(waitPendingControlRequests);
         }
 
-        std::shared_ptr<util::ListenableFuture> openWebSocketConnection(const std::string &serverAddress) override {
+        std::shared_ptr<util::ListenableFuture> openWebSocketConnection(const std::string &serverAddress)  {
             // This method should never be called in this class, as stated
             assert(false);
             return util::ListenableFuture::rejected(); // TODO: Adjust according to your ListenableFuture implementation

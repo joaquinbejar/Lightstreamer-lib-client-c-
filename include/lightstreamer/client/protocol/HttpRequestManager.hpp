@@ -27,7 +27,7 @@
 #include <lightstreamer/client/protocol/RequestManager.hpp>
 #include <lightstreamer/client/protocol/BatchRequest.hpp>
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
-#include "SessionThread.h" // Placeholder for SessionThread class
+#include <lightstreamer/client/session/SessionThread.hpp>
 #include "Transport.h" // Placeholder for Transport class
 #include "Protocol.h" // Placeholder for Protocol class
 #include "InternalConnectionOptions.h" // Placeholder for InternalConnectionOptions class
@@ -123,7 +123,7 @@ namespace lightstreamer::client::protocol {
 
         std::string status = IDLE;
         int statusPhase = 1;
-        SessionThread *sessionThread;
+        session::SessionThread *sessionThread;
         Transport *transport;
         Protocol *protocol;
         InternalConnectionOptions *options;
@@ -142,7 +142,7 @@ namespace lightstreamer::client::protocol {
         }
 
     public:
-        HttpRequestManager(SessionThread *thread, Transport *transport, InternalConnectionOptions *options)
+        HttpRequestManager(session::SessionThread *thread, Transport *transport, InternalConnectionOptions *options)
                 : HttpRequestManager(thread, nullptr, transport, options, nullptr) {
             if (!instanceFieldsInitialized) {
                 initializeInstanceFields();
@@ -150,7 +150,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        HttpRequestManager(SessionThread *thread, Protocol *protocol, Transport *transport,
+        HttpRequestManager(session::SessionThread *thread, Protocol *protocol, Transport *transport,
                            InternalConnectionOptions *options, FatalErrorListener *errListener) {
             if (!instanceFieldsInitialized) {
                 initializeInstanceFields();
@@ -283,7 +283,7 @@ namespace lightstreamer::client::protocol {
 
                 if (delay == ASYNC_DEQUEUE) {
                     // Assuming SessionThread has a method to queue a task
-                    sessionThread.queue(task);
+                    sessionThread->queue(task);
                 } else {
                     // Schedule the task for execution after a delay
                     std::thread([task, delay]() {

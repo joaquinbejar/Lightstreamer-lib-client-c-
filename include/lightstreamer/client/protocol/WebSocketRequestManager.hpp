@@ -29,7 +29,7 @@
 #include <unordered_map>
 #include "WebSocket.h" // Assume WebSocket is a class defined elsewhere.
 #include <lightstreamer/client/transport/RequestListener.hpp>
-#include "SessionThread.h"
+#include <lightstreamer/client/session/SessionThread.hpp>
 #include "InternalConnectionOptions.h"
 #include <lightstreamer/client/protocol/RequestManager.hpp>
 
@@ -52,7 +52,7 @@ namespace lightstreamer::client::protocol {
         ILogger &sessionLog;
         std::unique_ptr<WebSocket> wsTransport;
         Protocol &protocol;
-        SessionThread &sessionThread;
+        session::SessionThread &sessionThread;
         InternalConnectionOptions &options;
         std::list<PendingRequest> controlRequestQueue;
         std::unique_ptr<PendingBind> bindRequest;
@@ -229,7 +229,7 @@ namespace lightstreamer::client::protocol {
 
 
     public:
-        WebSocketRequestManager(std::shared_ptr<SessionThread> thread, std::shared_ptr<Protocol> prot,
+        WebSocketRequestManager(std::shared_ptr<session::SessionThread> thread, std::shared_ptr<Protocol> prot,
                                 std::shared_ptr<InternalConnectionOptions> opts)
                 : options(opts), sessionThread(thread), protocol(prot) {}
 

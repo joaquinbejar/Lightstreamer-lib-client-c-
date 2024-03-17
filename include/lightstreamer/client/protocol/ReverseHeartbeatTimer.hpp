@@ -29,7 +29,7 @@
 #include <functional>
 #include <thread>
 #include <mutex>
-#include "SessionThread.h" // Placeholder for actual SessionThread implementation
+#include <lightstreamer/client/session/SessionThread.hpp>
 #include "InternalConnectionOptions.h" // Placeholder for actual options class
 #include "ReverseHeartbeatRequest.h" // Placeholder for the actual request class
 #include "VoidTutor.h" // Placeholder for actual tutor class
@@ -41,7 +41,7 @@ namespace lightstreamer::client::protocol {
     private:
         static Logger log;
 
-        SessionThread& sessionThread;
+        session::SessionThread& sessionThread;
         InternalConnectionOptions& options;
         const long maxIntervalMs; // Maximum interval. Value of LS_inactivity_millis.
         long currentIntervalMs = -1; // It is the minimum between LS_inactivity_millis and the interval chosen by the user.
@@ -59,7 +59,7 @@ namespace lightstreamer::client::protocol {
         bool bindSent = false; // True when the bind session request is sent.
 
     public:
-        ReverseHeartbeatTimer(SessionThread& sessionThread, InternalConnectionOptions& options)
+        ReverseHeartbeatTimer(session::SessionThread& sessionThread, InternalConnectionOptions& options)
                 : sessionThread(sessionThread), options(options), maxIntervalMs(options.getReverseHeartbeatInterval()) {
             log.debug("rhb max interval " + std::to_string(maxIntervalMs));
             setCurrentInterval(maxIntervalMs);

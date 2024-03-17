@@ -24,7 +24,7 @@
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SESSIONHTTP_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_SESSIONHTTP_HPP
 
-#include "Session.hpp" // Asumiendo que hay un archivo de cabecera para la clase base Session
+#include "Session.hpp"
 #include <memory>
 #include <string>
 #include <lightstreamer/client/Constants.hpp>

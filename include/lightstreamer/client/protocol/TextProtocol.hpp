@@ -41,6 +41,8 @@
 #include <lightstreamer/client/transport/RequestListener.hpp>
 #include <lightstreamer/client/Constants.hpp>
 #include <lightstreamer/client/protocol/ProtocolConstants.hpp>
+#include <lightstreamer/client/protocol/RequestManager.hpp>
+#include <lightstreamer/client/protocol/HttpRequestManager.hpp>
 
 namespace lightstreamer::client::protocol {
     class TextProtocol {

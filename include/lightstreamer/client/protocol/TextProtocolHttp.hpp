@@ -29,38 +29,41 @@
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
 #include <lightstreamer/client/requests/RequestTutor.hpp>
 #include "Http.hpp" // Assuming Http is a class representing HTTP transport
+#include <lightstreamer/client/protocol/RequestManager.hpp>
 #include <lightstreamer/util/ListenableFuture.hpp>
 #include <cassert>
 #include <memory>
 #include <lightstreamer/client/transport/RequestListener.hpp>
-
+//#include <lightstreamer/client/protocol/HttpRequestManager.hpp>
 
 namespace lightstreamer::client::protocol {
 
     class TextProtocolHttp : public TextProtocol {
     public:
-        TextProtocolHttp(int objectId, SessionThread& thread, InternalConnectionOptions& options, Http& httpTransport)
+        TextProtocolHttp(int objectId, SessionThread &thread, InternalConnectionOptions &options, Http &httpTransport)
                 : TextProtocol(objectId, thread, options, httpTransport) {
             // Constructor implementation, possibly empty if all initialization happens in the base class
         }
 
-        RequestManager& getRequestManager() override {
+        std::unique_ptr<HttpRequestManager> &getRequestManager() {
             return this->httpRequestManager;
         }
 
-        void sendControlRequest(requests::LightstreamerRequest& request, requests::RequestTutor& tutor, transport::RequestListener& reqListener) override {
-            httpRequestManager.addRequest(request, tutor, reqListener);
+        void sendControlRequest(std::shared_ptr<requests::LightstreamerRequest> &request,
+                                std::shared_ptr<requests::RequestTutor> &tutor,
+                                std::shared_ptr<transport::RequestListener> &reqListener) {
+            httpRequestManager->addRequest(request, tutor, reqListener);
         }
 
-        void processREQOK(const std::string& message) override {
+        void processREQOK(const std::string &message) override {
             assert(false); // Use C++ assert
         }
 
-        void processREQERR(const std::string& message) override {
+        void processREQERR(const std::string &message) override {
             assert(false); // Use C++ assert
         }
 
-        void processERROR(const std::string& message) override {
+        void processERROR(const std::string &message) override {
             assert(false); // Use C++ assert
         }
 
@@ -69,7 +72,7 @@ namespace lightstreamer::client::protocol {
             this->httpRequestManager.close(waitPendingControlRequests);
         }
 
-        std::shared_ptr<util::ListenableFuture> openWebSocketConnection(const std::string& serverAddress) override {
+        std::shared_ptr<util::ListenableFuture> openWebSocketConnection(const std::string &serverAddress) override {
             // This method should never be called in this class, as stated
             assert(false);
             return util::ListenableFuture::rejected(); // TODO: Adjust according to your ListenableFuture implementation
@@ -80,11 +83,12 @@ namespace lightstreamer::client::protocol {
             reverseHeartbeatTimer.onBindSession(false);
         }
 
-        void forwardDestroyRequest(DestroyRequest& request, requests::RequestTutor& tutor, transport::RequestListener& reqListener) override {
+        void forwardDestroyRequest(DestroyRequest &request, requests::RequestTutor &tutor,
+                                   transport::RequestListener &reqListener) override {
             // Don't send destroy request when transport is http
         }
 
-        void setDefaultSessionId(const std::string& sessionId) override {
+        void setDefaultSessionId(const std::string &sessionId) {
             // HTTP connections don't have a default session id
         }
     };

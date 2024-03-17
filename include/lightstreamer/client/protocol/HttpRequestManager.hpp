@@ -227,7 +227,7 @@ namespace lightstreamer::client::protocol {
             newHandler.setRequestLimit(requestLimit);
         }
 
-        void addRequest(std::unique_ptr<LightstreamerRequest> request, std::unique_ptr<RequestTutor> tutor, std::unique_ptr<RequestListener> listener) override {
+        void addRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor, std::shared_ptr<RequestListener> listener) override {
             assert(dynamic_cast<ControlRequest*>(request.get()) || dynamic_cast<MessageRequest*>(request.get()) || dynamic_cast<ReverseHeartbeatRequest*>(request.get()));
 
             if (is("END") || is("ENDING")) {

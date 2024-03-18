@@ -41,6 +41,8 @@
 #include <lightstreamer/client/transport/RequestListener.hpp>
 #include <lightstreamer/client/Constants.hpp>
 #include <lightstreamer/client/protocol/ProtocolConstants.hpp>
+#include <lightstreamer/client/protocol/RequestManager.hpp>
+#include <lightstreamer/client/protocol/HttpRequestManager.hpp>
 
 namespace lightstreamer::client::protocol {
     class TextProtocol {
@@ -394,6 +396,12 @@ namespace lightstreamer::client::protocol {
 
         virtual void onBindSessionForTheSakeOfReverseHeartbeat() = 0;
 
+        // Stops the protocol activities, optionally waiting for pending control requests and forcing connection close.
+        virtual void stop(bool waitPendingControlRequests, bool forceConnectionClose) {
+            log.Info("Protocol dismissed");
+            setStatus(StreamStatus::STREAM_CLOSED, forceConnectionClose);
+            reverseHeartbeatTimer->onClose();
+        }
 
     private:
         bool statusIs(StreamStatus queryStatus) {
@@ -1003,12 +1011,7 @@ namespace lightstreamer::client::protocol {
             this->status = StreamStatus::STREAM_CLOSED;
         }
 
-        // Stops the protocol activities, optionally waiting for pending control requests and forcing connection close.
-        virtual void stop(bool waitPendingControlRequests, bool forceConnectionClose) {
-            log.Info("Protocol dismissed");
-            setStatus(StreamStatus::STREAM_CLOSED, forceConnectionClose);
-            reverseHeartbeatTimer->onClose();
-        }
+
 
         // Returns the maximum reverse heartbeat interval in milliseconds.
         long getMaxReverseHeartbeatIntervalMs() const {

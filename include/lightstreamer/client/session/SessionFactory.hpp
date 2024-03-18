@@ -76,7 +76,7 @@ namespace lightstreamer::client::session {
                                                                     httpTransport);
                 } catch (const std::exception &e) {
                     log.error("Error creating TextProtocolWS: " + std::string(e.what()));
-                    ws = nullptr; // In C++, nullptr is used instead of null
+                    ws = nullptr;
                 }
 
                 return std::make_unique<SessionWS>(objectId, isPolling, isComboForced, listener, subscriptions,

@@ -274,6 +274,158 @@ namespace lightstreamer::client::session {
             log->Info(std::format("Reverse Heartbeat Interval value changed to {}", reverseHeartbeatInterval));
         }
 
+        long long getStalledTimeout() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return stalledTimeout;
+        }
+
+        void setStalledTimeout(long long value) {
+            std::lock_guard<std::mutex> guard(mutex);
+            if (value <= 0) throw std::invalid_argument("Value must be positive and non-zero.");
+            stalledTimeout = value;
+            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("stalledTimeout"));
+            log->Info(std::format("Stalled Timeout value changed to {}", stalledTimeout));
+        }
+
+        long long getSessionRecoveryTimeout() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return sessionRecoveryTimeout;
+        }
+
+        void setSessionRecoveryTimeout(long long value) {
+            std::lock_guard<std::mutex> guard(mutex);
+            if (value < 0) throw std::invalid_argument("Value must be positive or zero.");
+            sessionRecoveryTimeout = value;
+            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("sessionRecoveryTimeout"));
+            log->Info(std::format("Session Recovery Timeout value changed to {}", sessionRecoveryTimeout));
+        }
+
+        std::unique_ptr<Proxy> getProxy() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return std::make_unique<Proxy>(*proxy); // Retorna una copia si es necesario evitar mutabilidad
+        }
+
+        void setProxy(std::unique_ptr<Proxy> newProxy) {
+            std::lock_guard<std::mutex> guard(mutex);
+            proxy = std::move(newProxy);
+            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("proxy"));
+            // Log the proxy change; asumir que Proxy tiene una forma de ser convertido a string para el log
+            log->Info("Proxy configuration changed.");
+        }
+
+        long long getSwitchCheckTimeout() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return switchCheckTimeout;
+        }
+
+        void setSwitchCheckTimeout(long long value) {
+            std::lock_guard<std::mutex> guard(mutex);
+            switchCheckTimeout = value;
+            // Asumiendo que no hay necesidad de notificar este cambio a través del eventDispatcher
+        }
+
+        long long getTCPConnectTimeout() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return currentRetryDelay->getCurrentRetryDelay() + 1000;
+        }
+
+        long long getTCPReadTimeout() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return keepaliveInterval + stalledTimeout + 1000;
+        }
+
+        bool getEarlyWSOpenEnabled() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return earlyWSOpenEnabled;
+        }
+
+        void setEarlyWSOpenEnabled(bool value) {
+            std::lock_guard<std::mutex> guard(mutex);
+            earlyWSOpenEnabled = value;
+            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("earlyWSOpenEnabled"));
+            log->Info(std::format("Early WS Open Enabled value changed to {}", value));
+        }
+
+        bool getHttpExtraHeadersOnSessionCreationOnly() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return httpExtraHeadersOnSessionCreationOnly;
+        }
+
+        void setHttpExtraHeadersOnSessionCreationOnly(bool value) {
+            std::lock_guard<std::mutex> guard(mutex);
+            httpExtraHeadersOnSessionCreationOnly = value;
+            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("httpExtraHeadersOnSessionCreationOnly"));
+            log->Info(std::format("Extra Headers On Session Creation Only flag changed to {}", value));
+        }
+
+        bool getServerInstanceAddressIgnored() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return serverInstanceAddressIgnored;
+        }
+
+        void setServerInstanceAddressIgnored(bool value) {
+            std::lock_guard<std::mutex> guard(mutex);
+            serverInstanceAddressIgnored = value;
+            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("serverInstanceAddressIgnored"));
+            log->Info(std::format("Server Instance Address Ignored flag changed to {}", value));
+        }
+
+        bool getSlowingEnabled() {
+            std::lock_guard<std::mutex> guard(mutex);
+            return slowingEnabled;
+        }
+
+        void setSlowingEnabled(bool value) {
+            std::lock_guard<std::mutex> guard(mutex);
+            slowingEnabled = value;
+            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("slowingEnabled"));
+            log->Info(std::format("Slowing Enabled flag changed to {}", value));
+        }
+
+        void increaseConnectTimeout() {
+            std::lock_guard<std::mutex> guard(mutex);
+            currentRetryDelay->increase();
+        }
+
+        void increaseRetryDelay() {
+            std::lock_guard<std::mutex> guard(mutex);
+            currentRetryDelay->increase();
+        }
+
+        void resetConnectTimeout() {
+            std::lock_guard<std::mutex> guard(mutex);
+            currentRetryDelay->reset(getRetryDelay());
+        }
+
+        void setMaxBandwidthInternal(const std::string& maxBandwidth, bool serverCall) {
+            std::lock_guard<std::mutex> guard(mutex);
+            if (maxBandwidth == Constants::UNLIMITED) {
+                requestedMaxBandwidth = 0;
+                log->Info("Max Bandwidth value changed to unlimited");
+            } else {
+                try {
+                    double tmp = std::stod(maxBandwidth);
+                    if (tmp < 0 || (!serverCall && tmp == 0)) throw std::invalid_argument("Value must be positive or zero.");
+                    requestedMaxBandwidth = tmp;
+                } catch (const std::invalid_argument& ia) {
+                    // Aquí se maneja la conversión fallida de string a double
+                    throw std::invalid_argument("The given value is not a valid value for setRequestedMaxBandwidth. Use a positive number or the string \"unlimited\"");
+                }
+                log->Info(std::format("Max Bandwidth value changed to {}", requestedMaxBandwidth));
+            }
+            // Aquí se notifica a los listeners del cambio
+            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("requestedMaxBandwidth"));
+        }
+
+        long long getRetryDelay() const {
+            // Implementación que retorna el valor actual de retry delay
+            return currentRetryDelay->getRetryDelay();
+        }
+
+        std::shared_ptr<EventDispatcher<ClientListener>> getEventDispatcher() const {
+            return eventDispatcher;
+        }
+
     };
 }
 

@@ -23,5 +23,50 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_NAMEDESCRIPTOR_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_NAMEDESCRIPTOR_HPP
+#include <string>
+#include <memory>
+#include <lightstreamer/util/Descriptor.hpp>
+
+namespace lightstreamer::util {
+
+
+    class NameDescriptor : public Descriptor {
+    private:
+        std::string name;
+
+    public:
+        NameDescriptor(const std::string& name) : name(name) {}
+
+        int getPos(const std::string& name) const override {
+            if (this->subDescriptor) { // Assuming subDescriptor is a smart pointer to a Descriptor
+                int fromSub = this->subDescriptor->getPos(name);
+                return fromSub > -1 ? fromSub + this->getSize() : -1;
+            }
+            return -1;
+        }
+
+        std::string getName(int pos) const override {
+            if (this->subDescriptor) {
+                return this->subDescriptor->getName(pos - this->getSize());
+            }
+            return ""; // Returning empty string instead of nullptr
+        }
+
+        std::string ComposedString() const override {
+            return this->name;
+        }
+
+        std::string Original() const {
+            return this->name;
+        }
+
+        // Implementing cloning by returning a new instance copied from this one
+        std::unique_ptr<NameDescriptor> clone() const {
+            return std::make_unique<NameDescriptor>(*this);
+        }
+    };
+
+    // Make sure subDescriptor is properly defined, either here or in the Descriptor base class.
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_NAMEDESCRIPTOR_HPP

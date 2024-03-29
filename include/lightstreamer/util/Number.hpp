@@ -23,5 +23,42 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_NUMBER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_NUMBER_HPP
+#include <stdexcept>
+#include <string>
+#include <regex>
+
+namespace lightstreamer::util {
+
+    constexpr bool ACCEPT_ZERO = true;
+    constexpr bool DONT_ACCEPT_ZERO = false;
+
+    bool isPositive(double num, bool zeroAccepted) {
+        if (zeroAccepted) {
+            if (num < 0) {
+                return false;
+            }
+        } else if (num <= 0) {
+            return false;
+        }
+        return true;
+    }
+
+    void verifyPositive(double num, bool zeroAccepted) {
+        bool positive = isPositive(num, zeroAccepted);
+        if (!positive) {
+            if (zeroAccepted) {
+                throw std::invalid_argument("The given value is not valid. Use a positive number or 0");
+            } else {
+                throw std::invalid_argument("The given value is not valid. Use a positive number");
+            }
+        }
+    }
+
+    // Static regex objects should be declared as const or constexpr in global scope or inside functions to avoid static initialization order issues
+    bool isNumber(const std::string& num) {
+        static const std::regex pattern(R"(^[+-]?\d*\.?\d+$)");
+        return std::regex_match(num, pattern);
+    }
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_NUMBER_HPP

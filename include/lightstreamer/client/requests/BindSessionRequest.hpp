@@ -31,7 +31,6 @@
 
 namespace lightstreamer::client::requests {
 
-
     class BindSessionRequest : public SessionRequest {
     private:
         std::string server;

@@ -23,5 +23,35 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_REVERSEHEARTBEATREQUEST_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_REVERSEHEARTBEATREQUEST_HPP
+#include <memory>
+#include <string>
+#include <lightstreamer/client/requests/LightstreamerRequest.hpp>
+
+namespace lightstreamer::client::requests {
+
+    /**
+     * Represents a reverse heartbeat request to keep the connection alive.
+     */
+    class ReverseHeartbeatRequest : public LightstreamerRequest {
+    public:
+        /**
+         * Sets the request name. This operation is not applicable for ReverseHeartbeatRequest and is ignored.
+         *
+         * @param name The name to set.
+         */
+        void setRequestName(const std::string& name) override {
+            // This is intentionally left empty as the request name for ReverseHeartbeatRequest is fixed.
+        }
+
+        /**
+         * Gets the name of the request.
+         *
+         * @return Always returns "heartbeat".
+         */
+        std::string getRequestName() const override {
+            return "heartbeat";
+        }
+    };
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_REVERSEHEARTBEATREQUEST_HPP

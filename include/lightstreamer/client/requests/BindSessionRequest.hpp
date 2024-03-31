@@ -27,28 +27,10 @@
 #include <string>
 #include <map>
 #include <lightstreamer/client/session/InternalConnectionOptions.hpp>
+#include <lightstreamer/client/requests/SessionRequest.hpp>
 
 namespace lightstreamer::client::requests {
 
-    class SessionRequest { // Assuming this is an existing base class
-    protected:
-        bool polling;
-        long delay;
-        std::map<std::string, std::string> parameters;
-
-        // Example of a possible base class constructor
-        SessionRequest(bool polling, long delay) : polling(polling), delay(delay) {}
-
-    public:
-        virtual std::string getRequestName() const = 0;
-
-        virtual bool isSessionRequest() const = 0;
-
-        // Assuming there's a mechanism to add parameters in the base class
-        void addParameter(const std::string &key, const std::string &value) {
-            parameters[key] = value;
-        }
-    };
 
     class BindSessionRequest : public SessionRequest {
     private:

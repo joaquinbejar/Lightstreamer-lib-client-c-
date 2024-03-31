@@ -23,5 +23,43 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CONTROLREQUEST_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_CONTROLREQUEST_HPP
+#include <memory>
+#include <string>
+
+namespace lightstreamer::client::requests {
+
+    /**
+     * Represents a control request with a predefined request name.
+     */
+    class ControlRequest : public NumberedRequest {
+    public:
+        /**
+         * Sets the request name. This operation is skipped in ControlRequest as the name is fixed.
+         *
+         * @param name The name to set.
+         */
+        void setRequestName(const std::string& name) {
+            // Skip. In ControlRequest, the request name is fixed.
+        }
+
+        /**
+         * Gets the name of the request.
+         *
+         * @return Always returns "control".
+         */
+        std::string getRequestName() const override {
+            return "control";
+        }
+
+        /**
+         * Converts the request to its string representation, excluding transport-specific details.
+         *
+         * @return The transport unaware query string of the request.
+         */
+        std::string toString() const override {
+            return this->TransportUnawareQueryString();
+        }
+    };
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CONTROLREQUEST_HPP

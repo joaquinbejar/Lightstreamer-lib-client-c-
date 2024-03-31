@@ -24,4 +24,41 @@
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_FORCEREBINDREQUEST_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_FORCEREBINDREQUEST_HPP
 
+#include <memory>
+#include <string>
+#include <lightstreamer/client/requests/ControlRequest.hpp>
+
+namespace lightstreamer::client::requests {
+
+    /**
+     * Represents a request to forcibly rebind the current session with specified parameters.
+     */
+    class ForceRebindRequest : public ControlRequest {
+    public:
+        /**
+         * Constructs a ForceRebindRequest with specified parameters.
+         *
+         * @param targetServer The target server for the rebind operation.
+         * @param sessionID The current session ID.
+         * @param rebindCause The cause for rebinding.
+         * @param delay The delay before attempting the rebind, in milliseconds.
+         */
+        ForceRebindRequest(const std::string &targetServer, const std::string &sessionID,
+                           const std::string &rebindCause, double delay) {
+            this->Server = targetServer;
+
+            this->addParameter("LS_op", "force_rebind");
+            this->addParameter("LS_session", sessionID);
+
+            if (!rebindCause.empty()) {
+                this->addParameter("LS_cause", rebindCause);
+            }
+
+            if (delay > 0) {
+                this->addParameter("LS_polling_millis", std::to_string(delay));
+            }
+        }
+    };
+}
+
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_FORCEREBINDREQUEST_HPP

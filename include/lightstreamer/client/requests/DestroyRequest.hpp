@@ -23,5 +23,55 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_DESTROYREQUEST_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_DESTROYREQUEST_HPP
+#include <memory>
+#include <string>
+#include <lightstreamer/client/requests/ControlRequest.hpp>
+
+namespace lightstreamer::client::requests {
+
+    /**
+     * Represents a request to destroy a session with the server.
+     *
+     * @param targetServer The target server where the session will be destroyed.
+     * @param sessionID The ID of the session to destroy.
+     * @param closeReason The reason for closing the session.
+     */
+    class DestroyRequest : public ControlRequest {
+    private:
+        std::string session;
+
+    public:
+        /**
+         * Constructs a DestroyRequest with specified parameters.
+         *
+         * @param targetServer The target server for the request.
+         * @param sessionID The session ID associated with this request.
+         * @param closeReason The reason for the session destruction.
+         */
+        DestroyRequest(const std::string& targetServer, const std::string& sessionID, const std::string& closeReason) {
+            this->Server = targetServer;
+
+            this->addParameter("LS_op", "destroy");
+
+            this->session = sessionID;
+
+            // The line below is commented out to match the C# version's behavior:
+            // this->addParameter("LS_session", sessionID);
+
+            if (!closeReason.empty()) {
+                this->addParameter("LS_cause", closeReason);
+            }
+        }
+
+        /**
+         * Gets the session ID associated with this request.
+         *
+         * @return The session ID.
+         */
+        std::string getSession() const {
+            return this->session;
+        }
+    };
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_DESTROYREQUEST_HPP

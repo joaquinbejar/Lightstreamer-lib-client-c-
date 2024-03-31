@@ -25,6 +25,8 @@
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_VOIDTUTOR_HPP
 #include <memory>
 #include <lightstreamer/client/requests/RequestTutor.hpp>
+#include <lightstreamer/client/session/SessionThread.hpp>
+#include <lightstreamer/client/session/InternalConnectionOptions.hpp>
 
 namespace lightstreamer::client::requests {
 
@@ -39,7 +41,7 @@ namespace lightstreamer::client::requests {
          * @param thread The session thread.
          * @param connectionOptions The connection options.
          */
-        VoidTutor(std::shared_ptr<SessionThread> thread, std::shared_ptr<InternalConnectionOptions> connectionOptions)
+        VoidTutor(std::shared_ptr<session::SessionThread> thread, std::shared_ptr<session::InternalConnectionOptions> connectionOptions)
                 : RequestTutor(thread, connectionOptions) {}
 
         /**

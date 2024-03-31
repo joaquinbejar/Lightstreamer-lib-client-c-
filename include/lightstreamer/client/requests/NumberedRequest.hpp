@@ -21,46 +21,39 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CONTROLREQUEST_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_CONTROLREQUEST_HPP
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_NUMBEREDREQUEST_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_NUMBEREDREQUEST_HPP
 #include <memory>
 #include <string>
-#include <lightstreamer/client/requests/NumberedRequest.hpp>
+#include <lightstreamer/client/requests/LightstreamerRequest.hpp>
+#include <lightstreamer/util/IdGenerator.hpp>
 
 namespace lightstreamer::client::requests {
 
     /**
-     * Represents a control request with a predefined request name.
+     * Represents a numbered request with a unique request ID.
      */
-    class ControlRequest : public NumberedRequest {
+    class NumberedRequest : public LightstreamerRequest {
+    protected:
+        long requestId;
+
     public:
         /**
-         * Sets the request name. This operation is skipped in ControlRequest as the name is fixed.
-         *
-         * @param name The name to set.
+         * Constructs a NumberedRequest and assigns a unique request ID.
          */
-        void setRequestName(const std::string& name) {
-            // Skip. In ControlRequest, the request name is fixed.
+        NumberedRequest() : requestId(util::IdGenerator::NextRequestId()) {
+            addParameter("LS_reqId", std::to_string(requestId));
         }
 
         /**
-         * Gets the name of the request.
+         * Gets the unique request ID of this NumberedRequest.
          *
-         * @return Always returns "control".
+         * @return The request ID.
          */
-        std::string getRequestName() const override {
-            return "control";
-        }
-
-        /**
-         * Converts the request to its string representation, excluding transport-specific details.
-         *
-         * @return The transport unaware query string of the request.
-         */
-        std::string toString() const override {
-            return this->TransportUnawareQueryString();
+        long getRequestId() const {
+            return requestId;
         }
     };
 }
 
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CONTROLREQUEST_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_NUMBEREDREQUEST_HPP

@@ -31,18 +31,20 @@
 #include <vector>
 #include <memory>
 #include "Logger.h" // Assume a logger class is defined elsewhere
-#include "SessionThread.h"
+#include <lightstreamer/client/session/SessionThread.hpp>
 #include "InternalConnectionOptions.h"
 #include <lightstreamer/client/protocol/ProtocolListener.hpp>
 #include "StreamListener.h"
 #include "RequestManager.h"
-#include "HttpTransport.h"
+#include "HttpTransport.hpp"
 #include "ReverseHeartbeatTimer.h"
 #include <lightstreamer/client/transport/RequestListener.hpp>
 #include <lightstreamer/client/Constants.hpp>
 #include <lightstreamer/client/protocol/ProtocolConstants.hpp>
 #include <lightstreamer/client/protocol/RequestManager.hpp>
 #include <lightstreamer/client/protocol/HttpRequestManager.hpp>
+#include <lightstreamer/client/requests/RequestTutor.hpp>
+#include <lightstreamer/client/transport/SessionRequestListener.hpp>
 
 namespace lightstreamer::client::protocol {
     class TextProtocol {
@@ -73,7 +75,7 @@ namespace lightstreamer::client::protocol {
 
     protected:
         Logger log; // Simplified logging mechanism for C++
-        SessionThread sessionThread;
+        session::SessionThread sessionThread;
         std::unique_ptr<HttpRequestManager> httpRequestManager;
         std::shared_ptr<ProtocolListener> session = nullptr;
         StreamListener *activeListener = nullptr;
@@ -85,7 +87,7 @@ namespace lightstreamer::client::protocol {
         HttpTransport httpTransport;
 
     public:
-        TextProtocol(int objectId, std::shared_ptr<SessionThread> thread, InternalConnectionOptions options,
+        TextProtocol(int objectId, std::shared_ptr<session::SessionThread> thread, InternalConnectionOptions options,
                      std::unique_ptr<HttpTransport> httpTransport)
                 : objectId(objectId), sessionThread(thread), options(options), httpTransport(std::move(httpTransport)) {
             if (log.IsDebugEnabled()) {
@@ -147,7 +149,7 @@ namespace lightstreamer::client::protocol {
 
         // Abstract method to dispatch control requests to the transport layer
         virtual void
-        sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor,
+        sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
                            std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         // Method to handle reverse heartbeat
@@ -157,14 +159,14 @@ namespace lightstreamer::client::protocol {
         }
 
         // Method to send a force rebind request
-        void sendForceRebind(std::shared_ptr<ForceRebindRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendForceRebind(std::shared_ptr<ForceRebindRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             // Assuming httpRequestManager is an object that can manage HTTP requests
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass>(this, tutor);
             httpRequestManager.addRequest(request, tutor, reqListener);
         }
 
         // Method to send a Destroy request
-        void sendDestroy(std::shared_ptr<DestroyRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendDestroy(std::shared_ptr<DestroyRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass2>(this, tutor);
             // Assuming httpRequestManager is an object that can manage HTTP requests
             // httpRequestManager.addRequest(request, tutor, reqListener); // Uncomment if httpRequestManager is implemented
@@ -172,17 +174,17 @@ namespace lightstreamer::client::protocol {
         }
 
         // Abstract method to forward Destroy request to the derived class for custom handling
-        virtual void forwardDestroyRequest(std::shared_ptr<DestroyRequest> request, std::shared_ptr<RequestTutor> tutor,
+        virtual void forwardDestroyRequest(std::shared_ptr<DestroyRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
                                            std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         // Method to send a Message request
-        void sendMessageRequest(std::shared_ptr<MessageRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendMessageRequest(std::shared_ptr<MessageRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass3>(this, tutor, request);
             sendControlRequest(request, tutor, reqListener);
         }
 
         // Method to send a subscription request
-        void sendSubscriptionRequest(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendSubscriptionRequest(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (log.isDebugEnabled()) {
                 // Log debug message about the subscription request
                 std::cout << "Subscription parameters: " << request->getTransportUnawareQueryString() << std::endl;
@@ -197,13 +199,13 @@ namespace lightstreamer::client::protocol {
         }
 
         void sendConfigurationRequest(std::shared_ptr<ChangeSubscriptionRequest> request,
-                                      std::shared_ptr<RequestTutor> tutor) {
+                                      std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass5>(this, tutor, request);
             sendControlRequest(request, tutor, reqListener);
         }
 
         void
-        sendUnsubscriptionRequest(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        sendUnsubscriptionRequest(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass6>(this, tutor, request);
             sendControlRequest(request, tutor, reqListener);
         }
@@ -214,7 +216,7 @@ namespace lightstreamer::client::protocol {
         }
 
         void
-        sendReverseHeartbeat(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        sendReverseHeartbeat(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<BaseControlRequestListenerAnonymousInnerClass>(this, tutor);
             sendControlRequest(request, tutor, reqListener);
         }
@@ -315,7 +317,7 @@ namespace lightstreamer::client::protocol {
 
         // Abstract method for sending control requests, to be implemented by derived classes
         virtual void
-        sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor,
+        sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
                            std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         std::smatch matchLine(const std::regex &pattern, const std::string &message) {
@@ -410,10 +412,10 @@ namespace lightstreamer::client::protocol {
 
         class ControlRequestListenerAnonymousInnerClass : public ControlRequestListener {
             TextProtocol *outerInstance;
-            std::shared_ptr<RequestTutor> tutor;
+            std::shared_ptr<requests::RequestTutor> tutor;
 
         public:
-            ControlRequestListenerAnonymousInnerClass(TextProtocol *outerInstance, std::shared_ptr<RequestTutor> tutor)
+            ControlRequestListenerAnonymousInnerClass(TextProtocol *outerInstance, std::shared_ptr<requests::RequestTutor> tutor)
                     : outerInstance(outerInstance), tutor(tutor) {}
 
             void onOK() override {
@@ -430,10 +432,10 @@ namespace lightstreamer::client::protocol {
 
         class ControlRequestListenerAnonymousInnerClass2 : public ControlRequestListener {
             TextProtocol *outerInstance;
-            std::shared_ptr<RequestTutor> tutor;
+            std::shared_ptr<requests::RequestTutor> tutor;
 
         public:
-            ControlRequestListenerAnonymousInnerClass2(TextProtocol *outerInstance, std::shared_ptr<RequestTutor> tutor)
+            ControlRequestListenerAnonymousInnerClass2(TextProtocol *outerInstance, std::shared_ptr<requests::RequestTutor> tutor)
                     : outerInstance(outerInstance), tutor(tutor) {}
 
             void onOK() override {
@@ -452,7 +454,7 @@ namespace lightstreamer::client::protocol {
             std::shared_ptr<MessageRequest> request;
 
         public:
-            ControlRequestListenerAnonymousInnerClass3(TextProtocol *outerInstance, std::shared_ptr<RequestTutor> tutor,
+            ControlRequestListenerAnonymousInnerClass3(TextProtocol *outerInstance, std::shared_ptr<requests::RequestTutor> tutor,
                                                        std::shared_ptr<MessageRequest> request)
                     : ControlRequestListener(outerInstance, tutor), request(request) {}
 
@@ -476,7 +478,7 @@ namespace lightstreamer::client::protocol {
             std::shared_ptr<SubscribeRequest> request;
 
         public:
-            ControlRequestListenerAnonymousInnerClass4(TextProtocol *outerInstance, std::shared_ptr<RequestTutor> tutor,
+            ControlRequestListenerAnonymousInnerClass4(TextProtocol *outerInstance, std::shared_ptr<requests::RequestTutor> tutor,
                                                        std::shared_ptr<SubscribeRequest> request)
                     : outerInstance(outerInstance), request(request) {}
 
@@ -1140,11 +1142,11 @@ namespace lightstreamer::client::protocol {
             TextProtocol &outerInstance;
             bool opened = false;
             bool completed = false;
-            std::unique_ptr<RequestTutor> tutor;
+            std::unique_ptr<requests::RequestTutor> tutor;
             std::string response;
 
         public:
-            BaseControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<RequestTutor> &tutor)
+            BaseControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<requests::RequestTutor> &tutor)
                     : outerInstance(outerInstance), tutor(std::move(tutor)) {}
 
             virtual void onOK() = 0;
@@ -1213,7 +1215,7 @@ namespace lightstreamer::client::protocol {
 
         public:
             // Constructor that initializes the external instance and passes the tutor to the base constructor.
-            ControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<RequestTutor> tutor)
+            ControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<requests::RequestTutor> tutor)
                     : BaseControlRequestListener(outerInstance, std::move(tutor)), outerInstance(outerInstance) {}
 
             // Overrides the onOpen method to implement ControlRequestListener specific logic.

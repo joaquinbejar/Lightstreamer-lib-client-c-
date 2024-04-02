@@ -1339,6 +1339,225 @@ namespace lightstreamer::client {
         int getMainSchemaSize() const {
             return this->fieldDescriptor.getSize();
         }
+        int toFieldPos(const std::string& fieldName) {
+            int fieldPos = fieldDescriptor.getPos(fieldName);
+            if (fieldPos == -1) {
+                throw std::invalid_argument("the specified field does not exist");
+            }
+            return fieldPos;
+        }
+
+        void verifyFieldPos(int fieldPos, bool full) {
+            if (fieldPos <= 0 || fieldPos > ( full ? fieldDescriptor.FullSize : fieldDescriptor.Size )) {
+                throw std::invalid_argument("the specified field position is out of bounds");
+            }
+        }
+
+        void verifyItemPos(int itemPos) {
+            if (itemPos <= 0 || itemPos > itemDescriptor.Size) {
+                throw std::invalid_argument("the specified item position is out of bounds");
+            }
+        }
+
+        int toItemPos(const std::string& itemName) {
+            int itemPos = itemDescriptor.getPos(itemName);
+            if (itemPos == -1) {
+                throw std::invalid_argument("the specified item does not exist");
+            }
+            return itemPos;
+        }
+        std::string toLowerCase(const std::string& s)
+        {
+            std::string lower;
+            for (char c : s) {
+                lower += std::tolower(c);
+            }
+            return lower;
+        }
+        class SecondLevelSubscriptionListener : public SubscriptionListener
+        {
+        private:
+            Subscription* outerInstance;
+            int itemReference;
+            std::string relKey;
+
+        public:
+            SecondLevelSubscriptionListener(Subscription* outerInstance, int item, const std::string& key) :
+                    outerInstance(outerInstance), itemReference(item), relKey(key)
+            {
+            }
+
+            void onClearSnapshot(const std::string& itemName, int itemPos) override
+            {
+                // not expected, as MERGE mode is implied here
+            }
+
+            void onCommandSecondLevelItemLostUpdates(int lostUpdates, const std::string& key) override {
+                // can't happen
+            }
+
+            void onCommandSecondLevelSubscriptionError(int code, const std::string& message, const std::string& key) override {
+                // can't happen
+            }
+
+            void onEndOfSnapshot(const std::string& itemName, int itemPos) override {
+                // nothing to do
+            }
+
+            void onItemLostUpdates(const std::string& itemName, int itemPos, int lostUpdates)
+            {
+                // assuming OuterInstance has onLostUpdates member function
+                if (shouldDispatch()) {
+                    outerInstance->onLostUpdates(this->relKey, lostUpdates);
+                }
+            }
+
+            void onItemUpdate(ItemUpdate& itemUpdate) override
+            {
+                // assuming outerInstance's has member functions
+                if (shouldDispatch()) {
+                    outerInstance->SecondLevelSchemaSize = itemUpdate.FieldsCount;
+
+                    std::vector<std::string> args = convertMultiSonUpdate(itemUpdate);
+
+                    // once the update args are converted we pass them to the main table
+                    outerInstance->update(args, this->itemReference, true);
+                }
+            }
+
+            void onListenEnd(Subscription& subscription) override {
+                // don't care
+            }
+
+            void onListenStart(Subscription& subscription) override {
+                // don't care
+            }
+
+            void onSubscription() override {
+                // nothing to do
+            }
+
+            void onSubscriptionError(int code, const std::string& message) override {
+                // assuming OuterInstance has onServerError member function
+                if (shouldDispatch()) {
+                    outerInstance->onServerError(code, message, this->relKey);
+                }
+            }
+
+            void onUnsubscription() override {
+                // nothing to do
+            }
+
+            bool shouldDispatch()
+            {
+                // assuming outerInstance has hasSubTable member function
+                return outerInstance->hasSubTable(this->itemReference, this->relKey);
+            }
+
+            std::vector<std::string> convertMultiSonUpdate(ItemUpdate& itemUpdate);
+
+            void onRealMaxFrequency(const std::string& frequency)
+            {
+                // the caller has already updated localRealMaxFrequency on the second-level object
+                outerInstance->onLocalFrequencyChanged();
+                // this invokes the first-level object
+            }
+        };
+
+        /**
+         * Detects whether the current update is a snapshot according to the rules in the following table.
+         * +---------------------+-------+-----------+----------+---------+---------+-------+-------+------+
+         * |                     |       | r1        | r2       | r3      | r4      | r5    | r6    | r7  |
+         * +---------------------+-------+-----------+----------+---------+---------+-------+-------+------+
+         * | snapshot requested  | false | true      | true     | true    | true    | true  | true  | true |
+         * +---------------------+-------+-----------+----------+---------+---------+-------+-------+------+
+         * | mode                |  -    | DISTINCT  | DISTINCT | COMMAND | COMMAND | MERGE | MERGE | RAW  |
+         * +---------------------+-------+-----------+----------+---------+---------+-------+-------+------+
+         * | first update        |  -    | -         | -        | -       | -       | false | true  | -    |
+         * +---------------------+-------+-----------+----------+---------+---------+-------+-------+------+
+         * | EOS received        |  -    | false     | true     | false   | true    | -     | -     | -    |
+         * +---------------------+-------+-----------+----------+---------+---------+-------+-------+------+
+         * | isSnapshot()        | false | true      | false    | true    | false   | false | true  | error|
+         * +---------------------+-------+-----------+----------+---------+---------+-------+-------+------+
+         */
+        class SnapshotManager {
+        private:
+            enum SnapshotManagerState {
+                NO_UPDATE_RECEIVED,
+                ONE_UPDATE_RECEIVED,
+                MORE_THAN_ONE_UPDATE_RECEIVED
+            };
+
+        public:
+            bool firstUpdate = true;
+            bool eosReceived = false;
+            SnapshotManagerState state = NO_UPDATE_RECEIVED;
+
+            const std::string _isRequiredSnapshot;
+            const std::string _mode;
+
+            SnapshotManager(const std::string& isRequiredSnapshot, const std::string& mode)
+                    : _isRequiredSnapshot(isRequiredSnapshot), _mode(mode)
+            {
+            }
+
+            /**
+             * Notifies the manager that a new update is available.
+             */
+            void update() {
+                if (state == NO_UPDATE_RECEIVED) {
+                    state = ONE_UPDATE_RECEIVED;
+                } else if (state == ONE_UPDATE_RECEIVED) {
+                    state = MORE_THAN_ONE_UPDATE_RECEIVED;
+                    firstUpdate = false;
+                }
+            }
+
+            /*
+             * Notifies the manager that the message EOS has arrived.
+             */
+            void endOfSnapshot() {
+                eosReceived = true;
+            }
+
+            /*
+             * Returns true if the user has requested the snapshot.
+             */
+            bool snapshotRequested() const {
+                return !_isRequiredSnapshot.empty() && _isRequiredSnapshot != "no";
+            }
+
+            /**
+             * Returns true if the current update is a snapshot.
+             */
+            bool isSnapshot() const {
+                if (!snapshotRequested()) {
+                    // r1
+                    return false;
+                } else if (Constants::MERGE == _mode) {
+                    // r6, r7
+                    return firstUpdate;
+                } else if (Constants::COMMAND == _mode || Constants::DISTINCT == _mode) {
+                    // r2, r3, r4, r5
+                    return !eosReceived;
+                } else {
+                    // r8
+                    // should never happen
+                    assert(Constants::RAW == _mode);
+                    return false;
+                }
+            }
+        };
+
+        /**
+         * Control states of SnapshotManager
+         */
+        enum class SnapshotManagerState
+        {
+            NO_UPDATE_RECEIVED,
+            ONE_UPDATE_RECEIVED,
+            MORE_THAN_ONE_UPDATE_RECEIVED
+        };
 
     };
 

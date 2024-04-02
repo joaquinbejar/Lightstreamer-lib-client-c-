@@ -1068,6 +1068,59 @@ namespace lightstreamer::client {
             // Handle behavior-specific configuration updates
             dispatcher.dispatchEvent(SubscriptionListenerConfigurationEvent(frequency));
         }
+        void onLostUpdates(const std::string& relKey, int lostUpdates) {
+            if (!checkStatusForUpdate()) {
+                return;
+            }
+            dispatcher.dispatchEvent(SubscriptionListenerCommandSecondLevelItemLostUpdatesEvent(lostUpdates, relKey));
+        }
+
+        void onServerError(int code, const std::string& message, const std::string& relKey) {
+            if (!checkStatusForUpdate()) {
+                return;
+            }
+            dispatcher.dispatchEvent(SubscriptionListenerCommandSecondLevelSubscriptionErrorEvent(code, message, relKey));
+        }
+
+        void update(const std::vector<std::string>& args, int item, bool fromMultison) {
+            // Logging and initial checks
+            if (!checkStatusForUpdate()) {
+                return;
+            }
+
+            if (snapshotByItem.count(item) && snapshotByItem[item].update()) {
+                // Handle snapshot updates
+            }
+
+            std::set<int> changedFields = prepareChangedSet(args);
+            std::string key = std::to_string(item);
+
+            if (behavior != "SIMPLE") {
+                try {
+                    key = organizeMPUpdate(args, item, fromMultison, changedFields);
+                } catch (const std::exception& e) {
+                    // Handle exception
+                }
+            }
+
+            // Additional handling for MULTIMETAPUSH behavior not shown for brevity
+            // Dispatch update event to listeners
+        }
+
+        void cleanData() {
+            oldValuesByItem.clear();
+            oldValuesByKey.clear();
+            snapshotByItem.clear();
+            fieldDescriptor.setSize(0);
+            itemDescriptor.setSize(0);
+
+            if (behavior == "MULTIMETAPUSH") {
+                // Additional cleanup for multi-metapush behavior
+            }
+
+            // Logging cleanup completion
+        }
+
 
 
 

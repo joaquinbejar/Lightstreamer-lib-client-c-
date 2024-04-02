@@ -487,7 +487,7 @@ namespace lightstreamer::client {
             }
         }
 
-        void setRequestedBufferSize(const std::string& value) {
+        void setRequestedBufferSize(const std::string &value) {
             std::lock_guard<std::mutex> guard(mtx);
             notAliveCheck();
 
@@ -499,11 +499,13 @@ namespace lightstreamer::client {
                 try {
                     int tmp = std::stoi(value);
                     if (tmp < 0) {
-                        throw std::invalid_argument("The given value is not valid for this setting; use 'null', 'unlimited', or a positive integer instead.");
+                        throw std::invalid_argument(
+                                "The given value is not valid for this setting; use 'null', 'unlimited', or a positive integer instead.");
                     }
                     requestedBufferSize = tmp;
-                } catch (const std::invalid_argument& e) {
-                    throw std::invalid_argument("The given value is not valid for this setting; use 'null', 'unlimited', or a positive integer instead.");
+                } catch (const std::invalid_argument &e) {
+                    throw std::invalid_argument(
+                            "The given value is not valid for this setting; use 'null', 'unlimited', or a positive integer instead.");
                 }
             }
         }
@@ -519,22 +521,24 @@ namespace lightstreamer::client {
             return isRequiredSnapshot;
         }
 
-        void setRequestedSnapshot(const std::string& value) {
+        void setRequestedSnapshot(const std::string &value) {
             std::lock_guard<std::mutex> guard(mtx);
             notAliveCheck();
 
             std::string lowerValue = value;
             std::transform(value.begin(), value.end(), lowerValue.begin(),
-                           [](unsigned char c){ return std::tolower(c); });
+                           [](unsigned char c) { return std::tolower(c); });
 
             if (lowerValue != "no" && mode == "RAW") {
                 throw std::invalid_argument("Snapshot is not permitted if RAW was specified as mode");
             } else if (lowerValue == "yes" || lowerValue == "no" || (mode == "DISTINCT" && isNumber(lowerValue))) {
                 isRequiredSnapshot = lowerValue;
             } else {
-                throw std::invalid_argument("Invalid value for RequestedSnapshot. Use 'yes', 'no', or a positive number.");
+                throw std::invalid_argument(
+                        "Invalid value for RequestedSnapshot. Use 'yes', 'no', or a positive number.");
             }
         }
+
         /**
          * Gets the maximum update frequency that has been requested from the Lightstreamer Server for all items in this Subscription.
          * Can only be used when the Subscription mode is MERGE, DISTINCT, or COMMAND. In COMMAND mode, it limits the update frequency
@@ -562,7 +566,7 @@ namespace lightstreamer::client {
          * @param value The maximum update frequency ("unfiltered", "unlimited", a numerical rate, or "null" to use the server default).
          * @throws std::invalid_argument If the Subscription is currently active.
          */
-        void setRequestedMaxFrequency(const std::string& value) {
+        void setRequestedMaxFrequency(const std::string &value) {
             std::lock_guard<std::mutex> guard(mtx);
             notAliveCheck();
 
@@ -583,27 +587,30 @@ namespace lightstreamer::client {
                 // The actual implementation depends on the server interaction logic.
             }
         }
+
         // And assuming Matrix is a class that contains Subscriptions and can iterate over them:
         template<typename T1, typename T2, typename T3>
         class Matrix {
         public:
             // An example of what a method might look like that accepts a function to operate on each element
-            void forEachElement(const std::function<bool(T3& element, T1 item, T2 key)>& func) {
+            void forEachElement(const std::function<bool(T3 &element, T1 item, T2 key)> &func) {
                 // Iterate over elements and apply the function.
                 // This is a simplified example. The actual implementation would depend on how the elements are stored.
-                for (auto& [key, element] : elements) {
+                for (auto &[key, element]: elements) {
                     if (!func(element, 0 /* item value */, key)) { // 0 is a placeholder for 'item' value
                         break;
                     }
                 }
             }
+
         private:
             std::unordered_map<T2, T3> elements; // Simplification of how elements might be stored.
         };
 
         // Now, assuming you want to replicate the functionality of ElementCallbackAnonymousInnerClassS using C++:
-        void applyFrequencyToSubscriptions(Matrix<int, std::string, Subscription>& matrix, const std::string& frequency) {
-            matrix.forEachElement([&frequency](Subscription& secondLevelSubscription, int item, std::string key) {
+        void
+        applyFrequencyToSubscriptions(Matrix<int, std::string, Subscription> &matrix, const std::string &frequency) {
+            matrix.forEachElement([&frequency](Subscription &secondLevelSubscription, int item, std::string key) {
                 secondLevelSubscription.setRequestedMaxFrequency(frequency);
                 return false; // Continue iterating. Change to true if you want to stop the iteration early.
             });
@@ -627,12 +634,13 @@ namespace lightstreamer::client {
          * @param value The name of the selector or an empty string to unset the selector.
          * @throws std::logic_error If the Subscription is currently active.
          */
-        void setSelector(const std::string& value) {
+        void setSelector(const std::string &value) {
             std::lock_guard<std::mutex> lock(mtx);
             notAliveCheck(); // Assume this method throws if the subscription is active.
             selector = value;
             // Logging logic here...
         }
+
         /**
          * @brief Gets the position of the "command" field in a COMMAND Subscription.
          *
@@ -649,7 +657,8 @@ namespace lightstreamer::client {
             commandCheck();
 
             if (/* fieldDescriptor is ListDescriptor */) {
-                throw std::logic_error("This Subscription was initiated using a field list, command field is always 'command'");
+                throw std::logic_error(
+                        "This Subscription was initiated using a field list, command field is always 'command'");
             }
 
             if (commandCode == -1) {
@@ -684,6 +693,7 @@ namespace lightstreamer::client {
 
             return keyCode;
         }
+
         /**
          * Retrieves the name of the second-level Data Adapter (within the Adapter Set used by the current session)
          * that supplies all the second-level items. All the possible second-level items should be supplied in "MERGE"
@@ -707,7 +717,7 @@ namespace lightstreamer::client {
          *
          * @param value The name of the Data Adapter.
          */
-        void setCommandSecondLevelDataAdapter(const std::string& value) {
+        void setCommandSecondLevelDataAdapter(const std::string &value) {
             std::lock_guard<std::mutex> lock(mtx);
             checkNotAlive(); // Assume existence of a method to check if the subscription is not active
             underDataAdapter = value.empty() ? "DEFAULT" : value;
@@ -728,7 +738,7 @@ namespace lightstreamer::client {
                 throw std::logic_error("Second-level fields are not set.");
             }
             // Assuming ListDescriptor stores fields as a vector of strings
-            return dynamic_cast<util::ListDescriptor*>(subFieldDescriptor.get())->getFields();
+            return dynamic_cast<util::ListDescriptor *>(subFieldDescriptor.get())->getFields();
         }
 
         /**
@@ -737,7 +747,7 @@ namespace lightstreamer::client {
          *
          * @param fields The list of fields for second-level items.
          */
-        void setCommandSecondLevelFields(const std::vector<std::string>& fields) {
+        void setCommandSecondLevelFields(const std::vector<std::string> &fields) {
             std::lock_guard<std::mutex> lock(mtx);
             checkNotAlive(); // Check if subscription is inactive
             checkCommandMode(); // Assume existence of a method to ensure this is a COMMAND subscription
@@ -760,7 +770,7 @@ namespace lightstreamer::client {
                 throw std::logic_error("Second-level field schema is not set.");
             }
             // Assuming NameDescriptor stores a single string for the schema
-            return dynamic_cast<util::NameDescriptor*>(subFieldDescriptor.get())->getName();
+            return dynamic_cast<util::NameDescriptor *>(subFieldDescriptor.get())->getName();
         }
 
         /**
@@ -769,7 +779,7 @@ namespace lightstreamer::client {
          *
          * @param schema The name of the field schema for second-level items.
          */
-        void setCommandSecondLevelFieldSchema(const std::string& schema) {
+        void setCommandSecondLevelFieldSchema(const std::string &schema) {
             std::lock_guard<std::mutex> lock(mtx);
             checkNotAlive(); // Check if subscription is inactive
             checkCommandMode(); // Ensure this is a COMMAND subscription
@@ -788,11 +798,11 @@ namespace lightstreamer::client {
          * @param fieldName The field within the "Field List".
          * @return The latest value for the specified field of the specified item, or an empty optional if no value has been received yet.
          */
-        std::optional<std::string> getValue(int itemPos, const std::string& fieldName) {
+        std::optional<std::string> getValue(int itemPos, const std::string &fieldName) {
             std::lock_guard<std::mutex> guard(mutex);
             verifyItemPos(itemPos);
             int fieldPos = toFieldPos(fieldName);
-            auto& itemMap = oldValuesByItem[itemPos];
+            auto &itemMap = oldValuesByItem[itemPos];
             auto it = itemMap.find(fieldPos);
             if (it != itemMap.end()) {
                 return it->second;
@@ -811,20 +821,255 @@ namespace lightstreamer::client {
          * @param fieldPos The 1-based position of a field within the "Field Schema" or "Field List".
          * @return The latest value for the specified field of the specified key within the item, or an empty optional if the key hasn't been added (or was deleted).
          */
-        std::optional<std::string> getCommandValue(int itemPos, const std::string& keyValue, int fieldPos) {
+        std::optional<std::string> getCommandValue(int itemPos, const std::string &keyValue, int fieldPos) {
             std::lock_guard<std::mutex> guard(mutex);
             commandCheck();
             verifyItemPos(itemPos);
             verifyFieldPos(fieldPos, true);
 
             std::string mapKey = std::to_string(itemPos) + " " + keyValue;
-            auto& keyMap = oldValuesByKey[mapKey];
+            auto &keyMap = oldValuesByKey[mapKey];
             auto it = keyMap.find(fieldPos);
             if (it != keyMap.end()) {
                 return it->second;
             }
             return {};
         }
+
+        void notAliveCheck() {
+            if (isActive) {
+                throw std::invalid_argument(
+                        "Cannot modify an active Subscription, please unsubscribe before applying any change");
+            }
+        }
+
+        void isAliveCheck() {
+            if (!isActive) {
+                throw std::invalid_argument("Subscription is not active");
+            }
+        }
+
+        void setActive() {
+            notAliveCheck();
+            // Assuming checks for itemDescriptor and fieldDescriptor.
+            isActive = true;
+        }
+
+        void setInactive() {
+            isAliveCheck();
+            isActive = false;
+        }
+
+        int getSubscriptionId() const {
+            return subscriptionId;
+        }
+
+        bool is(const std::string &what) const {
+            return tablePhaseType == what;
+        }
+
+        bool isNot(const std::string &what) const {
+            return !is(what);
+        }
+
+        void setPhase(const std::string &what) {
+            tablePhaseType = what;
+            ++tablePhase;
+        }
+
+        int getPhase() const {
+            return tablePhase;
+        }
+
+        bool checkPhase(int phase) const {
+            return phase == tablePhase;
+        }
+
+        void onAdd(int subId /*, SubscriptionManager manager, SessionThread sessionThread */) {
+            if (isNot("OFF")) {
+                logError("Add event already executed");
+            }
+            subscriptionId = subId;
+            // Set manager and sessionThread here.
+            setPhase("WAITING");
+            logDebug("Subscription " + std::to_string(subId) + " ready to be sent to server");
+        }
+
+        void onStart() {
+            if (isNot("PAUSED")) {
+                logError("Unexpected start while not paused");
+            }
+            setPhase("WAITING");
+            logDebug("Subscription " + std::to_string(subscriptionId) + " ready to be sent to server");
+        }
+
+        void onRemove() {
+            bool wasSubscribed = is("PUSHING");
+            logDebug("set OFF sub on Remove.");
+            setPhase("OFF");
+            // Assume dispatcher.dispatchEvent is handled elsewhere.
+            // if (wasSubscribed) { ... }
+            // if (behavior == "MULTIMETAPUSH") { ... }
+            // cleanData();
+            logDebug("Subscription " + std::to_string(subscriptionId) + " is now off");
+        }
+
+        void onPause() {
+            if (is("OFF")) {
+                log("Unexpected pause");
+            }
+
+            log("Set PAUSED sub on Pause.");
+
+            bool wasSubscribed = is("PUSHING");
+            setPhase("PAUSED");
+
+            // Assume dispatcher.dispatchEvent and other necessary operations are handled
+            log("Subscription " + std::to_string(subscriptionId) + " is now on hold");
+        }
+
+        void onSubscriptionSent() {
+            if (is("SUBSCRIBING")) {
+                // first subscribe failed, try again
+                return;
+            } else if (isNot("WAITING")) {
+                log("Was not expecting the subscription request");
+            }
+            setPhase("SUBSCRIBING");
+            log("Subscription " + std::to_string(subscriptionId) + " sent to server");
+        }
+
+        void unsupportedCommandWithFieldSchema() {
+            setPhase("PAUSED");
+            // Dispatch event indicating the error
+            // manager.remove(this); // Remove this subscription
+        }
+
+        void onSubscriptionAck() {
+            setPhase("PUSHING");
+        }
+
+        void onSubscribed(int commandPos, int keyPos, int items, int fields) {
+            setPhase("PUSHING");
+
+            // Perform necessary setup for the subscription based on the arguments and current state
+            // Dispatch the subscription event
+            log("Subscription " + std::to_string(subscriptionId) + " is now pushing");
+        }
+
+        void onSubscriptionError(int code, const std::string &message) {
+            if (isNot("SUBSCRIBING")) {
+                log("Was not expecting the error event");
+            }
+
+            setPhase("PAUSED");
+            // Dispatch the error event with provided code and message
+        }
+
+
+        bool isOff() const {
+            return is("OFF");
+        }
+
+        bool isWaiting() const {
+            return is("WAITING");
+        }
+
+        bool isPaused() const {
+            return is("PAUSED");
+        }
+
+        bool isSubscribing() const {
+            return is("SUBSCRIBING");
+        }
+
+        bool checkStatusForUpdate() {
+            if (!isActive) {
+                // Not active, ignore update
+                return false;
+            } else if (!is("PUSHING")) {
+                // Active but not pushing, ignore update
+                return false;
+            }
+            // Active and pushing, process update
+            return true;
+        }
+
+        // Assuming `SubscribeRequest` and `ChangeSubscriptionRequest` are classes you've implemented
+        SubscribeRequest generateSubscribeRequest() {
+            return SubscribeRequest(subscriptionId, mode, /* Other parameters as required */);
+        }
+
+        ChangeSubscriptionRequest generateFrequencyRequest() {
+            return ChangeSubscriptionRequest(subscriptionId, requestedMaxFrequency, ++nextReconfId);
+        }
+
+        ChangeSubscriptionRequest generateFrequencyRequest(int reconfId) {
+            return ChangeSubscriptionRequest(subscriptionId, requestedMaxFrequency, reconfId);
+        }
+
+        void prepareSecondLevel() {
+            if (/* condition to check if `subFieldDescriptor` is null */) {
+                behavior = "METAPUSH"; // Disable second level
+            } else {
+                behavior = "MULTIMETAPUSH"; // Enable second level
+            }
+        }
+
+        // Method to handle the end of a snapshot for a specific item
+        void endOfSnapshot(int item) {
+            if (!checkStatusForUpdate()) {
+                return;
+            }
+
+            std::string name = itemDescriptor->getName(item);
+            snapshotByItem[item].endOfSnapshot();
+            dispatcher.dispatchEvent(SubscriptionListenerEndOfSnapshotEvent(name, item));
+        }
+
+        // Method to clear the snapshot for a specific item
+        void clearSnapshot(int item) {
+            if (!checkStatusForUpdate()) {
+                return;
+            }
+
+            std::string name = itemDescriptor->getName(item);
+            if (behavior == "METAPUSH") {
+                oldValuesByKey.clear();
+            } else if (behavior == "MULTIMETAPUSH") {
+                oldValuesByKey.clear();
+                // Additional second-level handling if required
+            }
+
+            dispatcher.dispatchEvent(SubscriptionListenerClearSnapshotEvent(name, item));
+        }
+
+        // Method to notify about lost updates for a specific item
+        void lostUpdates(int item, int lostUpdates) {
+            if (!checkStatusForUpdate()) {
+                return;
+            }
+            std::string name = itemDescriptor->getName(item);
+            dispatcher.dispatchEvent(SubscriptionListenerItemLostUpdatesEvent(name, item, lostUpdates));
+        }
+
+        // Method to configure the subscription based on server-sent frequency settings
+        void configure(const std::string& frequency) {
+            if (!checkStatusForUpdate()) {
+                return;
+            }
+            try {
+                localRealMaxFrequency = std::stod(frequency); // Converts string to double, may throw std::invalid_argument or std::out_of_range
+            } catch (...) {
+                // Handle error - Invalid frequency received, log this condition and ignore the frequency update
+                localRealMaxFrequency = -1; // Assuming -1 is used to indicate no specific frequency
+            }
+
+            // Handle behavior-specific configuration updates
+            dispatcher.dispatchEvent(SubscriptionListenerConfigurationEvent(frequency));
+        }
+
+
 
     };
 

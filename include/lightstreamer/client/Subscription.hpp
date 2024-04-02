@@ -728,7 +728,7 @@ namespace lightstreamer::client {
                 throw std::logic_error("Second-level fields are not set.");
             }
             // Assuming ListDescriptor stores fields as a vector of strings
-            return dynamic_cast<ListDescriptor*>(subFieldDescriptor.get())->getFields();
+            return dynamic_cast<util::ListDescriptor*>(subFieldDescriptor.get())->getFields();
         }
 
         /**
@@ -743,7 +743,7 @@ namespace lightstreamer::client {
             checkCommandMode(); // Assume existence of a method to ensure this is a COMMAND subscription
 
             // Convert vector to ListDescriptor and store
-            subFieldDescriptor = std::make_unique<ListDescriptor>(fields);
+            subFieldDescriptor = std::make_unique<util::ListDescriptor>(fields);
         }
 
         /**
@@ -760,7 +760,7 @@ namespace lightstreamer::client {
                 throw std::logic_error("Second-level field schema is not set.");
             }
             // Assuming NameDescriptor stores a single string for the schema
-            return dynamic_cast<NameDescriptor*>(subFieldDescriptor.get())->getName();
+            return dynamic_cast<util::NameDescriptor*>(subFieldDescriptor.get())->getName();
         }
 
         /**
@@ -775,10 +775,56 @@ namespace lightstreamer::client {
             checkCommandMode(); // Ensure this is a COMMAND subscription
 
             // Convert schema to NameDescriptor and store
-            subFieldDescriptor = std::make_unique<NameDescriptor>(schema);
+            subFieldDescriptor = std::make_unique<util::NameDescriptor>(schema);
         }
 
+        /**
+         * Retrieves the latest value received for the specified item/field pair.
+         * It's recommended to consume real-time data through a properly implemented SubscriptionListener instead of directly probing this method.
+         * In the case of COMMAND subscriptions, the returned value by this method may be misleading, as all received keys, being part of the same item, will overwrite each other.
+         * This method can be called at any time; if called to retrieve a value not yet received, it will return an empty optional.
+         *
+         * @param itemPos The 1-based position of an item within the "Item Group" or "Item List".
+         * @param fieldName The field within the "Field List".
+         * @return The latest value for the specified field of the specified item, or an empty optional if no value has been received yet.
+         */
+        std::optional<std::string> getValue(int itemPos, const std::string& fieldName) {
+            std::lock_guard<std::mutex> guard(mutex);
+            verifyItemPos(itemPos);
+            int fieldPos = toFieldPos(fieldName);
+            auto& itemMap = oldValuesByItem[itemPos];
+            auto it = itemMap.find(fieldPos);
+            if (it != itemMap.end()) {
+                return it->second;
+            }
+            return {};
+        }
 
+        /**
+         * Retrieves the latest value received for a specific item/key/field combination in COMMAND mode subscriptions.
+         * It supports two-level behavior, hence the field can be either first-level or second-level.
+         * Real-time data consumption through a SubscriptionListener is suggested over direct method calls.
+         * Internal data is cleared upon unsubscription.
+         *
+         * @param itemPos The 1-based position of an item within the "Item Group" or "Item List".
+         * @param keyValue The key value received on the COMMAND subscription.
+         * @param fieldPos The 1-based position of a field within the "Field Schema" or "Field List".
+         * @return The latest value for the specified field of the specified key within the item, or an empty optional if the key hasn't been added (or was deleted).
+         */
+        std::optional<std::string> getCommandValue(int itemPos, const std::string& keyValue, int fieldPos) {
+            std::lock_guard<std::mutex> guard(mutex);
+            commandCheck();
+            verifyItemPos(itemPos);
+            verifyFieldPos(fieldPos, true);
+
+            std::string mapKey = std::to_string(itemPos) + " " + keyValue;
+            auto& keyMap = oldValuesByKey[mapKey];
+            auto it = keyMap.find(fieldPos);
+            if (it != keyMap.end()) {
+                return it->second;
+            }
+            return {};
+        }
 
     };
 

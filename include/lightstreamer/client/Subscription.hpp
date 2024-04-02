@@ -185,8 +185,96 @@ namespace lightstreamer::client {
         std::shared_ptr<session::SessionThread> sessionThread;
         std::vector<std::unique_ptr<SnapshotManager>> snapshotByItem;
 
-    public:
 
+        std::vector<std::string> items;
+        std::vector<std::string> fields;
+        std::mutex mtx;
+
+    public:
+        /**
+         * @brief Creates an object to be used to describe a Subscription that is going to be subscribed to
+         * through Lightstreamer Server. The object can be supplied to
+         * LightstreamerClient::subscribe() and LightstreamerClient::unsubscribe(), in order to bring the Subscription
+         * to "active" or back to "inactive" state.
+         *
+         * Note that all of the methods used to describe the subscription to the server can only be
+         * called while the instance is in the "inactive" state; the only exception is
+         * Subscription::requestedMaxFrequency().
+         *
+         * @param subscriptionMode The subscription mode for the items, required by Lightstreamer Server.
+         * Permitted values are: MERGE, DISTINCT, RAW, COMMAND.
+         * @param items A vector of items to be subscribed to through Lightstreamer server.
+         * It is also possible specify the "Item List" or "Item Group" later.
+         * @param fields A vector of fields for the items to be subscribed to through Lightstreamer Server.
+         */
+        Subscription(const std::string& subscriptionMode, const std::vector<std::string>& items, const std::vector<std::string>& fields) {
+            init(subscriptionMode, items, fields);
+        }
+
+        /**
+         * @brief Creates an object to be used to describe a Subscription with a single item.
+         *
+         * @param subscriptionMode The subscription mode for the items, required by Lightstreamer Server.
+         * @param item The item name to be subscribed to through Lightstreamer Server.
+         * @param fields A vector of fields for the item to be subscribed to through Lightstreamer Server.
+         */
+        Subscription(const std::string& subscriptionMode, const std::string& item, const std::vector<std::string>& fields) {
+            init(subscriptionMode, std::vector<std::string>{item}, fields);
+        }
+
+        /**
+         * @brief Creates an object to be used to describe a Subscription without specifying items or fields.
+         *
+         * @param subscriptionMode The subscription mode for the items, required by Lightstreamer Server.
+         */
+        Subscription(const std::string& subscriptionMode) {
+            init(subscriptionMode, {}, {});
+        }
+
+    private:
+        void init(const std::string& subscriptionMode, const std::vector<std::string>& items, const std::vector<std::string>& fields) {
+            if (subscriptionMode.empty()) {
+                throw std::invalid_argument("INVALID_MODE");
+            }
+
+            std::string upperSubscriptionMode = subscriptionMode;
+            std::transform(upperSubscriptionMode.begin(), upperSubscriptionMode.end(), upperSubscriptionMode.begin(), ::toupper);
+
+            // Assuming Constants::MODES contains the valid modes
+            if (std::find(Constants::MODES.begin(), Constants::MODES.end(), upperSubscriptionMode) == Constants::MODES.end()) {
+                throw std::invalid_argument("INVALID_MODE");
+            }
+
+            this->mode = upperSubscriptionMode;
+            this->isRequiredSnapshot = (this->mode == "RAW") ? "" : "yes";
+            this->behavior = (this->mode == "COMMAND") ? "METAPUSH" : "SIMPLE";
+
+            if (!items.empty()) {
+                if (fields.empty()) {
+                    throw std::invalid_argument("NO_VALID_FIELDS");
+                }
+                this->items = items;
+                this->fields = fields;
+            } else if (!fields.empty()) {
+                throw std::invalid_argument("NO_ITEMS");
+            }
+        }
+
+    public:
+        void addListener(std::shared_ptr<SubscriptionListener> listener) {
+            std::lock_guard<std::mutex> guard(mtx);
+            dispatcher.addListener(listener);
+        }
+
+        void removeListener(std::shared_ptr<SubscriptionListener> listener) {
+            std::lock_guard<std::mutex> guard(mtx);
+            dispatcher.removeListener(listener);
+        }
+
+        std::vector<std::shared_ptr<SubscriptionListener>> getListeners() {
+            std::lock_guard<std::mutex> guard(mtx);
+            return dispatcher.getListeners();
+        }
 
     };
 

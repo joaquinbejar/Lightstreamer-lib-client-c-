@@ -47,7 +47,6 @@
 #include <cassert>
 
 
-
 namespace lightstreamer::client {
     /**
      * @brief Class representing a Subscription to be submitted to a Lightstreamer Server. It contains
@@ -100,34 +99,34 @@ namespace lightstreamer::client {
      */
     class Subscription {
     private:
-        static constexpr char const* NO_ITEMS = "Please specify a valid item or item list";
-        static constexpr char const* NO_FIELDS = "Invalid Subscription, please specify a field list or field schema";
-        static constexpr char const* IS_ALIVE = "Cannot modify an active Subscription, please unsubscribe before applying any change";
-        static constexpr char const* NOT_ALIVE = "Subscription is not active";
-        static constexpr char const* INVALID_MODE = "The given value is not a valid subscription mode. Admitted values are MERGE, DISTINCT, RAW, COMMAND";
-        static constexpr char const* NO_VALID_FIELDS = "Please specify a valid field list";
-        static constexpr char const* NO_GROUP_NOR_LIST = "The  item list/item group of this Subscription was not initiated";
-        static constexpr char const* NO_SCHEMA_NOR_LIST = "The field list/field schema of this Subscription was not initiated";
-        static constexpr char const* MAX_BUF_EXC = "The given value is not valid for this setting; use null, 'unlimited' or a positive integer instead";
-        static constexpr char const* NO_SECOND_LEVEL = "Second level field list is only available on COMMAND Subscriptions";
-        static constexpr char const* NO_COMMAND = "This method can only be used on COMMAND subscriptions";
-        static constexpr char const* NO_SUB_SCHEMA_NOR_LIST = "The second level of this Subscription was not initiated";
-        static constexpr char const* RAW_NO_SNAPSHOT = "Snapshot is not permitted if RAW was specified as mode";
-        static constexpr char const* NUMERIC_DISTINCT_ONLY = "Numeric values are only allowed when the subscription mode is DISTINCT";
-        static constexpr char const* REQ_SNAP_EXC = "The given value is not valid for this setting; use null, 'yes', 'no' or a positive number instead";
-        static constexpr char const* ILLEGAL_FREQ_EXC = "Can't change the frequency from/to 'unfiltered' or to null while the Subscription is active";
-        static constexpr char const* MAX_FREQ_EXC = "The given value is not valid for this setting; use null, 'unlimited', 'unfiltered' or a positive number instead";
-        static constexpr char const* INVALID_SECOND_LEVEL_KEY = "The received key value is not a valid name for an Item";
+        static constexpr char const *NO_ITEMS = "Please specify a valid item or item list";
+        static constexpr char const *NO_FIELDS = "Invalid Subscription, please specify a field list or field schema";
+        static constexpr char const *IS_ALIVE = "Cannot modify an active Subscription, please unsubscribe before applying any change";
+        static constexpr char const *NOT_ALIVE = "Subscription is not active";
+        static constexpr char const *INVALID_MODE = "The given value is not a valid subscription mode. Admitted values are MERGE, DISTINCT, RAW, COMMAND";
+        static constexpr char const *NO_VALID_FIELDS = "Please specify a valid field list";
+        static constexpr char const *NO_GROUP_NOR_LIST = "The  item list/item group of this Subscription was not initiated";
+        static constexpr char const *NO_SCHEMA_NOR_LIST = "The field list/field schema of this Subscription was not initiated";
+        static constexpr char const *MAX_BUF_EXC = "The given value is not valid for this setting; use null, 'unlimited' or a positive integer instead";
+        static constexpr char const *NO_SECOND_LEVEL = "Second level field list is only available on COMMAND Subscriptions";
+        static constexpr char const *NO_COMMAND = "This method can only be used on COMMAND subscriptions";
+        static constexpr char const *NO_SUB_SCHEMA_NOR_LIST = "The second level of this Subscription was not initiated";
+        static constexpr char const *RAW_NO_SNAPSHOT = "Snapshot is not permitted if RAW was specified as mode";
+        static constexpr char const *NUMERIC_DISTINCT_ONLY = "Numeric values are only allowed when the subscription mode is DISTINCT";
+        static constexpr char const *REQ_SNAP_EXC = "The given value is not valid for this setting; use null, 'yes', 'no' or a positive number instead";
+        static constexpr char const *ILLEGAL_FREQ_EXC = "Can't change the frequency from/to 'unfiltered' or to null while the Subscription is active";
+        static constexpr char const *MAX_FREQ_EXC = "The given value is not valid for this setting; use null, 'unlimited', 'unfiltered' or a positive number instead";
+        static constexpr char const *INVALID_SECOND_LEVEL_KEY = "The received key value is not a valid name for an Item";
 
-        static constexpr char const* SIMPLE = "SIMPLE";
-        static constexpr char const* METAPUSH = "METAPUSH";
-        static constexpr char const* MULTIMETAPUSH = "MULTIMETAPUSH";
+        static constexpr char const *SIMPLE = "SIMPLE";
+        static constexpr char const *METAPUSH = "METAPUSH";
+        static constexpr char const *MULTIMETAPUSH = "MULTIMETAPUSH";
 
-        static constexpr char const* OFF = "OFF";
-        static constexpr char const* WAITING = "WAITING";
-        static constexpr char const* PAUSED = "PAUSED";
-        static constexpr char const* SUBSCRIBING = "SUBSCRIBING";
-        static constexpr char const* PUSHING = "PUSHING";
+        static constexpr char const *OFF = "OFF";
+        static constexpr char const *WAITING = "WAITING";
+        static constexpr char const *PAUSED = "PAUSED";
+        static constexpr char const *SUBSCRIBING = "SUBSCRIBING";
+        static constexpr char const *PUSHING = "PUSHING";
 
         static constexpr int FREQUENCY_NULL = -2;
         static constexpr int FREQUENCY_UNFILTERED = -1;
@@ -192,7 +191,6 @@ namespace lightstreamer::client {
         bool isActive_{false};
 
 
-
     public:
         /**
          * @brief Creates an object to be used to describe a Subscription that is going to be subscribed to
@@ -210,7 +208,8 @@ namespace lightstreamer::client {
          * It is also possible specify the "Item List" or "Item Group" later.
          * @param fields A vector of fields for the items to be subscribed to through Lightstreamer Server.
          */
-        Subscription(const std::string& subscriptionMode, const std::vector<std::string>& items, const std::vector<std::string>& fields) {
+        Subscription(const std::string &subscriptionMode, const std::vector<std::string> &items,
+                     const std::vector<std::string> &fields) {
             init(subscriptionMode, items, fields);
         }
 
@@ -221,7 +220,8 @@ namespace lightstreamer::client {
          * @param item The item name to be subscribed to through Lightstreamer Server.
          * @param fields A vector of fields for the item to be subscribed to through Lightstreamer Server.
          */
-        Subscription(const std::string& subscriptionMode, const std::string& item, const std::vector<std::string>& fields) {
+        Subscription(const std::string &subscriptionMode, const std::string &item,
+                     const std::vector<std::string> &fields) {
             init(subscriptionMode, std::vector<std::string>{item}, fields);
         }
 
@@ -230,21 +230,24 @@ namespace lightstreamer::client {
          *
          * @param subscriptionMode The subscription mode for the items, required by Lightstreamer Server.
          */
-        Subscription(const std::string& subscriptionMode) {
+        Subscription(const std::string &subscriptionMode) {
             init(subscriptionMode, {}, {});
         }
 
     private:
-        void init(const std::string& subscriptionMode, const std::vector<std::string>& items, const std::vector<std::string>& fields) {
+        void init(const std::string &subscriptionMode, const std::vector<std::string> &items,
+                  const std::vector<std::string> &fields) {
             if (subscriptionMode.empty()) {
                 throw std::invalid_argument("INVALID_MODE");
             }
 
             std::string upperSubscriptionMode = subscriptionMode;
-            std::transform(upperSubscriptionMode.begin(), upperSubscriptionMode.end(), upperSubscriptionMode.begin(), ::toupper);
+            std::transform(upperSubscriptionMode.begin(), upperSubscriptionMode.end(), upperSubscriptionMode.begin(),
+                           ::toupper);
 
             // Assuming Constants::MODES contains the valid modes
-            if (std::find(Constants::MODES.begin(), Constants::MODES.end(), upperSubscriptionMode) == Constants::MODES.end()) {
+            if (std::find(Constants::MODES.begin(), Constants::MODES.end(), upperSubscriptionMode) ==
+                Constants::MODES.end()) {
                 throw std::invalid_argument("INVALID_MODE");
             }
 
@@ -278,6 +281,7 @@ namespace lightstreamer::client {
             std::lock_guard<std::mutex> guard(mtx);
             return dispatcher.getListeners();
         }
+
         /**
          * @brief Checks if the Subscription is currently "active" or not.
          *
@@ -330,10 +334,136 @@ namespace lightstreamer::client {
          *
          * @param adapterName The name of the Data Adapter.
          */
-        void setDataAdapter(const std::string& adapterName) {
+        void setDataAdapter(const std::string &adapterName) {
             std::lock_guard<std::mutex> guard(mtx);
             notAliveCheck(); // Ensure Subscription is not active; implement this check as needed.
             dataAdapter = adapterName;
+        }
+
+        // Other members and methods...
+
+        /**
+         * Returns the mode specified in the constructor for this Subscription.
+         *
+         * This method can be called at any time.
+         *
+         * @return The subscription mode.
+         */
+        std::string getMode() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            return mode;
+        }
+
+        /**
+         * Returns the "Item List" to be subscribed to through the Lightstreamer Server.
+         *
+         * Any call to this property will return the items that have been specified
+         * previously. Note that if the single-item constructor was used, this method
+         * will return a vector of length 1 containing that item.
+         *
+         * This method can only be called if the Subscription has been initialized with an "Item List".
+         *
+         * @return A vector of items.
+         */
+        std::vector<std::string> getItems() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            if (!itemDescriptor) {
+                throw std::invalid_argument("NO_GROUP_NOR_LIST");
+            }
+            if (dynamic_cast<NameDescriptor *>(itemDescriptor.get())) {
+                throw std::invalid_argument(
+                        "This Subscription was initiated using an item group, use getItemGroup instead of using getItems");
+            }
+            return static_cast<ListDescriptor *>(itemDescriptor.get())->getOriginal();
+        }
+
+        void setItems(const std::vector<std::string> &newItems) {
+            std::lock_guard<std::mutex> guard(mtx);
+            notAliveCheck();
+            // Validation of item names would go here
+            itemDescriptor = std::make_unique<ListDescriptor>(newItems);
+        }
+
+        /**
+         * Returns the "Item Group" to be subscribed to through the Lightstreamer Server.
+         *
+         * Any call to this property will override any "Item List" or "Item Group" previously specified.
+         *
+         * This method can only be called if the Subscription has been initialized using an "Item Group".
+         *
+         * @return The name of the item group.
+         */
+        std::string getItemGroup() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            if (!itemDescriptor) {
+                throw std::invalid_argument("NO_GROUP_NOR_LIST");
+            }
+            if (dynamic_cast<ListDescriptor *>(itemDescriptor.get())) {
+                throw std::invalid_argument(
+                        "This Subscription was initiated using an item list, use getItems instead of using getItemGroup");
+            }
+            return static_cast<NameDescriptor *>(itemDescriptor.get())->getOriginal();
+        }
+
+        void setItemGroup(const std::string &newItemGroup) {
+            std::lock_guard<std::mutex> guard(mtx);
+            notAliveCheck();
+            itemDescriptor = std::make_unique<NameDescriptor>(newItemGroup);
+        }
+
+        /**
+         * @brief Get the Field List to be subscribed to through the Lightstreamer Server.
+         *
+         * Any call to this method will override any "Field List" or "Field Schema" previously specified.
+         * This method can be set only while the Subscription instance is in its "inactive" state.
+         *
+         * @return A vector containing the names of the fields.
+         */
+        std::vector<std::string> getFields() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            if (!fieldDescriptor) {
+                throw std::runtime_error("NO_SCHEMA_NOR_LIST");
+            }
+            auto listDescriptor = dynamic_cast<ListDescriptor *>(fieldDescriptor.get());
+            if (!listDescriptor) {
+                throw std::runtime_error(
+                        "This Subscription was initiated using a field schema, use getFieldSchema instead of using getFields");
+            }
+            return listDescriptor->getOriginal();
+        }
+
+        void setFields(const std::vector<std::string> &newFields) {
+            std::lock_guard<std::mutex> guard(mtx);
+            notAliveCheck();
+            // Here you would validate the field names
+            fieldDescriptor = std::make_unique<ListDescriptor>(newFields);
+        }
+
+        /**
+         * @brief Get the Field Schema to be subscribed to through the Lightstreamer Server.
+         *
+         * Any call to this method will override any "Field List" or "Field Schema" previously specified.
+         * This method can be set only while the Subscription instance is in its "inactive" state.
+         *
+         * @return A string representing the name of the field schema.
+         */
+        std::string getFieldSchema() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            if (!fieldDescriptor) {
+                throw std::runtime_error("NO_SCHEMA_NOR_LIST");
+            }
+            auto nameDescriptor = dynamic_cast<NameDescriptor *>(fieldDescriptor.get());
+            if (!nameDescriptor) {
+                throw std::runtime_error(
+                        "This Subscription was initiated using a field list, use getFields instead of using getFieldSchema");
+            }
+            return nameDescriptor->getOriginal();
+        }
+
+        void setFieldSchema(const std::string &newFieldSchema) {
+            std::lock_guard<std::mutex> guard(mtx);
+            notAliveCheck();
+            fieldDescriptor = std::make_unique<NameDescriptor>(newFieldSchema);
         }
 
     };

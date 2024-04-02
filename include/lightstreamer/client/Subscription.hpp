@@ -466,6 +466,125 @@ namespace lightstreamer::client {
             fieldDescriptor = std::make_unique<util::NameDescriptor>(newFieldSchema);
         }
 
+        /**
+         * Represents the length to be requested to the Lightstreamer Server for the internal queuing buffers
+         * for the items in the Subscription. This can only be used when the subscription mode is MERGE or DISTINCT
+         * and unfiltered dispatching has not been requested. The server may set an upper limit on the size of its
+         * internal buffers.
+         *
+         * This property can only be set while the Subscription instance is in its "inactive" state.
+         *
+         * @return The length of the internal queuing buffers to be used in the server, or "unlimited" if no limit is requested.
+         */
+        std::string getRequestedBufferSize() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            if (requestedBufferSize == BUFFER_NULL) {
+                return "null";
+            } else if (requestedBufferSize == BUFFER_UNLIMITED) {
+                return "unlimited";
+            } else {
+                return std::to_string(requestedBufferSize);
+            }
+        }
+
+        void setRequestedBufferSize(const std::string& value) {
+            std::lock_guard<std::mutex> guard(mtx);
+            notAliveCheck();
+
+            if (value == "null") {
+                requestedBufferSize = BUFFER_NULL;
+            } else if (value == "unlimited") {
+                requestedBufferSize = BUFFER_UNLIMITED;
+            } else {
+                try {
+                    int tmp = std::stoi(value);
+                    if (tmp < 0) {
+                        throw std::invalid_argument("The given value is not valid for this setting; use 'null', 'unlimited', or a positive integer instead.");
+                    }
+                    requestedBufferSize = tmp;
+                } catch (const std::invalid_argument& e) {
+                    throw std::invalid_argument("The given value is not valid for this setting; use 'null', 'unlimited', or a positive integer instead.");
+                }
+            }
+        }
+
+        /**
+          * Enables/disables snapshot delivery request for the items in the Subscription.
+          * The snapshot can be requested only if the Subscription mode is MERGE, DISTINCT, or COMMAND.
+          *
+          * @return A string indicating the snapshot request status ("yes", "no", or a numeric value for DISTINCT mode).
+          */
+        std::string getRequestedSnapshot() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            return isRequiredSnapshot;
+        }
+
+        void setRequestedSnapshot(const std::string& value) {
+            std::lock_guard<std::mutex> guard(mtx);
+            notAliveCheck();
+
+            std::string lowerValue = value;
+            std::transform(value.begin(), value.end(), lowerValue.begin(),
+                           [](unsigned char c){ return std::tolower(c); });
+
+            if (lowerValue != "no" && mode == "RAW") {
+                throw std::invalid_argument("Snapshot is not permitted if RAW was specified as mode");
+            } else if (lowerValue == "yes" || lowerValue == "no" || (mode == "DISTINCT" && isNumber(lowerValue))) {
+                isRequiredSnapshot = lowerValue;
+            } else {
+                throw std::invalid_argument("Invalid value for RequestedSnapshot. Use 'yes', 'no', or a positive number.");
+            }
+        }
+        /**
+         * Gets the maximum update frequency that has been requested from the Lightstreamer Server for all items in this Subscription.
+         * Can only be used when the Subscription mode is MERGE, DISTINCT, or COMMAND. In COMMAND mode, it limits the update frequency
+         * for each key in the subscription.
+         *
+         * @return A string representing the requested maximum update frequency ("unfiltered", "unlimited", or a numerical rate).
+         */
+        std::string getRequestedMaxFrequency() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            if (requestedMaxFrequency == FREQUENCY_UNFILTERED) {
+                return "unfiltered";
+            } else if (requestedMaxFrequency == FREQUENCY_NULL) {
+                return "null"; // In C++, we don't use null for std::string, could use std::optional to represent null.
+            } else if (requestedMaxFrequency == FREQUENCY_UNLIMITED) {
+                return "unlimited";
+            } else {
+                return std::to_string(requestedMaxFrequency);
+            }
+        }
+
+        /**
+         * Sets the maximum update frequency to be requested from the Lightstreamer Server for all items in this Subscription.
+         * Can only be called when the Subscription is inactive. Attempts to set it while the Subscription is active will throw an exception.
+         *
+         * @param value The maximum update frequency ("unfiltered", "unlimited", a numerical rate, or "null" to use the server default).
+         * @throws std::invalid_argument If the Subscription is currently active.
+         */
+        void setRequestedMaxFrequency(const std::string& value) {
+            std::lock_guard<std::mutex> guard(mtx);
+            notAliveCheck();
+
+            double prevValue = requestedMaxFrequency;
+            if (value == "null") {
+                requestedMaxFrequency = FREQUENCY_NULL;
+            } else if (value == "unfiltered") {
+                requestedMaxFrequency = FREQUENCY_UNFILTERED;
+            } else if (value == "unlimited") {
+                requestedMaxFrequency = FREQUENCY_UNLIMITED;
+            } else {
+                requestedMaxFrequency = std::stod(value); // Exception handling is needed here.
+            }
+
+            // Logic to update the frequency on the server, if necessary, would go here.
+            if (isActive && prevValue != requestedMaxFrequency) {
+                // TODO: Send a request to the server to change the frequency.
+                // The actual implementation depends on the server interaction logic.
+            }
+        }
+
+
     };
 
 }

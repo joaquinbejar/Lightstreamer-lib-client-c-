@@ -583,6 +583,201 @@ namespace lightstreamer::client {
                 // The actual implementation depends on the server interaction logic.
             }
         }
+        // And assuming Matrix is a class that contains Subscriptions and can iterate over them:
+        template<typename T1, typename T2, typename T3>
+        class Matrix {
+        public:
+            // An example of what a method might look like that accepts a function to operate on each element
+            void forEachElement(const std::function<bool(T3& element, T1 item, T2 key)>& func) {
+                // Iterate over elements and apply the function.
+                // This is a simplified example. The actual implementation would depend on how the elements are stored.
+                for (auto& [key, element] : elements) {
+                    if (!func(element, 0 /* item value */, key)) { // 0 is a placeholder for 'item' value
+                        break;
+                    }
+                }
+            }
+        private:
+            std::unordered_map<T2, T3> elements; // Simplification of how elements might be stored.
+        };
+
+        // Now, assuming you want to replicate the functionality of ElementCallbackAnonymousInnerClassS using C++:
+        void applyFrequencyToSubscriptions(Matrix<int, std::string, Subscription>& matrix, const std::string& frequency) {
+            matrix.forEachElement([&frequency](Subscription& secondLevelSubscription, int item, std::string key) {
+                secondLevelSubscription.setRequestedMaxFrequency(frequency);
+                return false; // Continue iterating. Change to true if you want to stop the iteration early.
+            });
+        }
+
+
+        /**
+         * Gets the selector name for all items in this Subscription. The selector acts as a filter on the updates received,
+         * executed on the server and implemented by the Metadata Adapter.
+         *
+         * @return The name of the selector or an empty string if no selector is set.
+         */
+        std::string getSelector() const {
+            std::lock_guard<std::mutex> lock(mtx);
+            return selector;
+        }
+
+        /**
+         * Sets the selector name for all items in this Subscription. Can only be called when the Subscription instance is inactive.
+         *
+         * @param value The name of the selector or an empty string to unset the selector.
+         * @throws std::logic_error If the Subscription is currently active.
+         */
+        void setSelector(const std::string& value) {
+            std::lock_guard<std::mutex> lock(mtx);
+            notAliveCheck(); // Assume this method throws if the subscription is active.
+            selector = value;
+            // Logging logic here...
+        }
+        /**
+         * @brief Gets the position of the "command" field in a COMMAND Subscription.
+         *
+         * This method can only be used if the Subscription mode is COMMAND and the Subscription was initialized using a "Field Schema".
+         * The value is the 1-based position of the "command" field within the "Field Schema".
+         *
+         * @throw std::logic_error If the subscription is not in the correct state or the command field's position is unknown.
+         * @return int The 1-based position of the "command" field.
+         */
+        int getCommandPosition() const {
+            std::lock_guard<std::mutex> lock(mtx); // Ensure thread-safe access
+
+            // Assuming commandCheck() verifies that we are in COMMAND mode with a Field Schema and throws if not
+            commandCheck();
+
+            if (/* fieldDescriptor is ListDescriptor */) {
+                throw std::logic_error("This Subscription was initiated using a field list, command field is always 'command'");
+            }
+
+            if (commandCode == -1) {
+                throw std::logic_error("The position of the command field is currently unknown");
+            }
+
+            return commandCode;
+        }
+
+        /**
+         * @brief Gets the position of the "key" field in a COMMAND Subscription.
+         *
+         * This method can only be used if the Subscription mode is COMMAND and the Subscription was initialized using a "Field Schema".
+         * The value is the 1-based position of the "key" field within the "Field Schema".
+         *
+         * @throw std::logic_error If the subscription is not in the correct state or the key field's position is unknown.
+         * @return int The 1-based position of the "key" field.
+         */
+        int getKeyPosition() const {
+            std::lock_guard<std::mutex> lock(mtx); // Ensure thread-safe access
+
+            // Assuming commandCheck() verifies that we are in COMMAND mode with a Field Schema and throws if not
+            commandCheck();
+
+            if (/* fieldDescriptor is ListDescriptor */) {
+                throw std::logic_error("This Subscription was initiated using a field list, key field is always 'key'");
+            }
+
+            if (keyCode == -1) {
+                throw std::logic_error("The position of the key field is currently unknown");
+            }
+
+            return keyCode;
+        }
+        /**
+         * Retrieves the name of the second-level Data Adapter (within the Adapter Set used by the current session)
+         * that supplies all the second-level items. All the possible second-level items should be supplied in "MERGE"
+         * mode with snapshot available. The Data Adapter name is configured on the server side through the "name"
+         * attribute of the "data_provider" element, in the "adapters.xml" file that defines the Adapter Set (a missing
+         * attribute configures the "DEFAULT" name). A null value is equivalent to the "DEFAULT" name. This property
+         * can only be called while the Subscription instance is in its "inactive" state. The default value is the
+         * default Data Adapter for the Adapter Set, configured as "DEFAULT" on the Server.
+         *
+         * @return The name of the second-level Data Adapter or "DEFAULT" if not set.
+         */
+        std::string getCommandSecondLevelDataAdapter() {
+            std::lock_guard<std::mutex> lock(mtx);
+            return underDataAdapter;
+        }
+
+        /**
+         * Sets the name of the second-level Data Adapter (within the Adapter Set used by the current session)
+         * that supplies all the second-level items. This method can only be called while the Subscription instance
+         * is in its "inactive" state.
+         *
+         * @param value The name of the Data Adapter.
+         */
+        void setCommandSecondLevelDataAdapter(const std::string& value) {
+            std::lock_guard<std::mutex> lock(mtx);
+            checkNotAlive(); // Assume existence of a method to check if the subscription is not active
+            underDataAdapter = value.empty() ? "DEFAULT" : value;
+        }
+
+        /**
+         * Retrieves the "Field List" to be subscribed to through Lightstreamer Server for the second-level items.
+         * It can only be used on COMMAND Subscriptions. Any call to this method will override any "Field List" or
+         * "Field Schema" previously specified for the second-level. Calling this method enables the two-level
+         * behavior. Specifying null as parameter will disable the two-level behavior. This property can only be called
+         * while the Subscription instance is in its "inactive" state.
+         *
+         * @return A vector of strings representing the second-level fields.
+         */
+        std::vector<std::string> getCommandSecondLevelFields() {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (!subFieldDescriptor) {
+                throw std::logic_error("Second-level fields are not set.");
+            }
+            // Assuming ListDescriptor stores fields as a vector of strings
+            return dynamic_cast<ListDescriptor*>(subFieldDescriptor.get())->getFields();
+        }
+
+        /**
+         * Sets the "Field List" for second-level items. This method enables the two-level behavior of a COMMAND
+         * Subscription. It can only be called when the Subscription instance is in its "inactive" state.
+         *
+         * @param fields The list of fields for second-level items.
+         */
+        void setCommandSecondLevelFields(const std::vector<std::string>& fields) {
+            std::lock_guard<std::mutex> lock(mtx);
+            checkNotAlive(); // Check if subscription is inactive
+            checkCommandMode(); // Assume existence of a method to ensure this is a COMMAND subscription
+
+            // Convert vector to ListDescriptor and store
+            subFieldDescriptor = std::make_unique<ListDescriptor>(fields);
+        }
+
+        /**
+         * Retrieves the "Field Schema" to be subscribed to through Lightstreamer Server for the second-level items.
+         * It can only be used on COMMAND Subscriptions. Calling this method enables the two-level behavior.
+         * Specifying null as parameter will disable the two-level behavior. This property can only be called while the
+         * Subscription instance is in its "inactive" state.
+         *
+         * @return The name of the second-level field schema.
+         */
+        std::string getCommandSecondLevelFieldSchema() {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (!subFieldDescriptor) {
+                throw std::logic_error("Second-level field schema is not set.");
+            }
+            // Assuming NameDescriptor stores a single string for the schema
+            return dynamic_cast<NameDescriptor*>(subFieldDescriptor.get())->getName();
+        }
+
+        /**
+         * Sets the "Field Schema" for second-level items. This method enables the two-level behavior of a COMMAND
+         * Subscription. It can only be called when the Subscription instance is in its "inactive" state.
+         *
+         * @param schema The name of the field schema for second-level items.
+         */
+        void setCommandSecondLevelFieldSchema(const std::string& schema) {
+            std::lock_guard<std::mutex> lock(mtx);
+            checkNotAlive(); // Check if subscription is inactive
+            checkCommandMode(); // Ensure this is a COMMAND subscription
+
+            // Convert schema to NameDescriptor and store
+            subFieldDescriptor = std::make_unique<NameDescriptor>(schema);
+        }
+
 
 
     };

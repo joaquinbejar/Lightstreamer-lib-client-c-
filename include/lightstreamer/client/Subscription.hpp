@@ -370,18 +370,18 @@ namespace lightstreamer::client {
             if (!itemDescriptor) {
                 throw std::invalid_argument("NO_GROUP_NOR_LIST");
             }
-            if (dynamic_cast<NameDescriptor *>(itemDescriptor.get())) {
+            if (dynamic_cast<util::NameDescriptor *>(itemDescriptor.get())) {
                 throw std::invalid_argument(
                         "This Subscription was initiated using an item group, use getItemGroup instead of using getItems");
             }
-            return static_cast<ListDescriptor *>(itemDescriptor.get())->getOriginal();
+            return static_cast<util::ListDescriptor *>(itemDescriptor.get())->getOriginal();
         }
 
         void setItems(const std::vector<std::string> &newItems) {
             std::lock_guard<std::mutex> guard(mtx);
             notAliveCheck();
             // Validation of item names would go here
-            itemDescriptor = std::make_unique<ListDescriptor>(newItems);
+            itemDescriptor = std::make_unique<util::ListDescriptor>(newItems);
         }
 
         /**
@@ -398,17 +398,17 @@ namespace lightstreamer::client {
             if (!itemDescriptor) {
                 throw std::invalid_argument("NO_GROUP_NOR_LIST");
             }
-            if (dynamic_cast<ListDescriptor *>(itemDescriptor.get())) {
+            if (dynamic_cast<util::ListDescriptor *>(itemDescriptor.get())) {
                 throw std::invalid_argument(
                         "This Subscription was initiated using an item list, use getItems instead of using getItemGroup");
             }
-            return static_cast<NameDescriptor *>(itemDescriptor.get())->getOriginal();
+            return static_cast<util::NameDescriptor *>(itemDescriptor.get())->getOriginal();
         }
 
         void setItemGroup(const std::string &newItemGroup) {
             std::lock_guard<std::mutex> guard(mtx);
             notAliveCheck();
-            itemDescriptor = std::make_unique<NameDescriptor>(newItemGroup);
+            itemDescriptor = std::make_unique<util::NameDescriptor>(newItemGroup);
         }
 
         /**
@@ -424,7 +424,7 @@ namespace lightstreamer::client {
             if (!fieldDescriptor) {
                 throw std::runtime_error("NO_SCHEMA_NOR_LIST");
             }
-            auto listDescriptor = dynamic_cast<ListDescriptor *>(fieldDescriptor.get());
+            auto listDescriptor = dynamic_cast<util::ListDescriptor *>(fieldDescriptor.get());
             if (!listDescriptor) {
                 throw std::runtime_error(
                         "This Subscription was initiated using a field schema, use getFieldSchema instead of using getFields");
@@ -436,7 +436,7 @@ namespace lightstreamer::client {
             std::lock_guard<std::mutex> guard(mtx);
             notAliveCheck();
             // Here you would validate the field names
-            fieldDescriptor = std::make_unique<ListDescriptor>(newFields);
+            fieldDescriptor = std::make_unique<util::ListDescriptor>(newFields);
         }
 
         /**
@@ -452,7 +452,7 @@ namespace lightstreamer::client {
             if (!fieldDescriptor) {
                 throw std::runtime_error("NO_SCHEMA_NOR_LIST");
             }
-            auto nameDescriptor = dynamic_cast<NameDescriptor *>(fieldDescriptor.get());
+            auto nameDescriptor = dynamic_cast<util::NameDescriptor *>(fieldDescriptor.get());
             if (!nameDescriptor) {
                 throw std::runtime_error(
                         "This Subscription was initiated using a field list, use getFields instead of using getFieldSchema");
@@ -463,7 +463,7 @@ namespace lightstreamer::client {
         void setFieldSchema(const std::string &newFieldSchema) {
             std::lock_guard<std::mutex> guard(mtx);
             notAliveCheck();
-            fieldDescriptor = std::make_unique<NameDescriptor>(newFieldSchema);
+            fieldDescriptor = std::make_unique<util::NameDescriptor>(newFieldSchema);
         }
 
     };

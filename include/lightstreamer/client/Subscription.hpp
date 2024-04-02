@@ -188,7 +188,10 @@ namespace lightstreamer::client {
 
         std::vector<std::string> items;
         std::vector<std::string> fields;
-        std::mutex mtx;
+        mutable std::mutex mtx;
+        bool isActive_{false};
+
+
 
     public:
         /**
@@ -274,6 +277,63 @@ namespace lightstreamer::client {
         std::vector<std::shared_ptr<SubscriptionListener>> getListeners() {
             std::lock_guard<std::mutex> guard(mtx);
             return dispatcher.getListeners();
+        }
+        /**
+         * @brief Checks if the Subscription is currently "active" or not.
+         *
+         * Most of the Subscription properties cannot be modified if a Subscription is "active".
+         * The status of a Subscription is changed to "active" through the
+         * LightstreamerClient::subscribe method and back to "inactive" through the
+         * LightstreamerClient::unsubscribe one.
+         *
+         * @return true if the Subscription is "active", false otherwise.
+         */
+        bool isActive() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            return isActive_;
+        }
+
+        /**
+         * @brief Checks if the Subscription is currently subscribed to through the server or not.
+         *
+         * This flag is switched to true by server sent Subscription events, and
+         * back to false in case of client disconnection,
+         * LightstreamerClient::unsubscribe calls and server sent unsubscription events.
+         *
+         * @return true if the Subscription is subscribed to through the server, false otherwise.
+         */
+        bool isSubscribed() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            return tablePhaseType == "PUSHING"; // Simplified version; Adjust according to your implementation.
+        }
+
+        /**
+         * @brief Gets the name of the Data Adapter (within the Adapter Set used by the current session)
+         * that supplies all the items for this Subscription.
+         *
+         * Note: This method can only be called while the Subscription instance is in its
+         * "inactive" state.
+         *
+         * @return The name of the Data Adapter.
+         */
+        std::string getDataAdapter() const {
+            std::lock_guard<std::mutex> guard(mtx);
+            return dataAdapter;
+        }
+
+        /**
+         * @brief Sets the name of the Data Adapter (within the Adapter Set used by the current session)
+         * that supplies all the items for this Subscription.
+         *
+         * Note: This method can only be called while the Subscription instance is in its
+         * "inactive" state.
+         *
+         * @param adapterName The name of the Data Adapter.
+         */
+        void setDataAdapter(const std::string& adapterName) {
+            std::lock_guard<std::mutex> guard(mtx);
+            notAliveCheck(); // Ensure Subscription is not active; implement this check as needed.
+            dataAdapter = adapterName;
         }
 
     };

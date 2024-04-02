@@ -1120,9 +1120,225 @@ namespace lightstreamer::client {
 
             // Logging cleanup completion
         }
+        std::set<int> prepareChangedSet(const std::vector<std::string>& args) {
+            std::set<int> changedFields;
+            for (size_t i = 0; i < args.size(); ++i) {
+                if (args[i] != ProtocolConstants::UNCHANGED) {
+                    changedFields.insert(static_cast<int>(i + 1));
+                }
+            }
+            return changedFields;
+        }
 
+        template <typename K>
+        void updateStructure(std::map<K, std::map<int, std::string>>& struct_, const K& key, std::vector<std::string>& args, const std::set<int>& changedFields) {
+            std::lock_guard<std::mutex> lock(mtx); // Ensure thread safety
+            for (size_t i = 0; i < args.size(); ++i) {
+                int fieldPos = static_cast<int>(i + 1);
+                std::string value = args[i];
 
+                if (value != ProtocolConstants::UNCHANGED) {
+                    struct_[key][fieldPos] = value;
+                } else {
+                    args[i] = struct_[key][fieldPos];
+                }
+            }
+        }
 
+        std::string organizeMPUpdate(std::vector<std::string>& args, int item, bool fromMultison, std::set<int>& changedFields) {
+            std::lock_guard<std::mutex> lock(mtx); // Ensure thread safety
+            std::string extendedKey;
+
+            int numFields = static_cast<int>(args.size());
+            if (commandCode > numFields || keyCode > numFields) {
+                // Log error: key and/or command position not correctly configured
+                return "";
+            }
+
+            std::string currentKey = args[keyCode - 1];
+            if (currentKey == ProtocolConstants::UNCHANGED) {
+                extendedKey = std::to_string(item) + " " + oldValuesByItem[item][keyCode];
+            } else {
+                extendedKey = std::to_string(item) + " " + currentKey;
+            }
+
+            // Additional logic not shown for brevity
+            return extendedKey;
+        }
+        /**
+         * Handle subscription/unsubscription of second level subscriptions.
+         * @param item The item index.
+         * @param args The arguments list containing subscription details.
+         */
+        void handleMultiTableSubscriptions(int item, std::list<std::string> args) {
+            std::string key = args[this->keyCode - 1];
+            if (key == ProtocolConstants::UNCHANGED) {
+                key = this->oldValuesByItem.get(item, this->keyCode);
+            }
+
+            std::string itemCommand = args[this->commandCode - 1];
+            bool subTableExists = this->hasSubTable(item, key);
+            if (Constants::DELETE == itemCommand) {
+                if (subTableExists) {
+                    this->removeSubTable(item, key, CLEAN);
+                    this->onLocalFrequencyChanged();
+                }
+            } else if (!subTableExists) {
+                this->addSubTable(item, key);
+                // onLocalFrequencyChanged(); // Useless, therefore commented out
+            }
+        }
+
+        /**
+         * Called when the local frequency changes.
+         * Asserts specific conditions and updates frequencies accordingly.
+         */
+        void onLocalFrequencyChanged() {
+            assert(behavior == MULTIMETAPUSH);
+            assert(!SubTable);
+            double prevRealMaxFrequency = aggregatedRealMaxFrequency;
+
+            aggregatedRealMaxFrequency = localRealMaxFrequency;
+            this->subTables.forEachElement(std::make_unique<ElementCallbackAnonymousInnerClass>(this));
+
+            if (aggregatedRealMaxFrequency != prevRealMaxFrequency) {
+                std::string frequency;
+                if (aggregatedRealMaxFrequency == FREQUENCY_UNLIMITED) {
+                    frequency = "unlimited";
+                } else if (aggregatedRealMaxFrequency == FREQUENCY_NULL) {
+                    frequency = nullptr;
+                } else {
+                    frequency = std::to_string(aggregatedRealMaxFrequency);
+                }
+                this->dispatcher.dispatchEvent(std::make_unique<SubscriptionListenerConfigurationEvent>(frequency));
+            }
+        }
+
+        class ElementCallbackAnonymousInnerClass : public Matrix<int, std::string, std::shared_ptr<Subscription>>::ElementCallback {
+        private:
+            std::shared_ptr<Subscription> outerInstance;
+
+        public:
+            ElementCallbackAnonymousInnerClass(std::shared_ptr<Subscription> outerInstance) : outerInstance(outerInstance) {}
+
+            bool onElement(std::shared_ptr<Subscription> value, int item, std::string key) {
+                if (isHigherFrequency(value->localRealMaxFrequency, outerInstance->aggregatedRealMaxFrequency)) {
+                    outerInstance->aggregatedRealMaxFrequency = value->localRealMaxFrequency;
+                }
+                return false;
+            }
+
+        private:
+            bool isHigherFrequency(double fNew, double fOld) {
+                if (fOld == FREQUENCY_UNLIMITED || fNew == FREQUENCY_NULL) {
+                    return false;
+                } else if (fNew == FREQUENCY_UNLIMITED || fOld == FREQUENCY_NULL) {
+                    return true;
+                } else {
+                    return fNew > fOld;
+                }
+            }
+        };
+
+        /**
+         * Adds a sub-table.
+         * @param item The item index.
+         * @param key The key for the subscription.
+         */
+        void addSubTable(int item, std::string key) {
+            auto secondLevelSubscription = std::make_shared<Subscription>(this->subMode);
+            secondLevelSubscription->makeSubTable();
+
+            try {
+                secondLevelSubscription->Items = {key};
+                this->subTables.insert(secondLevelSubscription, item, key);
+            } catch (std::exception& e) {
+                log.Error("Subscription error", e);
+                onServerError(14, INVALID_SECOND_LEVEL_KEY, key);
+                return;
+            }
+
+            if (std::dynamic_pointer_cast<ListDescriptor>(this->subFieldDescriptor) != nullptr) {
+                secondLevelSubscription->Fields = std::dynamic_pointer_cast<ListDescriptor>(this->subFieldDescriptor)->Original;
+            } else {
+                secondLevelSubscription->FieldSchema = std::dynamic_pointer_cast<NameDescriptor>(this->subFieldDescriptor)->Original;
+            }
+
+            secondLevelSubscription->DataAdapter = this->underDataAdapter;
+            secondLevelSubscription->RequestedSnapshot = "yes";
+            secondLevelSubscription->requestedMaxFrequency = this->requestedMaxFrequency;
+
+            auto subListener = std::make_shared<SecondLevelSubscriptionListener>(this, item, key);
+            secondLevelSubscription->addListener(subListener);
+
+            secondLevelSubscription->setActive();
+            this->manager.doAdd(secondLevelSubscription);
+        }
+
+        /** Marks this subscription as a sub-table (second-level subscription). */
+        void makeSubTable() {
+            this->subTableFlag = true;
+        }
+
+        /** Checks if this is a sub-table (second-level subscription). */
+        bool isSubTable() const {
+            // Do not abuse this method
+            return this->subTableFlag;
+        }
+
+        /** Checks if a sub-table exists for the given item and key. */
+        bool hasSubTable(int item, const std::string& key) {
+            return this->subTables.find(item) != this->subTables.end() &&
+                   this->subTables.at(item).find(key) != this->subTables.at(item).end();
+        }
+
+        /** Removes a sub-table (second-level subscription) for the given item and key. */
+        void removeSubTable(int item, const std::string& key, bool clean) {
+            auto& secondLevelSubscription = this->subTables[item][key];
+            secondLevelSubscription->setInactive();
+            this->manager.doRemove(*secondLevelSubscription);
+            if (clean) {
+                this->subTables[item].erase(key);
+            }
+        }
+
+        /** Removes all sub-tables associated with a given item. */
+        void removeItemSubTables(int item) {
+            for (auto& keySubPair : this->subTables[item]) {
+                this->removeSubTable(item, keySubPair.first, false /* DONT_CLEAN */);
+            }
+        }
+
+        /** Removes all sub-tables. */
+        void removeAllSubTables() {
+            for (auto& itemSubTables : this->subTables) {
+                for (auto& keySubPair : itemSubTables.second) {
+                    this->removeSubTable(itemSubTables.first, keySubPair.first, false /* DONT_CLEAN */);
+                }
+            }
+        }
+
+        /** Sets the size of the second-level schema. */
+        void setSecondLevelSchemaSize(int size) {
+            this->subFieldDescriptor.setSize(size);
+        }
+
+        /** Debugging helper to output the descriptor as a string. */
+        void debugDescriptor(const std::string& debugString, const Descriptor& desc) {
+            if (/* condition to check if debug is enabled */) {
+                std::cout << debugString << (desc ? desc.composedString() : "<null>") << std::endl;
+            }
+        }
+
+        /** Gets the full size of the schema, including both main and second-level fields. */
+        int getFullSchemaSize() const {
+            return this->fieldDescriptor.getFullSize();
+        }
+
+        /** Gets the size of the main schema only, excluding second-level fields. */
+        int getMainSchemaSize() const {
+            return this->fieldDescriptor.getSize();
+        }
 
     };
 

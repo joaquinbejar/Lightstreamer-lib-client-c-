@@ -45,6 +45,7 @@ namespace lightstreamer::client {
         std::string user;
         std::string password;
 
+
         Proxy(std::string type, std::string host, int port, std::string user,
               std::string password) : type(std::move(type)),
                                       host(std::move(host)), port(port), user(std::move(user)),

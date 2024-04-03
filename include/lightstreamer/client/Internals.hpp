@@ -31,6 +31,11 @@
 
 namespace lightstreamer::client {
 
+    /**
+     * Utility methods to access non-public methods/fields from a package different from the containing package.
+     * The methods/fields must remain non-public because the containing classes are documented in a way that
+     * they are presented to the final user, who should not see these internal elements.
+     */
     class Internals {
     public:
         static util::Descriptor getItemDescriptor(const Subscription &sub) {

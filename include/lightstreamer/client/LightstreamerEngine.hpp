@@ -43,17 +43,17 @@ namespace lightstreamer::client {
 
         ILogger *log = LogManager::GetLogger(Constants::SESSION_LOG);
 
-        SessionManager *sessionManager;
-        InternalConnectionOptions *connectionOptions;
-        SessionThread *sessionThread;
+        session::SessionManager *sessionManager;
+        session::InternalConnectionOptions *connectionOptions;
+        session::SessionThread *sessionThread;
         EventsThread *eventsThread;
         ClientListener *clientListener;
 
         bool connectionRequested = false;
 
     public:
-        LightstreamerEngine(InternalConnectionOptions *options, SessionThread *sessionThread,
-                             EventsThread *eventsThread, ClientListener *listener, SessionManager *manager) {
+        LightstreamerEngine(session::InternalConnectionOptions *options, session::SessionThread *sessionThread,
+                             EventsThread *eventsThread, ClientListener *listener, session::SessionManager *manager) {
             this->connectionOptions = options;
             this->sessionThread = sessionThread;
             this->clientListener = listener;
@@ -80,7 +80,7 @@ namespace lightstreamer::client {
                 std::string ft = connectionOptions->ForcedTransport;
 
                 if (ft.empty()) {
-                    bool isHttp = WebSocket::Disabled;
+                    bool isHttp = transport::WebSocket::Disabled;
                     sessionManager->createSession(FROM_API, NO_TRANSPORT_FORCED, NO_COMBO_FORCED, NO_POLLING, isHttp,
                                                   nullptr, CAN_SWITCH, false, false);
                 } else {

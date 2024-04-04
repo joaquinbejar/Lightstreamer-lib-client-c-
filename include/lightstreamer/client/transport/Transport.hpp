@@ -56,8 +56,8 @@ namespace lightstreamer::client::transport {
          *         interested in responses to the request. Cannot be nullptr.
          */
         virtual std::unique_ptr<RequestHandle> sendRequest(
-                std::shared_ptr<protocol::Protocol> protocol,  // TODO: implement Protocol
-                std::shared_ptr<requests::LightstreamerRequest> request, // TODO: implement LightstreamerRequest
+                std::shared_ptr<protocol::Protocol> protocol,
+                std::shared_ptr<requests::LightstreamerRequest> request,
                 std::shared_ptr<RequestListener> listener,
                 const std::map<std::string, std::string>& extraHeaders,
                 std::shared_ptr<Proxy> proxy,

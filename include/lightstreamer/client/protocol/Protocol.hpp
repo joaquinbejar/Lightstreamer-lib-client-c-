@@ -38,7 +38,7 @@
 #include "ReverseHeartbeatRequest.h"
 #include "RequestManager.h"
 #include <lightstreamer/client/requests/RequestTutor.hpp>
-#include "ConstrainTutor.h"
+#include "ConstrainTutor.hpp"
 #include <lightstreamer/util/ListenableFuture.hpp>
 #include <string>
 #include <exception>

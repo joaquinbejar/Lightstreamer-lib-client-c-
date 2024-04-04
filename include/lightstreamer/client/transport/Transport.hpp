@@ -30,7 +30,7 @@
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
 #include <lightstreamer/client/transport/RequestListener.hpp>
 #include <lightstreamer/client/transport/RequestHandle.hpp>
-#include "Protocol.hpp"
+#include <lightstreamer/client/protocol/Protocol.hpp>
 #include <lightstreamer/client/Proxy.hpp>
 
 namespace lightstreamer::client::transport {
@@ -56,8 +56,8 @@ namespace lightstreamer::client::transport {
          *         interested in responses to the request. Cannot be nullptr.
          */
         virtual std::unique_ptr<RequestHandle> sendRequest(
-                std::shared_ptr<Protocol> protocol,  // TODO: implement Protocol
-                std::shared_ptr<LightstreamerRequest> request, // TODO: implement LightstreamerRequest
+                std::shared_ptr<protocol::Protocol> protocol,
+                std::shared_ptr<requests::LightstreamerRequest> request,
                 std::shared_ptr<RequestListener> listener,
                 const std::map<std::string, std::string>& extraHeaders,
                 std::shared_ptr<Proxy> proxy,

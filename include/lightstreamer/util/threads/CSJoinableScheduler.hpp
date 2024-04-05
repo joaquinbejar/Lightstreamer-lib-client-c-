@@ -38,10 +38,12 @@
 namespace lightstreamer::util::threads {
     class CSJoinableScheduler : public providers::JoinableScheduler {
     private:
-        std::stack<std::future<void>> currentTasks;
+//        std::stack<std::future<void>> currentTasks;
+        std::stack<std::shared_ptr<std::future<void>>> currentTasks;
         std::string threadName;
         long keepAliveTime;
-        providers::JoinableExecutor executor;
+//        providers::JoinableExecutor executor;
+        std::shared_ptr<providers::JoinableExecutor> executor;
         std::map<std::future<void>, std::shared_ptr<std::promise<void>>> cancs;
         std::mutex m;
 
@@ -49,8 +51,9 @@ namespace lightstreamer::util::threads {
         CSJoinableScheduler(std::string threadName, long keepAliveTime) : threadName(threadName),
                                                                           keepAliveTime(keepAliveTime) {}
 
-        CSJoinableScheduler(std::string threadName, long keepAliveTime, providers::JoinableExecutor executor) : threadName(
-                threadName), keepAliveTime(keepAliveTime), executor(executor) {}
+        CSJoinableScheduler(const std::string& threadName, long keepAliveTime, std::shared_ptr<providers::JoinableExecutor> executor)
+                : threadName(threadName), keepAliveTime(keepAliveTime), executor(executor) {
+        }
 
         void join() {
             std::lock_guard<std::mutex> lock(m);

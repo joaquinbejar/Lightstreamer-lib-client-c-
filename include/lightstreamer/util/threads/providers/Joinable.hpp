@@ -24,4 +24,27 @@
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLE_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLE_HPP
 
+namespace lightstreamer::util::threads::providers {
+
+    /**
+     * Root abstract class for joinable executors and schedulers.
+     *
+     * Executors and Schedulers are said to be joinable if their internal working threads are
+     * terminated when no more tasks arrive, therefore allowing a graceful completion of involved
+     * threads without the need to explicitly invoke a shutdown method.
+     */
+    class Joinable {
+    public:
+        virtual ~Joinable() = default;
+
+        /**
+         * Waits indefinitely for this joinable executor (or scheduler) to complete all tasks.
+         *
+         * @throws std::runtime_error which wraps an std::exception if the current thread is interrupted.
+         */
+        virtual void join() = 0;
+    };
+
+}
+
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLE_HPP

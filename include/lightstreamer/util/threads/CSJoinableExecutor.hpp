@@ -23,5 +23,70 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CSJOINABLEEXECUTOR_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_CSJOINABLEEXECUTOR_HPP
+#include <functional>
+#include <queue>
+#include <mutex>
+#include <thread>
+#include <future>
+#include <condition_variable>
+#include <chrono>
+#include <iostream>
+#include <lightstreamer/util/threads/providers/JoinableExecutor.hpp>
+
+namespace lightstreamer::util::threads {
+
+    struct Task {
+        std::function<void()> func;
+        bool done;
+
+        Task(const std::function<void()>& f) : func(f), done(false) {}
+        void operator()() { func(); done = true; }
+    };
+
+    class CSJoinableExecutor  : JoinableExecutor {
+    private:
+        std::queue<std::shared_ptr<Task>> tasks;
+        std::mutex lock;
+        std::condition_variable cv;
+        long keepAliveTime;
+        bool running;
+        std::thread worker;
+
+    public:
+
+        void execute(std::function<void()> task) {
+            std::lock_guard<std::mutex> guard(lock);
+            if(!running) {
+                running = true;
+                worker = std::thread([this]{ this->work(); });
+            }
+            tasks.push(std::make_shared<Task>(task));
+            cv.notify_all();
+        }
+
+        void join() {
+            std::unique_lock<std::mutex> ul(lock);
+            cv.wait(ul, [this]{ return tasks.empty(); });
+            running = false;
+            if(worker.joinable()) worker.join();
+        }
+
+    private:
+        void work() {
+            while(running) {
+                std::shared_ptr<Task> task = nullptr;
+                {
+                    std::unique_lock<std::mutex> ul(lock);
+                    cv.wait_for(ul, std::chrono::milliseconds(keepAliveTime), [&]{ return !tasks.empty(); });
+                    if(!tasks.empty() && running) {
+                        task = std::move(tasks.front());
+                        tasks.pop();
+                    }
+                }
+                if(task) (*task)();
+            }
+        }
+    };
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CSJOINABLEEXECUTOR_HPP

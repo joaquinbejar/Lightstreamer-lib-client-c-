@@ -43,7 +43,7 @@ namespace lightstreamer::util::threads {
         void operator()() { func(); done = true; }
     };
 
-    class CSJoinableExecutor  : JoinableExecutor {
+    class CSJoinableExecutor  : providers::JoinableExecutor {
     private:
         std::queue<std::shared_ptr<Task>> tasks;
         std::mutex lock;

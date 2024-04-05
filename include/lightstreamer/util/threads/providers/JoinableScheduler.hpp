@@ -23,5 +23,33 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLESCHEDULER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLESCHEDULER_HPP
+#include <functional>
+#include <future>
+#include <chrono>
+#include <stdexcept>
+
+namespace lightstreamer::util::threads::providers {
+
+    /**
+     * An abstract class representing a basic thread scheduler whose internal working threads are terminated if
+     * no task arrives within a specified keep-alive time.
+     */
+    class JoinableScheduler {
+    public:
+        virtual ~JoinableScheduler() = default;
+
+        /**
+         * Creates and executes a one-shot action that becomes enabled after the given delay.
+         *
+         * @param task The task to execute.
+         * @param delayInMillis The time in milliseconds from now to delay execution.
+         * @return A std::future object representing pending completion of the task.
+         * @throws std::invalid_argument if the task is null.
+         * @throws std::runtime_error if the task cannot be scheduled for execution.
+         */
+        virtual std::future<void> schedule(std::function<void()> task, long delayInMillis) = 0;
+    };
+
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLESCHEDULER_HPP

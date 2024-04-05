@@ -27,6 +27,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <lightstreamer/util/threads/providers/JoinableScheduler.hpp>
 
 namespace lightstreamer::util::threads::providers {
 

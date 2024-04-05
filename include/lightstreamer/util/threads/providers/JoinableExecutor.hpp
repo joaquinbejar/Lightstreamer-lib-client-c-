@@ -23,5 +23,28 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEEXECUTOR_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEEXECUTOR_HPP
+#include <functional>
+#include <stdexcept>
+
+namespace lightstreamer::util::threads::providers {
+
+    /**
+     * An abstract class representing a basic thread executor whose internal working
+     * threads are terminated if no task arrives within a specified keep-alive time.
+     */
+    class JoinableExecutor {
+    public:
+        virtual ~JoinableExecutor() = default;
+
+        /**
+         * Executes the given task at some time in the future.
+         *
+         * @param task The runnable task.
+         * @throws std::runtime_error if this task cannot be accepted for execution.
+         * @throws std::invalid_argument if task is null.
+         */
+        virtual void execute(std::function<void()> task) = 0;
+    };
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEEXECUTOR_HPP

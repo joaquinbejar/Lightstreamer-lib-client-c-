@@ -28,6 +28,7 @@
 #include <stdexcept>
 #include <string>
 #include <lightstreamer/util/threads/providers/JoinableScheduler.hpp>
+#include <lightstreamer/util/threads/providers/JoinableExecutor.hpp>
 
 namespace lightstreamer::util::threads::providers {
 

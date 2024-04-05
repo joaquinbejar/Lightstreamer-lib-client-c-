@@ -29,13 +29,7 @@
 #include <string>
 
 namespace lightstreamer::util::threads::providers {
-    class JoinableExecutor {
-        // Placeholder for JoinableExecutor implementation
-    };
 
-    class JoinableScheduler {
-        // Placeholder for JoinableScheduler implementation
-    };
 
     /**
      * A Factory of joinable Executors or Schedulers.

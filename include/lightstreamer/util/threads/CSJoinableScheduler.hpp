@@ -23,9 +23,11 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_CSJOINABLESCHEDULER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_CSJOINABLESCHEDULER_HPP
+
 #include <stack>
 #include <lightstreamer/util/threads/CSJoinableScheduler.hpp>
 #include <lightstreamer/util/threads/providers/JoinableExecutor.hpp>
+#include <lightstreamer/util/threads/providers/JoinableScheduler.hpp>
 #include <mutex>
 #include <condition_variable>
 #include <thread>
@@ -33,48 +35,52 @@
 #include <chrono>
 #include <future>
 
-class CSJoinableScheduler : public JoinableScheduler {
-private:
-    std::stack<std::future<void>> currentTasks;
-    std::string threadName;
-    long keepAliveTime;
-    JoinableExecutor executor;
-    std::map<std::future<void>, std::shared_ptr<std::promise<void>>> cancs;
-    std::mutex m;
+namespace lightstreamer::util::threads {
+    class CSJoinableScheduler : public providers::JoinableScheduler {
+    private:
+        std::stack<std::future<void>> currentTasks;
+        std::string threadName;
+        long keepAliveTime;
+        providers::JoinableExecutor executor;
+        std::map<std::future<void>, std::shared_ptr<std::promise<void>>> cancs;
+        std::mutex m;
 
-public:
-    CSJoinableScheduler(std::string threadName, long keepAliveTime) : threadName(threadName), keepAliveTime(keepAliveTime) {}
+    public:
+        CSJoinableScheduler(std::string threadName, long keepAliveTime) : threadName(threadName),
+                                                                          keepAliveTime(keepAliveTime) {}
 
-    CSJoinableScheduler(std::string threadName, long keepAliveTime, JoinableExecutor executor) : threadName(threadName), keepAliveTime(keepAliveTime), executor(executor) {}
+        CSJoinableScheduler(std::string threadName, long keepAliveTime, providers::JoinableExecutor executor) : threadName(
+                threadName), keepAliveTime(keepAliveTime), executor(executor) {}
 
-    void join() {
-        std::lock_guard<std::mutex> lock(m);
-        for (auto &entry : cancs) {
-            if ( entry.second != nullptr ) {
-                entry.second->set_value();
+        void join() {
+            std::lock_guard<std::mutex> lock(m);
+            for (auto &entry: cancs) {
+                if (entry.second != nullptr) {
+                    entry.second->set_value();
+                }
             }
+            cancs.clear();
         }
-        cancs.clear();
-    }
 
-    void Dequeue(std::future<void> tsk) {
-        std::lock_guard<std::mutex> lock(m);
-        cancs.erase(tsk);
-    }
+        void Dequeue(std::future<void> tsk) {
+            std::lock_guard<std::mutex> lock(m);
+            cancs.erase(tsk);
+        }
 
-    std::shared_ptr<std::promise<void>> schedule(std::function<void()> task, long delayInMillis) {
-        std::shared_ptr<std::promise<void>> source = std::make_shared<std::promise<void>>();
-        std::lock_guard<std::mutex> lock(m);
-        std::future<void> tsk_p = std::async(std::launch::async, [=]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(delayInMillis));
-            if (source->get_future().wait_for(std::chrono::seconds(0)) == std::future_status::timeout) {
-                executor.execute(task);
-            }
-        });
-        cancs[tsk_p] = source;
-        tsk_p.share().wait();
-        this->Dequeue(tsk_p);
-        return source;
-    }
-};
+        std::shared_ptr<std::promise<void>> schedule(std::function<void()> task, long delayInMillis) {
+            std::shared_ptr<std::promise<void>> source = std::make_shared<std::promise<void>>();
+            std::lock_guard<std::mutex> lock(m);
+            std::future<void> tsk_p = std::async(std::launch::async, [=]() {
+                std::this_thread::sleep_for(std::chrono::milliseconds(delayInMillis));
+                if (source->get_future().wait_for(std::chrono::seconds(0)) == std::future_status::timeout) {
+                    executor.execute(task);
+                }
+            });
+            cancs[tsk_p] = source;
+            tsk_p.share().wait();
+            this->Dequeue(tsk_p);
+            return source;
+        }
+    };
+}
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_CSJOINABLESCHEDULER_HPP

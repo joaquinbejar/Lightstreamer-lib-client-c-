@@ -23,5 +23,46 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_DEFAULTEXECUTORFACTORY_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_DEFAULTEXECUTORFACTORY_HPP
+#include <lightstreamer/util/threads/providers/ExecutorFactory.hpp>
+#include <lightstreamer/util/threads/providers/JoinableScheduler.hpp>
+#include <lightstreamer/util/threads/providers/JoinableExecutor.hpp>
+
+
+
+namespace lightstreamer::util::threads {
+
+    /**
+     * The default implementation of an ExecutorFactory.
+     */
+    class DefaultExecutorFactory : public providers::ExecutorFactory {
+    public:
+        /**
+         * Returns a new instance of a JoinableExecutor.
+         *
+         * @param nThreads Number of threads in the executor pool.
+         * @param threadName Name prefix for threads in the pool.
+         * @param keepAliveTime Time in milliseconds that threads without tasks will wait for new tasks before terminating.
+         * @return A shared pointer to a JoinableExecutor instance.
+         */
+        std::shared_ptr<providers::JoinableExecutor> getExecutor(int nThreads, const std::string& threadName, long keepAliveTime) override {
+            // Placeholder for actual CSJoinableExecutor creation
+            return std::make_shared<CSJoinableExecutor>(threadName, keepAliveTime);
+        }
+
+        /**
+         * Returns a new instance of a JoinableScheduler.
+         *
+         * @param nThreads Number of threads in the scheduler pool.
+         * @param threadName Name prefix for threads in the pool.
+         * @param keepAliveTime Time in milliseconds that threads without tasks will wait for new tasks before terminating.
+         * @return A shared pointer to a JoinableScheduler instance.
+         */
+        std::shared_ptr<providers::JoinableScheduler> getScheduledExecutor(int nThreads, const std::string& threadName, long keepAliveTime) override {
+            // Placeholder for actual CSJoinableScheduler creation
+            return std::make_shared<CSJoinableScheduler>(threadName, keepAliveTime);
+        }
+    };
+
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_DEFAULTEXECUTORFACTORY_HPP

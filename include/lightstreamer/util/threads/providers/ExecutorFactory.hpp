@@ -23,5 +23,87 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_EXECUTORFACTORY_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_EXECUTORFACTORY_HPP
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+
+namespace lightstreamer::util::threads::providers {
+    class JoinableExecutor {
+        // Placeholder for JoinableExecutor implementation
+    };
+
+    class JoinableScheduler {
+        // Placeholder for JoinableScheduler implementation
+    };
+
+    /**
+     * A Factory of joinable Executors or Schedulers.
+     *
+     * The entry point of the factory is the getDefaultExecutorFactory() static method,
+     * which provides an instance of the class DefaultExecutorFactory. To provide a custom
+     * implementation, it is required to pass it to the setDefaultExecutorFactory(ExecutorFactory),
+     * before the library is actually used.
+     */
+    class ExecutorFactory {
+    private:
+        static std::shared_ptr<ExecutorFactory> defaultExecutorFactory;
+        static std::mutex mutex;
+
+    public:
+        static std::shared_ptr<ExecutorFactory>& getDefaultExecutorFactory() {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (!defaultExecutorFactory) {
+                // Placeholder for alternative loading mechanism
+                // If loading fails, instantiate DefaultExecutorFactory or a custom implementation
+                defaultExecutorFactory = std::make_shared<ExecutorFactory>();
+            }
+            return defaultExecutorFactory;
+        }
+
+        static void setDefaultExecutorFactory(std::shared_ptr<ExecutorFactory> factory) {
+            if (!factory) {
+                throw std::invalid_argument("Specify a factory");
+            }
+            std::lock_guard<std::mutex> lock(mutex);
+            defaultExecutorFactory = factory;
+        }
+
+        /**
+         * Configure and returns a new JoinableExecutor instance, as per the specified parameters.
+         *
+         * @param nThreads The number of threads of the thread pool.
+         * @param threadName The suffix to use for the name of every newly created thread.
+         * @param keepAliveTime The keep-alive time specified in milliseconds.
+         * @return A new instance of JoinableExecutor.
+         */
+        virtual std::shared_ptr<JoinableExecutor> getExecutor(int nThreads, const std::string& threadName, long keepAliveTime) {
+            // Placeholder for actual JoinableExecutor creation
+            return nullptr; // Implement according to your needs
+        }
+
+        /**
+         * Configure and returns a new JoinableScheduler instance, as per the specified parameters.
+         *
+         * @param nThreads The number of threads of the thread pool.
+         * @param threadName The suffix to use for the name of every newly created thread.
+         * @param keepAliveTime The keep-alive time specified in milliseconds.
+         * @return A new instance of JoinableScheduler.
+         */
+        virtual std::shared_ptr<JoinableScheduler> getScheduledExecutor(int nThreads, const std::string& threadName, long keepAliveTime) {
+            // Placeholder for actual JoinableScheduler creation
+            return nullptr; // Implement according to your needs
+        }
+
+        virtual std::shared_ptr<JoinableScheduler> getScheduledExecutor(int nThreads, const std::string& threadName, long keepAliveTime, std::shared_ptr<JoinableExecutor> executor) {
+            // Placeholder for actual JoinableScheduler creation
+            return nullptr; // Implement according to your needs
+        }
+    };
+
+    // Static member initialization
+    std::shared_ptr<ExecutorFactory> ExecutorFactory::defaultExecutorFactory = nullptr;
+    std::mutex ExecutorFactory::mutex;
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_EXECUTORFACTORY_HPP

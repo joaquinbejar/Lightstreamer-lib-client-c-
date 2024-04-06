@@ -25,38 +25,32 @@
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_FUTUREPENDINGTASK_HPP
 #include <future>
 #include <memory>
+#include <lightstreamer/util/threads/PendingTask.hpp>
 
 namespace com::lightstreamer::util::threads {
 
-    class PendingTask {
-    public:
-        virtual ~PendingTask() = default;
-        virtual void Cancel() = 0;
-        virtual bool IsCancellationRequested() = 0;
-    };
-
-    class FuturePendingTask : public PendingTask {
+    class FuturePendingTask : PendingTask
+    {
     private:
-        std::shared_future<std::result_of_t<std::function<void()>()>> pending;
-        std::promise<void> cancellationPromise;
+        std::future<void> pending;
+        std::future<void> token;
 
     public:
-        FuturePendingTask(std::future<std::result_of_t<std::function<void()>()>>&& pendingFuture)
-            : pending(pendingFuture.share()) {
-            // Future is initialized and shared for access
+        FuturePendingTask(std::future<void> pending_, std::future<void> token_)
+                : pending(std::move(pending_)),
+                  token(std::move(token_))
+        {
         }
 
-        void Cancel() override {
-            cancellationPromise.set_value(); // Signal cancellation
+        void Cancel()
+        {
+            token.get();  // Calling get() on the future representing the cancellationToken is the equivalent of calling cancel in C#.
         }
 
-        bool IsCancellationRequested() override {
-            return pending.wait_for(std::chrono::seconds(0)) == std::future_status::deferred;
-            // This checks if the task is waiting to start or has been deferred, which might indicate cancellation.
-            // Note: This does not directly check for cancellation but rather infers it based on the task state.
+        bool IsCancellationRequested()
+        {
+            return pending.wait_for(std::chrono::seconds(0)) != std::future_status::timeout;
         }
-
-        // Additional methods to work with the future and cancellation state as needed
     };
 }
 

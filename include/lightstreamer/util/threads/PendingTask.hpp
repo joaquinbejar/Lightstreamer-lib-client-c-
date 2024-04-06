@@ -23,5 +23,28 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_PENDINGTASK_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_PENDINGTASK_HPP
+namespace com::lightstreamer::util::threads {
+
+    /**
+     * An abstract class representing a task that can be pending and cancelled.
+     */
+    class PendingTask {
+    public:
+        virtual ~PendingTask() = default;
+
+        /**
+         * Cancels the pending task.
+         */
+        virtual void Cancel() = 0;
+
+        /**
+         * Checks if the cancellation of the task has been requested.
+         *
+         * @return True if cancellation was requested, false otherwise.
+         */
+        virtual bool IsCancellationRequested() const = 0;
+    };
+
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_PENDINGTASK_HPP

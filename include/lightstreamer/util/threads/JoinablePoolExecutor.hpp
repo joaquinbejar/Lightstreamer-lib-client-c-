@@ -29,17 +29,11 @@
 #include <functional>
 #include <stdexcept>
 #include <memory>
+#include <lightstreamer/util/threads/providers/JoinableExecutor.hpp>
 
 namespace lightstreamer::util::threads {
 
-    class JoinableExecutor {
-    public:
-        virtual ~JoinableExecutor() = default;
-        virtual void execute(std::function<void()> task) = 0;
-        virtual void join() = 0;
-    };
-
-    class JoinablePoolExecutor : public JoinableExecutor {
+    class JoinablePoolExecutor : public providers::JoinableExecutor {
     private:
         std::mutex currentThreadLock;
         std::condition_variable cv;

@@ -31,6 +31,7 @@
 #include <lightstreamer/util/threads/providers/JoinableExecutor.hpp>
 #include <lightstreamer/util/threads/providers/JoinableScheduler.hpp>
 #include <lightstreamer/util/threads/providers/ExecutorFactory.hpp>
+#include <lightstreamer/util/threads/ThreadMultiplexer.hpp>
 
 namespace lightstreamer::util::threads {
 

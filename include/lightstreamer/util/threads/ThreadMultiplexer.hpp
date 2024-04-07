@@ -27,7 +27,7 @@
 #include <future>
 #include <memory>
 
-namespace com::lightstreamer::util::threads {
+namespace lightstreamer::util::threads {
 
     template<typename S>
     class ThreadMultiplexer {

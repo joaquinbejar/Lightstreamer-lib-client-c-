@@ -30,7 +30,7 @@
 #include <stdexcept>
 #include <memory>
 
-namespace com::lightstreamer::util::threads {
+namespace lightstreamer::util::threads {
 
     class JoinableExecutor {
     public:

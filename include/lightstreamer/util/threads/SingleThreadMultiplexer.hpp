@@ -23,5 +23,51 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SINGLETHREADMULTIPLEXER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_SINGLETHREADMULTIPLEXER_HPP
+#include <memory>
+#include <functional>
+#include <future>
+#include <chrono>
+#include <iostream>
+#include <lightstreamer/util/threads/providers/JoinableExecutor.hpp>
+#include <lightstreamer/util/threads/providers/JoinableScheduler.hpp>
+#include <lightstreamer/util/threads/providers/ExecutorFactory.hpp>
+
+namespace lightstreamer::util::threads {
+
+    template<typename S>
+    class SingleThreadMultiplexer : public ThreadMultiplexer<S> {
+    private:
+        std::shared_ptr<providers::JoinableExecutor> executor;
+        std::shared_ptr<providers::JoinableScheduler> scheduler;
+
+    public:
+        SingleThreadMultiplexer() {
+            // Assuming ExecutorFactory provides shared_ptr to executors and schedulers
+            executor = providers::ExecutorFactory::getDefaultExecutorFactory()->getExecutor(1, "Session Thread", 1000);
+            scheduler = providers::ExecutorFactory::getDefaultExecutorFactory()->getScheduledExecutor(1, "Session Thread", 1000, executor);
+        }
+
+        void await()  {
+            std::cout << "Await executor ... " << std::endl;
+            executor->join();
+            std::cout << "Await scheduler ... " << std::endl;
+            scheduler->join();
+            std::cout << "Await done." << std::endl;
+        }
+
+        void execute(S source, std::function<void()> runnable) override {
+            executor->execute(runnable);
+            // Alternatively, you can schedule immediately with scheduler, depending on use case
+        }
+
+        std::shared_ptr<std::future<void>> schedule(S source, std::function<void()> task, long delayMillis) override {
+            // Implementation depends on how JoinableScheduler's schedule method is defined.
+            // Here's a simple placeholder assuming schedule returns a future.
+            return scheduler->schedule(task, delayMillis);
+        }
+    };
+
+    // ExecutorFactory definition needs to be provided
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_SINGLETHREADMULTIPLEXER_HPP

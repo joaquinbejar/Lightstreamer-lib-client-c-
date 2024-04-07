@@ -27,6 +27,7 @@
 #include <future>
 #include <chrono>
 #include <stdexcept>
+#include <lightstreamer/util/threads/providers/Joinable.hpp>
 
 namespace lightstreamer::util::threads::providers {
 
@@ -34,7 +35,7 @@ namespace lightstreamer::util::threads::providers {
      * An abstract class representing a basic thread scheduler whose internal working threads are terminated if
      * no task arrives within a specified keep-alive time.
      */
-    class JoinableScheduler {
+    class JoinableScheduler : Joinable {
     public:
         virtual ~JoinableScheduler() = default;
 
@@ -47,7 +48,7 @@ namespace lightstreamer::util::threads::providers {
          * @throws std::invalid_argument if the task is null.
          * @throws std::runtime_error if the task cannot be scheduled for execution.
          */
-        virtual std::future<void> schedule(std::function<void()> task, long delayInMillis) = 0;
+        virtual std::shared_ptr<std::future<void>> schedule(std::function<void()> task, long delayInMillis) = 0;
     };
 
 }

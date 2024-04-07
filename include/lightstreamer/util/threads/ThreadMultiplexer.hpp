@@ -1,7 +1,7 @@
 /******************************************************************************
     Author: Joaquin Bejar Garcia 
     Email: jb@taunais.com 
-    Date: 5/4/24
+    Date: 7/4/24
  ******************************************************************************/
 
 /*******************************************************************************
@@ -21,31 +21,7 @@
  with this program. If not, see <https://www.gnu.org/licenses/>..
  ******************************************************************************/
 
-#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEEXECUTOR_HPP
-#define LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEEXECUTOR_HPP
-#include <functional>
-#include <stdexcept>
-#include <lightstreamer/util/threads/providers/Joinable.hpp>
+#ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_THREADMULTIPLEXER_HPP
+#define LIGHTSTREAMER_LIB_CLIENT_CPP_THREADMULTIPLEXER_HPP
 
-namespace lightstreamer::util::threads::providers {
-
-    /**
-     * An abstract class representing a basic thread executor whose internal working
-     * threads are terminated if no task arrives within a specified keep-alive time.
-     */
-    class JoinableExecutor : Joinable {
-    public:
-        virtual ~JoinableExecutor() = default;
-
-        /**
-         * Executes the given task at some time in the future.
-         *
-         * @param task The runnable task.
-         * @throws std::runtime_error if this task cannot be accepted for execution.
-         * @throws std::invalid_argument if task is null.
-         */
-        virtual void execute(std::function<void()> task) = 0;
-    };
-}
-
-#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEEXECUTOR_HPP
+#endif //LIGHTSTREAMER_LIB_CLIENT_CPP_THREADMULTIPLEXER_HPP

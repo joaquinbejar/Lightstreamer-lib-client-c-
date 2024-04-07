@@ -23,5 +23,21 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_THREADSHUTDOWNHOOK_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_THREADSHUTDOWNHOOK_HPP
+namespace com::lightstreamer::util::threads {
+
+    /**
+     * An abstract class representing a shutdown hook for threads.
+     */
+    class ThreadShutdownHook {
+    public:
+        virtual ~ThreadShutdownHook() = default;
+
+        /**
+         * Called on thread shutdown.
+         */
+        virtual void onShutdown() = 0;
+    };
+
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_THREADSHUTDOWNHOOK_HPP

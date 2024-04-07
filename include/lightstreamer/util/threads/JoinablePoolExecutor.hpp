@@ -23,5 +23,54 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEPOOLEXECUTOR_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEPOOLEXECUTOR_HPP
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+#include <stdexcept>
+#include <memory>
+
+namespace com::lightstreamer::util::threads {
+
+    class JoinableExecutor {
+    public:
+        virtual ~JoinableExecutor() = default;
+        virtual void execute(std::function<void()> task) = 0;
+        virtual void join() = 0;
+    };
+
+    class JoinablePoolExecutor : public JoinableExecutor {
+    private:
+        std::mutex currentThreadLock;
+        std::condition_variable cv;
+        std::unique_ptr<std::thread> currentThread;
+
+    public:
+        void execute(std::function<void()> task) override {
+            std::lock_guard<std::mutex> lock(currentThreadLock);
+            if (currentThread && currentThread->joinable()) {
+                // Task execution is pending. Real implementation should queue tasks for execution.
+                throw std::runtime_error("Execution not implemented. Task execution is already in progress.");
+            } else {
+                // Start the task in a new thread.
+                currentThread = std::make_unique<std::thread>(task);
+                cv.notify_one();
+            }
+        }
+
+        void join() override {
+            std::unique_lock<std::mutex> lock(currentThreadLock);
+            cv.wait(lock, [this] { return currentThread != nullptr; }); // Wait until a task is being executed
+
+            if (currentThread->joinable()) {
+                currentThread->join(); // Wait for the task to complete
+            }
+
+            while (currentThread && currentThread->joinable()) {
+                // Loop until the current thread has finished execution
+            }
+        }
+    };
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_JOINABLEPOOLEXECUTOR_HPP

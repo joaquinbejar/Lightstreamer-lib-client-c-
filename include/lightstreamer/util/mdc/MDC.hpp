@@ -23,7 +23,7 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_MDC_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_MDC_HPP
-#include "MDCProvider.hpp"
+#include <lightstreamer/util/mdc/MDCProvider.hpp>
 #include <memory>
 #include <iostream>
 

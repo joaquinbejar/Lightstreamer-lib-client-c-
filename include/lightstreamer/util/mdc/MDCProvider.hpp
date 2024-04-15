@@ -23,5 +23,47 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_MDCPROVIDER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_MDCPROVIDER_HPP
+#include <string>
+
+namespace lightstreamer::util::mdc {
+
+    /**
+     * Abstract class representing a provider for Mapped Diagnostic Context (MDC).
+     * It is essentially a key-value store used to keep context information useful for logging purposes.
+     */
+    class MDCProvider {
+    public:
+        virtual ~MDCProvider() = default;
+
+        /**
+         * Inserts or updates a key-value pair in the MDC.
+         *
+         * @param key The key associated with the context information.
+         * @param value The value associated with the key.
+         */
+        virtual void put(const std::string& key, const std::string& value) = 0;
+
+        /**
+         * Retrieves a value from the MDC based on its key.
+         *
+         * @param key The key whose associated value is to be returned.
+         * @return The value associated with the key, or an empty string if the key does not exist.
+         */
+        virtual std::string get(const std::string& key) = 0;
+
+        /**
+         * Removes a key-value pair from the MDC based on its key.
+         *
+         * @param key The key whose associated value is to be removed.
+         */
+        virtual void remove(const std::string& key) = 0;
+
+        /**
+         * Clears all key-value pairs stored in the MDC.
+         */
+        virtual void clear() = 0;
+    };
+
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_MDCPROVIDER_HPP

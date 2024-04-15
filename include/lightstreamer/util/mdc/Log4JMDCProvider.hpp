@@ -27,7 +27,7 @@
 #include <lightstreamer/util/mdc/MDC.hpp>
 #include <string>
 
-namespace com::lightstreamer::util::mdc {
+namespace lightstreamer::util::mdc {
     
     /**
      * @class Log4JMDCProvider

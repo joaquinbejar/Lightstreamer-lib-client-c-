@@ -23,5 +23,81 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_MDC_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_MDC_HPP
+#include "MDCProvider.hpp"
+#include <memory>
+#include <iostream>
+
+namespace lightstreamer::util::mdc {
+
+    /**
+     * @class MDC
+     * @brief The Mapped Diagnostic Context stores the context of the application and makes it available to the configured loggers.
+     *
+     * The MDC must be manually enabled by setting the system property "com.lightstreamer.logging.mdc".
+     *
+     * @note
+     * - <b>NB 1:</b> The current implementation relies on Log4J facilities, so it is available only if the logger provider
+     *   (set by `LogManager::setLoggerProvider(com::lightstreamer::log::LoggerProvider)`) is `Log4jWrapper`.
+     * - <b>NB 2:</b> Since an MDC provider is not mandatory, it is better to guard each method call with the check `MDC::isEnabled()`.
+     *
+     * Example usage:
+     * @code
+     * if (MDC::isEnabled()) {
+     *     MDC::put("key", "value");
+     * }
+     * @endcode
+     */
+    class MDC {
+    private:
+        static std::unique_ptr<MDCProvider> provider;
+
+    public:
+        // Static initializer for the MDC, which checks system properties or configuration to enable MDC
+        MDC() {
+            // Assuming a configuration or system property check needs to be implemented
+            // For demonstration, we're always enabling MDC here
+            //  implementation of MDCProvider
+        }
+
+        // Checks if the MDC is enabled
+        static bool isEnabled() {
+            return provider != nullptr;
+        }
+
+        // Puts a key-value pair into the MDC
+        static void put(const std::string& key, const std::string& value) {
+            if (isEnabled()) {
+                provider->put(key, value);
+            } else {
+                std::cerr << "MDC is not enabled." << std::endl;
+            }
+        }
+
+        // Retrieves a value by key from the MDC
+        static std::string get(const std::string& key) {
+            if (isEnabled()) {
+                return provider->get(key);
+            }
+            return "";
+        }
+
+        // Removes a key-value pair from the MDC by key
+        static void remove(const std::string& key) {
+            if (isEnabled()) {
+                provider->remove(key);
+            }
+        }
+
+        // Clears all key-value pairs from the MDC
+        static void clear() {
+            if (isEnabled()) {
+                provider->clear();
+            }
+        }
+    };
+
+    // Define the static provider
+    std::unique_ptr<MDCProvider> MDC::provider = nullptr;
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_MDC_HPP

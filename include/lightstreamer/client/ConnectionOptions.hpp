@@ -130,8 +130,115 @@ namespace lightstreamer::client {
             internal->setContentLength(value);
         }
 
+        /**
+         * @brief Manages the maximum waiting time in milliseconds before attempting a new connection to the server.
+         *
+         * If the previous connection is unexpectedly closed while correctly working, this property determines the maximum
+         * delay before trying a new connection, which may be a new session or a recovery of the current session. The actual
+         * delay applied is a random value between 0 and this maximum value to help avoid load spikes on the server cluster
+         * due to simultaneous reconnections.
+         *
+         * @note This delay is only applied before the first reconnection. If this reconnection fails, the RetryDelay setting
+         * is applied.
+         *
+         * @b Lifecycle: This value can be set and changed at any time.
+         *
+         * @b Related notifications: Changes to this setting are notified through a call to ClientListener::onPropertyChange
+         * with argument "firstRetryMaxDelay" on any ClientListener listening to the related LightstreamerClient.
+         *
+         * @b Default value: 100 milliseconds (0.1 seconds).
+         */
+        long getFirstRetryMaxDelay() {
+            std::lock_guard<std::mutex> lock(mtx);
+            return internal->getFirstRetryMaxDelay();
+        }
 
+        void setFirstRetryMaxDelay(long value) {
+            std::lock_guard<std::mutex> lock(mtx);
+            internal->setFirstRetryMaxDelay(value);
+        }
 
+        /**
+         * @brief Manages the timeout for forcing a binding to the server.
+         *
+         * This property specifies how long the client will wait before timing out a binding operation to the server.
+         *
+         * @b Lifecycle: This value can be set and changed at any time.
+         *
+         * @b Related notifications: Changes to this setting are notified through a call to ClientListener::onPropertyChange
+         * with argument "forceBindTimeout" on any ClientListener listening to the related LightstreamerClient.
+         */
+        long getForceBindTimeout() {
+            std::lock_guard<std::mutex> lock(mtx);
+            return internal->getForceBindTimeout();
+        }
+
+        void setForceBindTimeout(long value) {
+            std::lock_guard<std::mutex> lock(mtx);
+            internal->setForceBindTimeout(value);
+        }
+
+        /**
+         * @brief Allows enabling or disabling the Stream-Sense algorithm and forcing a specific transport or transport/connection type.
+         *
+         * This property can control the connection behavior, enabling or disabling Stream-Sense and forcing the use of a specific
+         * transport or combination of transport and connection type. Specifying a combination disables Stream-Sense completely.
+         *
+         * @note If the Stream-Sense algorithm is disabled, the client may still enter "CONNECTED:STREAM-SENSING" status.
+         * If streaming is found to be impossible, no recovery attempt will be made.
+         *
+         * Possible values:
+         * - nullptr: Stream-Sense is enabled, and the client connects using the most appropriate transport and connection type.
+         * - "WS": WebSocket only. If WebSocket connections cannot be established, no connection will be made.
+         * - "HTTP": HTTP only. If HTTP connections cannot be established, no connection will be made.
+         * - "WS-STREAMING": Only WebSocket streaming. No connection if this is not possible.
+         * - "HTTP-STREAMING": Only HTTP streaming. No connection if this is not possible.
+         * - "WS-POLLING": Only WebSocket polling. No connection if this is not possible.
+         * - "HTTP-POLLING": Only HTTP polling. No connection if this is not possible.
+         *
+         * @b Lifecycle: Can be set at any time. If set during a connection, it will trigger a switch to the specified configuration.
+         *
+         * @b Notifications: Changes are notified through ClientListener::onPropertyChange with "forcedTransport".
+         *
+         * @b Default: nullptr (Stream-Sense enabled).
+         */
+        std::string getForcedTransport()  {
+            std::lock_guard<std::mutex> lock(mtx);
+            return internal->getForcedTransport();
+        }
+
+        void setForcedTransport(const std::string& value) {
+            std::lock_guard<std::mutex> lock(mtx);
+            internal->setForcedTransport(value);
+        }
+
+        /**
+       * @brief Manages extra HTTP headers to be sent with requests to the server.
+       *
+       * This property allows setting extra HTTP headers that will be included in all requests to the server.
+       * The Content-Type header is reserved and managed by the client library itself. Usage of certain headers
+       * might be restricted based on the environment, and some may even prevent successful connection establishment.
+       *
+       * @note Custom cookies should be managed through LightstreamerClient::addCookies instead of this property.
+       * Setting headers might trigger an OPTIONS request before establishing the actual connection.
+       *
+       * @b Lifecycle: Should be set before LightstreamerClient::connect() but can be changed anytime for subsequent requests.
+       *
+       * @b Notifications: Changes are notified through ClientListener::onPropertyChange with "httpExtraHeaders".
+       *
+       * @b Default: nullptr (no extra headers sent).
+       *
+       * @see HttpExtraHeadersOnSessionCreationOnly
+       */
+        std::map<std::string, std::string> getHttpExtraHeaders()  {
+            std::lock_guard<std::mutex> lock(mtx);
+            return internal->getHttpExtraHeaders();
+        }
+
+        void setHttpExtraHeaders(const std::map<std::string, std::string>& headers) {
+            std::lock_guard<std::mutex> lock(mtx);
+            internal->setHttpExtraHeaders(headers);
+        }
 
 
     };

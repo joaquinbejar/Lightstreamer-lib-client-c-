@@ -85,62 +85,52 @@ namespace lightstreamer::client {
          *
          * @return The current connect timeout in milliseconds.
          */
-        long getCurrentConnectTimeout() const {
+        long getCurrentConnectTimeout() {
             std::lock_guard<std::mutex> lock(mtx);
             return internal->getCurrentConnectTimeout();
         }
 
         /**
-         * @brief Gets or sets the ContentLength.
+         * @brief Manages the length in bytes used by the server for the response body on a stream connection.
+         *
+         * This property specifies the length that the server will use for the response body in an HTTP-STREAMING connection.
+         * Once the specified content length is exhausted, the connection will be closed and a new bind connection
+         * will be automatically reopened. This setting is not applicable to WebSocket connections.
+         *
+         * @note This setting only applies to the "HTTP-STREAMING" case, not to WebSockets.
+         *
+         * @b Lifecycle: The content length should be set before calling LightstreamerClient::connect().
+         * However, the value can be changed at any time, and the new value will be used for the next streaming
+         * connection (either a bind or a brand new session).
+         *
+         * @b Related notifications: A change to this setting will be notified through a call to
+         * ClientListener::onPropertyChange with argument "contentLength" on any ClientListener listening to
+         * the related LightstreamerClient.
+         *
+         * @b Default value: The default length is decided by the library to ensure the best performance,
+         * which may be a few MB or much higher, depending on the environment.
          */
-        long getContentLength() const {
+        /**
+         * @brief Gets the content length used for HTTP streaming connections.
+         *
+         * @return The content length in bytes.
+         */
+        long getContentLength() {
             std::lock_guard<std::mutex> lock(mtx);
             return internal->getContentLength();
         }
 
+        /**
+         * @brief Sets the content length used for HTTP streaming connections.
+         *
+         * @param value The new content length in bytes.
+         */
         void setContentLength(long value) {
             std::lock_guard<std::mutex> lock(mtx);
             internal->setContentLength(value);
         }
 
-        /**
-         * @brief Gets or sets the FirstRetryMaxDelay.
-         */
-        long getFirstRetryMaxDelay() const {
-            std::lock_guard<std::mutex> lock(mtx);
-            return internal->getFirstRetryMaxDelay();
-        }
 
-        void setFirstRetryMaxDelay(long value) {
-            std::lock_guard<std::mutex> lock(mtx);
-            internal->setFirstRetryMaxDelay(value);
-        }
-
-        /**
-         * @brief Gets or sets the ForcedTransport.
-         */
-        std::string getForcedTransport() const {
-            std::lock_guard<std::mutex> lock(mtx);
-            return internal->getForcedTransport();
-        }
-
-        void setForcedTransport(const std::string& value) {
-            std::lock_guard<std::mutex> lock(mtx);
-            internal->setForcedTransport(value);
-        }
-
-        /**
-         * @brief Gets or sets HTTP extra headers.
-         */
-        std::map<std::string, std::string> getHttpExtraHeaders() const {
-            std::lock_guard<std::mutex> lock(mtx);
-            return internal->getHttpExtraHeaders();
-        }
-
-        void setHttpExtraHeaders(const std::map<std::string, std::string>& headers) {
-            std::lock_guard<std::mutex> lock(mtx);
-            internal->setHttpExtraHeaders(headers);
-        }
 
 
 

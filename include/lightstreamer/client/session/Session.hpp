@@ -1205,6 +1205,49 @@ namespace lightstreamer::client::session {
             }
         };
 
+        class ConstrainTutor : public requests::RequestTutor {
+        private:
+            ConstrainRequest& request;
+
+        public:
+            ConstrainTutor(long timeoutMs, ConstrainRequest& request, SessionThread& sessionThread, InternalConnectionOptions& options)
+                    : RequestTutor(timeoutMs, sessionThread, options, false),
+                      request(request) {}
+
+            bool verifySuccess() override {
+                // NB: la verificación real se realiza dentro del método Session::changeBandwidth
+                return false;
+            }
+
+            void doRecovery() override {
+                Session* session = sessionThread.getSessionManager().getSession();
+                if (session) {
+                    session->sendConstrain(this->timeoutMs, request);
+                }
+            }
+
+            void notifyAbort() override {
+                // No se requiere ninguna acción
+            }
+
+            bool timeoutFixed() const override {
+                return false;
+            }
+
+            long fixedTimeout() const override {
+                return 0;
+            }
+
+            bool shouldBeSent() override {
+                return true;
+            }
+
+            ConstrainRequest& getRequest() const {
+                return request;
+            }
+        };
+
+
 
     };
 }

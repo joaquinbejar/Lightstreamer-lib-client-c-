@@ -30,9 +30,9 @@
 #include <map>
 #include <vector>
 #include <memory>
-#include "Logger.h" // Assume a logger class is defined elsewhere
+#include "Logger.hpp" // Assume a logger class is defined elsewhere
 #include <lightstreamer/client/session/SessionThread.hpp>
-#include "InternalConnectionOptions.h"
+#include <lightstreamer/client/session/InternalConnectionOptions.hpp>
 #include <lightstreamer/client/protocol/ProtocolListener.hpp>
 #include "StreamListener.h"
 #include "RequestManager.h"
@@ -74,14 +74,14 @@ namespace lightstreamer::client::protocol {
         static const std::regex LOOP_REGEX;
 
     protected:
-        Logger log; // Simplified logging mechanism for C++
+        Logger::Logger log; // Simplified logging mechanism for C++
         session::SessionThread sessionThread;
         std::unique_ptr<HttpRequestManager> httpRequestManager;
         std::shared_ptr<ProtocolListener> session = nullptr;
         StreamListener *activeListener = nullptr;
         StreamStatus status = StreamStatus::NO_STREAM;
         long currentProg = 0;
-        InternalConnectionOptions options;
+        session::InternalConnectionOptions options;
         ReverseHeartbeatTimer reverseHeartbeatTimer;
         int objectId;
         HttpTransport httpTransport;

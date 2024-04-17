@@ -23,6 +23,7 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SESSION_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_SESSION_HPP
+
 #include <string>
 #include <cassert>
 #include <memory>
@@ -49,17 +50,20 @@ namespace lightstreamer::client::session {
      */
     class Session {
     protected:
-        static const std::string OFF;
-        static const std::string CREATING;
-        static const std::string CREATED;
-        static const std::string FIRST_PAUSE;
-        static const std::string FIRST_BINDING;
-        static const std::string PAUSE;
-        static const std::string BINDING;
-        static const std::string RECEIVING;
-        static const std::string STALLING;
-        static const std::string STALLED;
-        static const std::string SLEEP;
+        enum class SessionState {
+            OFF,
+            CREATING,
+            CREATED,
+            FIRST_PAUSE,
+            FIRST_BINDING,
+            PAUSE,
+            BINDING,
+            RECEIVING,
+            STALLING,
+            STALLED,
+            SLEEP,
+            OTHER // for any state not covered above
+        };
 
         static const bool GO_TO_SLEEP = true;
         static const bool GO_TO_OFF = false;
@@ -108,7 +112,7 @@ namespace lightstreamer::client::session {
         std::shared_ptr<MessagesListener> messages;
 
         std::shared_ptr<SessionThread> thread;
-        std::shared_ptr<Protocol> protocol;
+        std::shared_ptr<protocol::Protocol> protocol;
         bool retryAgainIfStreamFails;
         std::shared_ptr<OfflineCheck> offlineCheck;
 
@@ -120,7 +124,7 @@ namespace lightstreamer::client::session {
         Session(int objectId, bool isPolling, bool forced, std::shared_ptr<SessionListener> handler,
                 std::shared_ptr<SubscriptionsListener> subscriptions, std::shared_ptr<MessagesListener> messages,
                 std::shared_ptr<Session> originalSession, std::shared_ptr<SessionThread> thread,
-                std::shared_ptr<Protocol> protocol, std::shared_ptr<InternalConnectionDetails> details,
+                std::shared_ptr<protocol::Protocol> protocol, std::shared_ptr<InternalConnectionDetails> details,
                 std::shared_ptr<InternalConnectionOptions> options, int callerPhase, bool retryAgainIfStreamFails,
                 bool sessionRecovery)
                 : objectId(objectId), isPolling(isPolling), isForced(forced), handler(handler),
@@ -176,6 +180,108 @@ namespace lightstreamer::client::session {
 
             cachedRequiredBW = false;
         }
+
+        SessionState getStateFromString(const std::string &phase) const {
+            if (phase == "OFF") return SessionState::OFF;
+            if (phase == "CREATING") return SessionState::CREATING;
+            if (phase == "CREATED") return SessionState::CREATED;
+            if (phase == "FIRST_PAUSE") return SessionState::FIRST_PAUSE;
+            if (phase == "FIRST_BINDING") return SessionState::FIRST_BINDING;
+            if (phase == "PAUSE") return SessionState::PAUSE;
+            if (phase == "BINDING") return SessionState::BINDING;
+            if (phase == "RECEIVING") return SessionState::RECEIVING;
+            if (phase == "STALLING") return SessionState::STALLING;
+            if (phase == "STALLED") return SessionState::STALLED;
+            if (phase == "SLEEP") return SessionState::SLEEP;
+            return SessionState::OTHER;
+        }
+
+    protected:
+        /**
+         * @brief Checks if the current phase matches the specified phase.
+         * @param phaseToCheck The phase to check against the current phase.
+         * @return True if the current phase matches the specified phase, false otherwise.
+         */
+        virtual bool is(const std::string &phaseToCheck) const {
+            return this->phase == phaseToCheck;
+        }
+
+        /**
+         * @brief Checks if the current phase does not match the specified phase.
+         * @param phaseToCheck The phase to check against the current phase.
+         * @return True if the current phase does not match the specified phase, false otherwise.
+         */
+        virtual bool isNot(const std::string &phaseToCheck) const {
+            return !is(phaseToCheck);
+        }
+
+        /**
+         * @brief Changes the current phase to a new phase and optionally starts recovery.
+         * @param newType The new phase to transition to.
+         * @param startRecovery Indicates whether to start recovery.
+         * @return True if the phase change was successful and not externally modified, false otherwise.
+         */
+        virtual bool changePhaseType(const std::string &newType, bool startRecovery = false) {
+            std::string oldType = this->phase;
+            int ph = this->phaseCount;
+
+            if (isNot(newType)) {
+                this->phase = newType;
+                this->phaseCount++;
+                ph = this->phaseCount;
+
+                this->handler->sessionStatusChanged(this->handlerPhase, this->phase, startRecovery);
+
+                if (log->isDebugEnabled()) {
+                    log->debug(
+                            "Session state change (" + std::to_string(objectId) + "): " + oldType + " -> " + newType);
+                    log->debug(" phasing : " + std::to_string(ph) + " - " + std::to_string(this->phaseCount));
+                }
+            }
+
+            return ph == this->phaseCount;
+        }
+
+        /**
+         * @brief Retrieves the high-level status of the session based on current phase and recovery status.
+         * @param startRecovery Indicates whether the recovery process is considered started.
+         * @return The high-level status as a string.
+         */
+        std::string getHighLevelStatus(bool startRecovery) const {
+            SessionState state = getStateFromString(this->phase);
+
+            switch (state) {
+                case SessionState::OFF:
+                    return Constants::DISCONNECTED;
+                case SessionState::SLEEP:
+                    return startRecovery ? Constants::TRYING_RECOVERY : Constants::WILL_RETRY;
+                case SessionState::CREATING:
+                    return recoveryBean->isRecovery() ? Constants::TRYING_RECOVERY : Constants::CONNECTING;
+                case SessionState::CREATED:
+                case SessionState::FIRST_PAUSE:
+                case SessionState::FIRST_BINDING:
+                    return Constants::CONNECTED + this->firstConnectedStatus();
+                case SessionState::STALLED:
+                    return Constants::STALLED;
+                default:
+                    return Constants::CONNECTED + this->connectedHighLevelStatus();
+            }
+        }
+
+
+    private:
+        // Helper methods for deriving specific status strings
+        std::string firstConnectedStatus() const {
+            // Placeholder: implement based on specific logic that determines the "first connected" status.
+            return ""; // Modify as needed
+        }
+
+        std::string connectedHighLevelStatus() const {
+            // Placeholder: implement based on specific logic that determines the "connected high level" status.
+            return ""; // Modify as needed
+        }
+
+
     };
 }
 

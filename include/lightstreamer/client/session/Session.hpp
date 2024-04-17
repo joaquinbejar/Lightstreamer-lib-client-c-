@@ -937,25 +937,25 @@ namespace lightstreamer::client::session {
         virtual void changeControlLink(const std::string &controlLink) {}
 
     public:
-        void sendSubscription(SubscribeRequest &request, RequestTutor &tutor) {
+        void sendSubscription(SubscribeRequest &request, requests::RequestTutor &tutor) {
             request.setServer(pushServerAddress());
             request.setSession(sessionId);
             protocol.sendSubscriptionRequest(request, tutor);
         }
 
-        void sendUnsubscription(UnsubscribeRequest &request, RequestTutor &tutor) {
+        void sendUnsubscription(UnsubscribeRequest &request, requests::RequestTutor &tutor) {
             request.setServer(pushServerAddress());
             request.setSession(sessionId);
             protocol.sendUnsubscriptionRequest(request, tutor);
         }
 
-        void sendSubscriptionChange(ChangeSubscriptionRequest &request, RequestTutor &tutor) {
+        void sendSubscriptionChange(ChangeSubscriptionRequest &request, requests::RequestTutor &tutor) {
             request.setServer(pushServerAddress());
             request.setSession(sessionId);
             protocol.sendConfigurationRequest(request, tutor);
         }
 
-        void sendReverseHeartbeat(ReverseHeartbeatRequest &request, RequestTutor &tutor) {
+        void sendReverseHeartbeat(ReverseHeartbeatRequest &request, requests::RequestTutor &tutor) {
             request.setServer(pushServerAddress());
             request.setSession(sessionId);
             protocol.sendReverseHeartbeat(request, tutor);

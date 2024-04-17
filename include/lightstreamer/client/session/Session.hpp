@@ -24,6 +24,8 @@
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SESSION_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_SESSION_HPP
 
+#include <iostream>
+#include <functional>
 #include <string>
 #include <cassert>
 #include <memory>
@@ -915,6 +917,295 @@ namespace lightstreamer::client::session {
             closeSession("end", true, true);
             handler.onServerError(errorCode, errorMessage);
         }
+
+        class TextProtocolListener : public protocol::ProtocolListener {
+            Session& outerInstance;
+
+        public:
+            TextProtocolListener(Session& outerInstance) : outerInstance(outerInstance) {}
+
+            void onInterrupted(bool wsError, bool unableToOpen) override {
+                // An interruption triggers an attempt to recover the session.
+                onErrorEvent("network.error", false, unableToOpen, true, wsError);
+            }
+
+            void onConstrainResponse(const ConstrainTutor& tutor) override {
+                outerInstance.bwRetransmissionMonitor.onReceivedResponse(tutor.getRequest());
+            }
+
+            void onServerSentBandwidth(const std::string& maxBandwidth) override {
+                if (maxBandwidth == "unmanaged") {
+                    outerInstance.options.BandwidthUnmanaged = true;
+                }
+                outerInstance.options.InternalRealMaxBandwidth = (maxBandwidth == "unmanaged") ? "unlimited" : maxBandwidth;
+            }
+
+            void onTakeover(int specificCode) override {
+                onErrorEvent("error" + std::to_string(specificCode), CLOSED_ON_SERVER, false, false, false);
+            }
+
+            void onKeepalive() override {
+                onEvent();
+            }
+
+            void onOKReceived(const std::string& newSession, const std::string& controlLink, long requestLimitLength, long keepaliveIntervalDefault) override {
+                outerInstance.logDebug("OK event while " + outerInstance.phase);
+                if (!outerInstance.is(CREATING) && !outerInstance.is(FIRST_BINDING) && !outerInstance.is(BINDING)) {
+                    outerInstance.logError("Unexpected OK event while session is in status: " + outerInstance.phase);
+                    outerInstance.shutdown(GO_TO_OFF);
+                    return;
+                }
+
+                std::string lastUsedAddress = outerInstance.PushServerAddress();
+                std::string addressToUse = (!controlLink.empty() && !outerInstance.ignoreServerAddressCache) ? controlLink : lastUsedAddress;
+                outerInstance.sessionServerAddress = addressToUse;
+
+                outerInstance.logDebug("Address to use after create: " + outerInstance.sessionServerAddress);
+
+                if (lastUsedAddress != outerInstance.sessionServerAddress && outerInstance.is(CREATING)) {
+                    outerInstance.changeControlLink(outerInstance.sessionServerAddress);
+                }
+
+                if (keepaliveIntervalDefault > 0) {
+                    if (outerInstance.isPolling) {
+                        outerInstance.options.IdleTimeout = keepaliveIntervalDefault;
+                    } else {
+                        outerInstance.options.KeepaliveInterval = keepaliveIntervalDefault;
+                    }
+                }
+
+                if (outerInstance.is(CREATING)) {
+                    outerInstance.SessionId = newSession;
+                } else if (outerInstance.SessionId != newSession) {
+                    outerInstance.logError("Bound unexpected session: " + newSession);
+                    outerInstance.shutdown(GO_TO_OFF);
+                } else {
+                    long spentTime = getCurrentMilliseconds() - outerInstance.sentTime;
+                    outerInstance.reconnectTimeout = std::max(spentTime, outerInstance.options.CurrentConnectTimeout);
+                    outerInstance.logDebug("CurrentConnectTimeout: " + std::to_string(outerInstance.reconnectTimeout));
+                }
+
+                outerInstance.slowing.startSync(outerInstance.isPolling, outerInstance.isForced);
+                onEvent();
+            }
+
+            void onLoopReceived(long serverSentPause) override {
+                if (outerInstance.is(RECEIVING) || outerInstance.is(STALLING) || outerInstance.is(STALLED) || outerInstance.is(CREATED)) {
+                    if (outerInstance.switchRequired) {
+                        outerInstance.handler.switchReady(outerInstance.handlerPhase, outerInstance.switchCause, outerInstance.switchForced, false);
+                    } else if (outerInstance.slowRequired) {
+                        outerInstance.handler.slowReady(outerInstance.handlerPhase);
+                    } else {
+                        doPause(serverSentPause);
+                    }
+                } else {
+                    outerInstance.logError("Unexpected loop event while session is in non-active status: " + outerInstance.phase);
+                    outerInstance.shutdown(GO_TO_OFF);
+                }
+            }
+
+            void onSyncError(bool async) override {
+                std::string cause = async ? "syncerror" : "control.syncerror";
+                onErrorEvent(cause, true, false, false, false);
+            }
+
+            void onRecoveryError() override {
+                onErrorEvent("recovery.error", true, false, false, false);
+            }
+
+            void onExpiry() override {
+                onErrorEvent("expired", true, false, false, false);
+            }
+
+            void onUpdateReceived(int subscriptionId, int item, const std::vector<std::string>& args) override {
+                onEvent();
+                outerInstance.subscriptions.onUpdateReceived(subscriptionId, item, args);
+            }
+
+            void onEndOfSnapshotEvent(int subscriptionId, int item) override {
+                onEvent();
+                outerInstance.subscriptions.onEndOfSnapshotEvent(subscriptionId, item);
+            }
+
+            void onClearSnapshotEvent(int subscriptionId, int item) override {
+                onEvent();
+                outerInstance.subscriptions.onClearSnapshotEvent(subscriptionId, item);
+            }
+
+            void onLostUpdatesEvent(int subscriptionId, int item, int lost) override {
+                onEvent();
+                outerInstance.subscriptions.onLostUpdatesEvent(subscriptionId, item, lost);
+            }
+
+            void onConfigurationEvent(int subscriptionId, const std::string& frequency) override {
+                onEvent();
+                outerInstance.subscriptions.onConfigurationEvent(subscriptionId, frequency);
+            }
+
+            void onMessageAck(const std::string& sequence, int number, bool async) override {
+                if (async) {
+                    onEvent();
+                }
+                outerInstance.messages.onMessageAck(sequence, number);
+            }
+
+            void onMessageOk(const std::string& sequence, int number) override {
+                onEvent();
+                outerInstance.messages.onMessageOk(sequence, number);
+            }
+
+            void onMessageDeny(const std::string& sequence, int denyCode, const std::string& denyMessage, int number, bool async) override {
+                if (async) {
+                    onEvent();
+                }
+                outerInstance.messages.onMessageDeny(sequence, denyCode, denyMessage, number);
+            }
+
+            void onMessageDiscarded(const std::string& sequence, int number, bool async) override {
+                if (async) {
+                    onEvent();
+                }
+                outerInstance.messages.onMessageDiscarded(sequence, number);
+            }
+
+            void onMessageError(const std::string& sequence, int errorCode, const std::string& errorMessage, int number, bool async) override {
+                if (async) {
+                    onEvent();
+                }
+                outerInstance.messages.onMessageError(sequence, errorCode, errorMessage, number);
+            }
+
+            void onSubscriptionError(int subscriptionId, int errorCode, const std::string& errorMessage, bool async) override {
+                if (async) {
+                    onEvent();
+                }
+                outerInstance.subscriptions.onSubscriptionError(subscriptionId, errorCode, errorMessage);
+            }
+
+            void onServerError(int errorCode, const std::string& errorMessage) override {
+                outerInstance.notifyServerError(errorCode, errorMessage);
+            }
+
+            void onUnsubscriptionAck(int subscriptionId) override {
+                onEvent();
+                outerInstance.subscriptions.onUnsubscriptionAck(subscriptionId);
+            }
+
+            void onUnsubscription(int subscriptionId) override {
+                onEvent();
+                outerInstance.subscriptions.onUnsubscription(subscriptionId);
+            }
+
+            void onSubscriptionAck(int subscriptionId) override {
+                outerInstance.subscriptions.onSubscriptionAck(subscriptionId);
+            }
+
+            void onSubscription(int subscriptionId, int totalItems, int totalFields, int keyPosition, int commandPosition) override {
+                onEvent();
+                outerInstance.subscriptions.onSubscription(subscriptionId, totalItems, totalFields, keyPosition, commandPosition);
+            }
+
+            void onSubscriptionReconf(int subscriptionId, long reconfId, bool async) override {
+                if (async) {
+                    onEvent();
+                }
+                outerInstance.subscriptions.onSubscriptionReconf(subscriptionId, reconfId);
+            }
+
+            void onSyncMessage(long seconds) override {
+                onEvent();
+                bool syncOk = outerInstance.slowing.syncCheck(seconds, !outerInstance.isPolling);
+                if (!syncOk) {
+                    if (!outerInstance.switchRequired && !outerInstance.slowRequired) {
+                        outerInstance.handler.onSlowRequired(outerInstance.handlerPhase, outerInstance.slowing.Delay);
+                    }
+                }
+            }
+
+            void onServerName(const std::string& serverName) override {
+                outerInstance.details.ServerSocketName = serverName;
+            }
+
+            void onClientIp(const std::string& clientIp) override {
+                outerInstance.details.ClientIp = clientIp;
+                outerInstance.handler.onIPReceived(clientIp);
+            }
+
+        private:
+            void onEvent() {
+                if (outerInstance.is(CREATING) && !outerInstance.changePhaseType(CREATED)) {
+                    return;
+                }
+                outerInstance.timeoutForExecution();
+            }
+
+            void onErrorEvent(const std::string& reason, bool closedOnServer, bool unableToOpen, bool tryRecovery, bool wsError) {
+                long timeLeftMs = outerInstance.recoveryBean.timeLeftMs(outerInstance.options.SessionRecoveryTimeout);
+                if (outerInstance.is(OFF)) {
+                    return;
+                }
+                bool startRecovery = tryRecovery && timeLeftMs > 0;
+                outerInstance.doOnErrorEvent(reason, closedOnServer, unableToOpen, startRecovery, timeLeftMs, wsError);
+            }
+
+            void doPause(long serverSentPause) {
+                long pauseToUse = serverSentPause;
+                if (outerInstance.isPolling && outerInstance.isNot(FIRST_PAUSE)) {
+                    if (serverSentPause >= outerInstance.options.PollingInterval) {
+                        // Server response pause time is acceptable; no adjustment needed.
+                    } else {
+                        // Adapt to the server-suggested pause time.
+                        outerInstance.options.PollingInterval = serverSentPause;
+                    }
+                    pauseToUse = outerInstance.realPollingInterval();
+                }
+                if (outerInstance.isNot(FIRST_PAUSE) && pauseToUse > 0) {
+                    outerInstance.launchTimeout("pause", pauseToUse, nullptr, false);
+                } else {
+                    outerInstance.onTimeout("noPause", outerInstance.phaseCount, 0, nullptr, false);
+                }
+            }
+        };
+
+        class ForceRebindTutor : public requests::RequestTutor {
+        private:
+            Session& outerInstance;
+            int currentPhase;
+            std::string cause;
+
+        public:
+            ForceRebindTutor(Session& outerInstance, int currentPhase, const std::string& cause)
+                    : RequestTutor(outerInstance.thread, outerInstance.options),
+                      outerInstance(outerInstance),
+                      currentPhase(currentPhase),
+                      cause(cause) {}
+
+            bool verifySuccess() override {
+                return this->currentPhase != outerInstance.getPhaseCount();
+            }
+
+            void doRecovery() override {
+                outerInstance.sendForceRebind(this->cause);
+            }
+
+            void notifyAbort() override {
+                // No action needed
+            }
+
+            bool timeoutFixed() const override {
+                return true;
+            }
+
+            long fixedTimeout() const override {
+                return this->connectionOptions.forceBindTimeout();
+            }
+
+            bool shouldBeSent() override {
+                return this->currentPhase == outerInstance.getPhaseCount();
+            }
+        };
+
+
     };
 }
 

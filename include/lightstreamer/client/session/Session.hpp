@@ -1309,6 +1309,29 @@ namespace lightstreamer::client::session {
             }
         };
 
+        /**
+          * This method is called by SessionManager to notify the session that WebSocket support has been enabled again
+          * because the client IP has changed. So next bind_session must try WebSocket as transport
+          * (except in the case of forced transport).
+          */
+        virtual void restoreWebSocket() {
+            if (options.ForcedTransport.empty()) {
+                switchToWebSocket = true;
+            } else {
+                // If the transport is forced, it is either HTTP or WebSocket.
+                // If it is HTTP, we must not switch to WebSocket. So the flag must remain false.
+                // If it is WebSocket, the switch is useless. So the flag must remain false.
+                // In either case, we don't need to change it.
+            }
+        }
+
+        /**
+         * Notifies about a fatal error and closes the session.
+         */
+        virtual void onFatalError(const std::exception& e) {
+            log.Error("A fatal error has occurred. The session will be closed. Cause: " + std::string(e.what()));
+            protocol.onFatalError(e);
+        }
 
     };
 }

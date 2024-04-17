@@ -526,7 +526,90 @@ namespace lightstreamer::client::session {
             ~MyRunnableA() override = default;
         };
 
+        bool createNewOnFirstBindTimeout() {
+            return isPolling;
+        }
 
+        std::future<void> launchTimeout(const std::string& timeoutType, long pauseToUse, const std::string& cause, bool startRecovery) {
+            int pc = phaseCount;
+            log.debug("Status timeout in " + std::to_string(pauseToUse) + " [" + timeoutType + "] due to " + cause);
+
+            return std::async(std::launch::async, [this, pc, pauseToUse, timeoutType, cause, startRecovery] {
+                std::this_thread::sleep_for(std::chrono::milliseconds(pauseToUse + 50));
+
+                if (pc != phaseCount) {
+                    return;
+                }
+
+                onTimeout(timeoutType, pc, pauseToUse, cause, startRecovery);
+            });
+        }
+
+        void timeoutForStalling() {
+            if (options.keepaliveInterval > 0) {
+                if (lastKATask != nullptr && !lastKATask->isCanceled()) {
+                    lastKATask->cancel();
+                }
+
+                lastKATask = launchTimeout("keepaliveInterval", options.keepaliveInterval, "", false);
+            }
+        }
+
+        void timeoutForStalled() {
+            if (!changePhaseType("STALLING")) {
+                return;
+            }
+
+            launchTimeout("stalledTimeout", options.stalledTimeout + 500, "", false);
+        }
+
+        void timeoutForReconnect() {
+            if (!changePhaseType("STALLED")) {
+                return;
+            }
+
+            long timeLeftMs = recoveryBean.timeLeftMs(options.sessionRecoveryTimeout);
+            bool startRecovery = timeLeftMs > 0;
+            launchTimeout("reconnectTimeout", options.reconnectTimeout, "", startRecovery);
+        }
+
+        void timeoutForExecution() {
+            try {
+                launchTimeout("executionTimeout", options.stalledTimeout, "", false);
+            } catch (const std::exception& e) {
+                log.warn("Something went wrong: " + std::string(e.what()));
+            }
+            log.debug("Check Point 1a120ak.");
+        }
+
+        long getBindTimeout() const {
+            if (isPolling) {
+                return options.currentConnectTimeout + options.idleTimeout;
+            } else {
+                return (workedBefore > 0 && reconnectTimeout > 0) ? reconnectTimeout : options.currentConnectTimeout;
+            }
+        }
+
+        long getRealPollingInterval() const {
+            if (is("FIRST_PAUSE")) {
+                return options.pollingInterval;
+            } else {
+                auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch()
+                );
+                long spent = (now - sentTime).count();
+                return spent > options.pollingInterval ? 0 : options.pollingInterval - spent;
+            }
+        }
+
+        long calculateRetryDelay() const {
+            auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()
+            );
+            long spent = (now - sentTime).count();
+            long currentRetryDelay = options.currentRetryDelay;
+            return spent > currentRetryDelay ? 0 : currentRetryDelay - spent;
+        }
 
 
     protected:
@@ -622,6 +705,103 @@ namespace lightstreamer::client::session {
             bindFuture.then([this]() {
                 // Placeholder for fulfilled action
             });
+        }
+
+        void onTimeout(const std::string& timeoutType, int phaseCount, long usedTimeout, const std::string& coreCause, bool startRecovery) {
+            if (phaseCount != this->phaseCount) {
+                return;
+            }
+
+            log.debug("Timeout event [" + timeoutType + "] while " + phase + " cause=" + coreCause);
+
+            std::string tCause = "timeout." + phase + "." + std::to_string(bindCount);
+            if (is("SLEEP") && !coreCause.empty()) {
+                tCause = coreCause;
+            }
+
+            if (is("CREATING")) {
+                long timeLeftMs = recoveryBean.timeLeftMs(options.sessionRecoveryTimeout);
+                if (recoveryBean.recovery && timeLeftMs > 0) {
+                    log.debug("Start session recovery. Cause: no response timeLeft=" + std::to_string(timeLeftMs));
+                    options.increaseConnectTimeout();
+                    handler.recoverSession(handlerPhase, tCause, isForced, workedBefore > 0);
+                } else {
+                    log.debug("Start new session. Cause: no response");
+                    closeSession("create.timeout", CLOSED_ON_SERVER, RECOVERY_SCHEDULED, true);
+                    options.increaseConnectTimeout();
+                    launchTimeout("zeroDelay", 0, "create.timeout", false);
+                }
+            } else if (is("CREATED") || is("BINDING") || is("STALLED") || is("SLEEP")) {
+                if (slowRequired || switchRequired) {
+                    log.debug("Timeout: switch transport");
+                    handler.streamSense(handlerPhase, tCause + ".switch", switchForced);
+                } else if (!isPolling || isForced) {
+                    if (startRecovery) {
+                        handler.recoverSession(handlerPhase, tCause, isForced, workedBefore > 0);
+                    } else {
+                        log.debug("Timeout: new session");
+                        handler.retry(handlerPhase, tCause, isForced, workedBefore > 0);
+                    }
+                } else {
+                    log.debug(startRecovery ? "Timeout: switch transport from polling (ignore recovery)" : "Timeout: switch transport from polling");
+                    handler.streamSense(handlerPhase, tCause, false);
+                }
+            } else if (is("FIRST_BINDING")) {
+                if (slowRequired || switchRequired) {
+                    handler.streamSense(handlerPhase, tCause + ".switch", switchForced);
+                } else if (workedBefore > 0 || isForced || retryAgainIfStreamFails) {
+                    handler.retry(handlerPhase, tCause, isForced, workedBefore > 0);
+                } else if (createNewOnFirstBindTimeout()) {
+                    handler.streamSense(handlerPhase, tCause + ".switch", switchForced);
+                } else {
+                    handler.streamSenseSwitch(handlerPhase, tCause, phase, recoveryBean.recovery);
+                }
+            } else if (is("PAUSE")) {
+                if (isPolling) {
+                    slowing.testPollSync(usedTimeout, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+                }
+                bindSession("loop");
+            } else if (is("FIRST_PAUSE")) {
+                if (switchToWebSocket) {
+                    handler.switchToWebSocket(recoveryBean.recovery);
+                    switchToWebSocket = false;
+                } else {
+                    bindSession("loop1");
+                }
+            } else if (is("RECEIVING")) {
+                timeoutForStalled();
+            } else if (is("STALLING")) {
+                timeoutForReconnect();
+            } else { // _OFF
+                log.error("Unexpected timeout event while session is OFF");
+                shutdown(GO_TO_OFF);
+            }
+        }
+
+        void createSent() {
+            sentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            if (isNot("OFF") && isNot("SLEEP")) {
+                log.error("Unexpected phase after create request sent: " + phase);
+                shutdown(GO_TO_OFF);
+                return;
+            }
+            if (!changePhaseType("CREATING")) {
+                return;
+            }
+            launchTimeout("currentConnectTimeout", options.currentConnectTimeout, "", false);
+        }
+
+        void bindSent() {
+            sentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            if (isNot("PAUSE") && isNot("FIRST_PAUSE")) {
+                log.error("Unexpected phase after bind request sent: " + phase);
+                shutdown(GO_TO_OFF);
+                return;
+            }
+            if (!changePhaseType(is("PAUSE") ? "BINDING" : "FIRST_BINDING")) {
+                return;
+            }
+            launchTimeout("bindTimeout", bindTimeout, "", false);
         }
 
 

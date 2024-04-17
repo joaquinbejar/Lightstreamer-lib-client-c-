@@ -40,6 +40,7 @@
 #include <lightstreamer/client/session/SlowingHandler.hpp>
 #include <lightstreamer/client/session/RecoveryBean.hpp>
 #include <lightstreamer/client/session/OfflineCheck.hpp>
+#include <lightstreamer/util/mdc/MDC.hpp>
 
 namespace lightstreamer::client::session {
 
@@ -265,6 +266,76 @@ namespace lightstreamer::client::session {
                     return Constants::STALLED;
                 default:
                     return Constants::CONNECTED + this->connectedHighLevelStatus();
+            }
+        }
+        /**
+ * @brief Pure virtual method to be overridden in derived classes to provide the first connected status.
+ * @return A string representing the first connected status.
+ */
+        virtual std::string firstConnectedStatus() const = 0;
+
+        /**
+         * @brief Handles sending of a reverse heartbeat if necessary.
+         * @param force If true, forcefully handle the reverse heartbeat.
+         */
+        virtual void handleReverseHeartbeat(bool force) {
+            this->protocol->handleReverseHeartbeat();
+        }
+
+        /**
+         * @brief Pure virtual method to determine if content length should be asked.
+         * @return True if content length should be asked, false otherwise.
+         */
+        virtual bool shouldAskContentLength() const = 0;
+
+        /**
+         * @brief Determines if the session is considered open.
+         * @return True if the session is not in OFF, CREATING, or SLEEP states.
+         */
+        bool isOpen() const {
+            return isNot("OFF") && isNot("CREATING") && isNot("SLEEP");
+        }
+
+        /**
+         * @brief Checks if the current session is a streaming session.
+         * @return True if the session is not polling, false if it is polling.
+         */
+        bool isStreamingSession() const {
+            return !this->isPolling;
+        }
+
+        /**
+         * @brief Gets the server address to be used for push communication.
+         * @return The control-link address if available; otherwise, the address configured at startup.
+         */
+        std::string pushServerAddress() const {
+            if (sessionServerAddress.empty()) {
+                return serverAddressCache;
+            }
+            return sessionServerAddress;
+        }
+
+    public:
+        /**
+         * @brief Gets the session ID.
+         * @return The session ID if set, or an empty string if not.
+         */
+        std::string getSessionId() const {
+            if (sessionId.empty()) {
+                return "";
+            }
+            return sessionId;
+        }
+
+        /**
+         * @brief Sets the session ID.
+         * @param value The new session ID.
+         */
+        void setSessionId(const std::string& value) {
+            sessionId = value;
+            // Assuming MDC is some sort of logging context manager:
+            if (MDC::isEnabled()) {
+                MDC::put("sessionId", sessionId);
             }
         }
 

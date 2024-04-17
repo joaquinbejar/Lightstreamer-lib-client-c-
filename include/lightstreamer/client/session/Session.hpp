@@ -315,6 +315,156 @@ namespace lightstreamer::client::session {
             return sessionServerAddress;
         }
 
+        /**
+         * @brief Executes the bind session process.
+         * @param bindCause The reason for binding the session.
+         * @return A future that will hold the result of the bind session request.
+         */
+        std::future<bool> bindSessionExecution(const std::string& bindCause) {
+            auto request = std::make_shared<BindSessionRequest>(
+                    pushServerAddress(),
+                    getSessionId(),
+                    isPolling,
+                    bindCause,
+                    options,
+                    slowing->delay(),
+                    shouldAskContentLength(),
+                    protocol->maxReverseHeartbeatIntervalMs()
+            );
+
+            return protocol->sendBindRequest(request);
+        }
+
+        /**
+         * @brief Attempts to recover the session after a network error or similar issue.
+         */
+        void recoverSession() {
+            auto request = std::make_shared<RecoverSessionRequest>(
+                    pushServerAddress(),
+                    getSessionId(),
+                    "network.error",
+                    options,
+                    slowing->delay(),
+                    dataNotificationCount
+            );
+
+            protocol->sendRecoveryRequest(request);
+            createSent(); // Assume createSent() manages the reconnection logic.
+        }
+
+        /**
+         * @brief Requests a switch in the session state to handle new phase changes or recoveries.
+         */
+        void requestSwitch(int newHPhase, const std::string& switchCause, bool forced, bool startRecovery) {
+            handlerPhase = newHPhase;
+
+            if (switchRequired) {
+                return; // Switch already requested!
+            }
+
+            if (log->isDebugEnabled()) {
+                log->debug("Switch requested phase=" + phase + " cause=" + switchCause);
+            }
+
+            slowRequired = false; // Overriding any pending slow-switch command.
+
+            if (is("CREATING") || is("SLEEP") || is("OFF")) {
+                handler->streamSense(handlerPhase, switchCause, forced);
+            } else if (is("PAUSE") || is("FIRST_PAUSE")) {
+                handler->switchReady(handlerPhase, switchCause, forced, startRecovery);
+            } else {
+                switchRequired = true;
+                switchForced = forced;
+                this->switchCause = switchCause;
+                sendForceRebind(switchCause);
+            }
+        }
+
+        /**
+         * @brief Requests a slow operation mode to accommodate slower network conditions or client performance.
+         */
+        void requestSlow(int newHPhase) {
+            handlerPhase = newHPhase;
+
+            if (slowRequired) {
+                return; // Slow mode already requested.
+            }
+
+            log->debug("Slow requested");
+
+            if (is("CREATING") || is("SLEEP") || is("OFF")) {
+                log->error("Unexpected phase during slow handling");
+                shutdown(GO_TO_OFF);
+                return;
+            }
+
+            if (is("PAUSE") || is("FIRST_PAUSE")) {
+                handler->slowReady(handlerPhase);
+            } else {
+                slowRequired = true;
+                sendForceRebind("slow");
+            }
+        }
+
+        /**
+         * @brief Closes the session with the specified reason.
+         * @param closeReason The reason for closing the session.
+         * @param alreadyClosedOnServer Whether the session is already closed on the server.
+         * @param noRecoveryScheduled Whether recovery is scheduled or not.
+         */
+        virtual void closeSession(const std::string& closeReason, bool alreadyClosedOnServer, bool noRecoveryScheduled) {
+            closeSession(closeReason, alreadyClosedOnServer, noRecoveryScheduled, false);
+        }
+
+        /**
+         * @brief Closes the session with additional control over the connection state.
+         * @param closeReason The reason for closing the session.
+         * @param alreadyClosedOnServer Whether the session is already closed on the server.
+         * @param noRecoveryScheduled Whether recovery is scheduled or not.
+         * @param forceConnectionClose Forcefully close the connection if true.
+         */
+        void closeSession(const std::string& closeReason, bool alreadyClosedOnServer, bool noRecoveryScheduled, bool forceConnectionClose) {
+            log.info("Closing session: " + closeReason);
+
+            if (isOpen()) {
+                if (!alreadyClosedOnServer) {
+                    sendDestroySession(closeReason);
+                }
+
+                subscriptions->onSessionClose();
+                messages->onSessionClose();
+                handlerPhase = handler->onSessionClose(handlerPhase, noRecoveryScheduled);
+
+                details->clear();
+                options->resetInternalMaxBandwidth();
+            } else {
+                subscriptions->onSessionClose();
+                messages->onSessionClose();
+                handlerPhase = handler->onSessionClose(handlerPhase, noRecoveryScheduled);
+            }
+
+            shutdown(!noRecoveryScheduled, forceConnectionClose);
+        }
+
+        /**
+         * @brief Shutdown the session optionally going to sleep or closing off completely.
+         * @param goToSleep Indicates whether to go to sleep (temporary shutdown) or not.
+         */
+        virtual void shutdown(bool goToSleep) {
+            shutdown(goToSleep, false);
+        }
+
+        /**
+         * @brief Forcefully or gracefully shuts down the session.
+         * @param goToSleep Indicates whether to put the session in sleep mode.
+         * @param forceConnectionClose Forcefully closes the connection if true.
+         */
+        virtual void shutdown(bool goToSleep, bool forceConnectionClose) {
+            reset();
+            changePhaseType(goToSleep ? SLEEP : OFF);
+            protocol->stop(goToSleep, forceConnectionClose);
+        }
+
     public:
         /**
          * @brief Gets the session ID.
@@ -351,6 +501,130 @@ namespace lightstreamer::client::session {
             // Placeholder: implement based on specific logic that determines the "connected high level" status.
             return ""; // Modify as needed
         }
+
+        class IRunnable {
+        public:
+            virtual void run() = 0;
+            virtual ~IRunnable() = default;
+        };
+
+        class MyRunnableA : public IRunnable {
+        private:
+            Session* session; // Using raw pointer for simplicity in this context.
+
+        public:
+            // Constructor to initialize the session pointer.
+            explicit MyRunnableA(Session* session) : session(session) {}
+
+            // Implementation of the run method.
+            void run() override {
+                // Debug assertion to ensure this is being called on the correct thread could be added here.
+                session->bindSent();
+            }
+
+            // Ensure proper destruction.
+            ~MyRunnableA() override = default;
+        };
+
+
+
+
+    protected:
+
+        /**
+         * @brief Initiates creation of a new session, potentially replacing an old one.
+         * @param oldSessionId The session ID of the previous session.
+         * @param reconnectionCause The cause of the reconnection.
+         */
+        virtual void createSession(const std::string& oldSessionId, const std::string& reconnectionCause) {
+            bool openOnServer = isNot("OFF") && isNot("SLEEP") ? OPEN_ON_SERVER : CLOSED_ON_SERVER;
+
+            std::string cause = reconnectionCause.empty() ? "" : reconnectionCause;
+            if (openOnServer == OPEN_ON_SERVER) {
+                closeSession("new." + cause, OPEN_ON_SERVER, RECOVERY_SCHEDULED);
+            }
+
+            reset();
+
+            details->sessionId = "";
+            details->serverSocketName = "";
+            details->clientIp = "";
+            details->serverInstanceAddress = "";
+
+            serverAddressCache = details->serverAddress;
+
+            ignoreServerAddressCache = options->serverInstanceAddressIgnored;
+
+            options->internalRealMaxBandwidth.reset();
+
+            log->info("Opening new session ... ");
+
+            if (createSessionExecution(phaseCount, oldSessionId, cause)) {
+                createSent();
+            }
+        }
+
+        /**
+         * @brief Executes the session creation process.
+         * @param ph The phase count.
+         * @param oldSessionId The previous session's ID.
+         * @param cause The cause for session creation.
+         * @return True if the session was successfully created, false otherwise.
+         */
+        virtual bool createSessionExecution(int ph, const std::string& oldSessionId, const std::string& cause) {
+            if (ph != phaseCount) {
+                return false;
+            }
+
+            std::string server = pushServerAddress();
+
+            if (offlineCheck->shouldDelay(server)) {
+                log->info("Client is offline, delaying connection to server");
+                thread->schedule([=] {
+                    createSessionExecution(ph, oldSessionId, "offline");
+                }, offlineCheck->delay());
+
+                return false;
+            }
+
+            auto request = std::make_shared<CreateSessionRequest>(server, isPolling, cause, options, details, slowing->delay(), details->password, oldSessionId);
+            protocol->sendCreateRequest(request);
+
+            return true;
+        }
+
+        /**
+         * @brief Binds the session with the server.
+         * @param bindCause The reason for binding.
+         */
+        virtual void bindSession(const std::string& bindCause) {
+            bindCount++;
+
+            if (isNot("PAUSE") && isNot("FIRST_PAUSE") && isNot("OFF")) {
+                log->error("Unexpected phase during binding of session");
+                shutdown(GO_TO_OFF);
+                return;
+            }
+
+            if (is("OFF")) {
+                if (!changePhaseType("FIRST_PAUSE")) {
+                    return;
+                }
+            }
+
+            if (!isPolling) {
+                log->info("Binding session");
+            } else {
+                log->debug("Binding session");
+            }
+
+            auto bindFuture = bindSessionExecution(bindCause);
+            bindFuture.then([this]() {
+                // Placeholder for fulfilled action
+            });
+        }
+
+
 
 
     };

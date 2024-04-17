@@ -270,6 +270,7 @@ namespace lightstreamer::client::session {
                     return Constants::CONNECTED + this->connectedHighLevelStatus();
             }
         }
+
         /**
  * @brief Pure virtual method to be overridden in derived classes to provide the first connected status.
  * @return A string representing the first connected status.
@@ -322,7 +323,7 @@ namespace lightstreamer::client::session {
          * @param bindCause The reason for binding the session.
          * @return A future that will hold the result of the bind session request.
          */
-        std::future<bool> bindSessionExecution(const std::string& bindCause) {
+        std::future<bool> bindSessionExecution(const std::string &bindCause) {
             auto request = std::make_shared<BindSessionRequest>(
                     pushServerAddress(),
                     getSessionId(),
@@ -357,7 +358,7 @@ namespace lightstreamer::client::session {
         /**
          * @brief Requests a switch in the session state to handle new phase changes or recoveries.
          */
-        void requestSwitch(int newHPhase, const std::string& switchCause, bool forced, bool startRecovery) {
+        void requestSwitch(int newHPhase, const std::string &switchCause, bool forced, bool startRecovery) {
             handlerPhase = newHPhase;
 
             if (switchRequired) {
@@ -414,7 +415,8 @@ namespace lightstreamer::client::session {
          * @param alreadyClosedOnServer Whether the session is already closed on the server.
          * @param noRecoveryScheduled Whether recovery is scheduled or not.
          */
-        virtual void closeSession(const std::string& closeReason, bool alreadyClosedOnServer, bool noRecoveryScheduled) {
+        virtual void
+        closeSession(const std::string &closeReason, bool alreadyClosedOnServer, bool noRecoveryScheduled) {
             closeSession(closeReason, alreadyClosedOnServer, noRecoveryScheduled, false);
         }
 
@@ -425,7 +427,8 @@ namespace lightstreamer::client::session {
          * @param noRecoveryScheduled Whether recovery is scheduled or not.
          * @param forceConnectionClose Forcefully close the connection if true.
          */
-        void closeSession(const std::string& closeReason, bool alreadyClosedOnServer, bool noRecoveryScheduled, bool forceConnectionClose) {
+        void closeSession(const std::string &closeReason, bool alreadyClosedOnServer, bool noRecoveryScheduled,
+                          bool forceConnectionClose) {
             log.info("Closing session: " + closeReason);
 
             if (isOpen()) {
@@ -483,7 +486,7 @@ namespace lightstreamer::client::session {
          * @brief Sets the session ID.
          * @param value The new session ID.
          */
-        void setSessionId(const std::string& value) {
+        void setSessionId(const std::string &value) {
             sessionId = value;
             // Assuming MDC is some sort of logging context manager:
             if (MDC::isEnabled()) {
@@ -507,16 +510,17 @@ namespace lightstreamer::client::session {
         class IRunnable {
         public:
             virtual void run() = 0;
+
             virtual ~IRunnable() = default;
         };
 
         class MyRunnableA : public IRunnable {
         private:
-            Session* session; // Using raw pointer for simplicity in this context.
+            Session *session; // Using raw pointer for simplicity in this context.
 
         public:
             // Constructor to initialize the session pointer.
-            explicit MyRunnableA(Session* session) : session(session) {}
+            explicit MyRunnableA(Session *session) : session(session) {}
 
             // Implementation of the run method.
             void run() override {
@@ -532,7 +536,8 @@ namespace lightstreamer::client::session {
             return isPolling;
         }
 
-        std::future<void> launchTimeout(const std::string& timeoutType, long pauseToUse, const std::string& cause, bool startRecovery) {
+        std::future<void>
+        launchTimeout(const std::string &timeoutType, long pauseToUse, const std::string &cause, bool startRecovery) {
             int pc = phaseCount;
             log.debug("Status timeout in " + std::to_string(pauseToUse) + " [" + timeoutType + "] due to " + cause);
 
@@ -578,7 +583,7 @@ namespace lightstreamer::client::session {
         void timeoutForExecution() {
             try {
                 launchTimeout("executionTimeout", options.stalledTimeout, "", false);
-            } catch (const std::exception& e) {
+            } catch (const std::exception &e) {
                 log.warn("Something went wrong: " + std::string(e.what()));
             }
             log.debug("Check Point 1a120ak.");
@@ -613,7 +618,7 @@ namespace lightstreamer::client::session {
             return spent > currentRetryDelay ? 0 : currentRetryDelay - spent;
         }
 
-        void sendForceRebind(const std::string& rebindCause) {
+        void sendForceRebind(const std::string &rebindCause) {
             log.info("Sending request to the server to force a rebind on the current connection during " + phase);
 
             ForceRebindRequest request(pushServerAddress(), sessionId, rebindCause, slowing.delay());
@@ -622,7 +627,7 @@ namespace lightstreamer::client::session {
             protocol.sendForceRebind(request, tutor);
         }
 
-        void sendDestroySession(const std::string& closeReason) {
+        void sendDestroySession(const std::string &closeReason) {
             log.info("Sending request to the server to destroy the current session during " + phase);
 
             DestroyRequest request(pushServerAddress(), sessionId, closeReason);
@@ -643,7 +648,7 @@ namespace lightstreamer::client::session {
         }
 
         /// Sends a bandwidth request to the transport layer.
-        void sendConstrain(long timeoutMs, ConstrainRequest* clientRequest) {
+        void sendConstrain(long timeoutMs, ConstrainRequest *clientRequest) {
             if (is("OFF") || is("SLEEP")) {
                 return;
             } else if (bandwidthUnmanaged) {
@@ -670,7 +675,7 @@ namespace lightstreamer::client::session {
             BandwidthRetransmissionMonitor() : lastReceivedRequestId(-1), lastPendingRequestId(-1) {}
 
             // Must be checked before sending a request to ensure it does not override newer requests
-            bool canSend(const ConstrainRequest& request) {
+            bool canSend(const ConstrainRequest &request) {
                 std::lock_guard<std::mutex> lock(mutex);
                 long clientId = request.getClientRequestId();
                 bool isForbidden = (clientId < lastPendingRequestId || clientId <= lastReceivedRequestId);
@@ -681,7 +686,7 @@ namespace lightstreamer::client::session {
             }
 
             // Must be checked after receiving a response to update the state correctly
-            void onReceivedResponse(const ConstrainRequest& request) {
+            void onReceivedResponse(const ConstrainRequest &request) {
                 std::lock_guard<std::mutex> lock(mutex);
                 long clientId = request.getClientRequestId();
                 if (clientId > lastReceivedRequestId) {
@@ -702,7 +707,7 @@ namespace lightstreamer::client::session {
          * @param oldSessionId The session ID of the previous session.
          * @param reconnectionCause The cause of the reconnection.
          */
-        virtual void createSession(const std::string& oldSessionId, const std::string& reconnectionCause) {
+        virtual void createSession(const std::string &oldSessionId, const std::string &reconnectionCause) {
             bool openOnServer = isNot("OFF") && isNot("SLEEP") ? OPEN_ON_SERVER : CLOSED_ON_SERVER;
 
             std::string cause = reconnectionCause.empty() ? "" : reconnectionCause;
@@ -737,7 +742,7 @@ namespace lightstreamer::client::session {
          * @param cause The cause for session creation.
          * @return True if the session was successfully created, false otherwise.
          */
-        virtual bool createSessionExecution(int ph, const std::string& oldSessionId, const std::string& cause) {
+        virtual bool createSessionExecution(int ph, const std::string &oldSessionId, const std::string &cause) {
             if (ph != phaseCount) {
                 return false;
             }
@@ -753,7 +758,8 @@ namespace lightstreamer::client::session {
                 return false;
             }
 
-            auto request = std::make_shared<CreateSessionRequest>(server, isPolling, cause, options, details, slowing->delay(), details->password, oldSessionId);
+            auto request = std::make_shared<CreateSessionRequest>(server, isPolling, cause, options, details,
+                                                                  slowing->delay(), details->password, oldSessionId);
             protocol->sendCreateRequest(request);
 
             return true;
@@ -763,7 +769,7 @@ namespace lightstreamer::client::session {
          * @brief Binds the session with the server.
          * @param bindCause The reason for binding.
          */
-        virtual void bindSession(const std::string& bindCause) {
+        virtual void bindSession(const std::string &bindCause) {
             bindCount++;
 
             if (isNot("PAUSE") && isNot("FIRST_PAUSE") && isNot("OFF")) {
@@ -790,7 +796,8 @@ namespace lightstreamer::client::session {
             });
         }
 
-        void onTimeout(const std::string& timeoutType, int phaseCount, long usedTimeout, const std::string& coreCause, bool startRecovery) {
+        void onTimeout(const std::string &timeoutType, int phaseCount, long usedTimeout, const std::string &coreCause,
+                       bool startRecovery) {
             if (phaseCount != this->phaseCount) {
                 return;
             }
@@ -826,7 +833,8 @@ namespace lightstreamer::client::session {
                         handler.retry(handlerPhase, tCause, isForced, workedBefore > 0);
                     }
                 } else {
-                    log.debug(startRecovery ? "Timeout: switch transport from polling (ignore recovery)" : "Timeout: switch transport from polling");
+                    log.debug(startRecovery ? "Timeout: switch transport from polling (ignore recovery)"
+                                            : "Timeout: switch transport from polling");
                     handler.streamSense(handlerPhase, tCause, false);
                 }
             } else if (is("FIRST_BINDING")) {
@@ -841,7 +849,8 @@ namespace lightstreamer::client::session {
                 }
             } else if (is("PAUSE")) {
                 if (isPolling) {
-                    slowing.testPollSync(usedTimeout, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+                    slowing.testPollSync(usedTimeout, std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch()).count());
                 }
                 bindSession("loop");
             } else if (is("FIRST_PAUSE")) {
@@ -862,7 +871,8 @@ namespace lightstreamer::client::session {
         }
 
         void createSent() {
-            sentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            sentTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
             if (isNot("OFF") && isNot("SLEEP")) {
                 log.error("Unexpected phase after create request sent: " + phase);
                 shutdown(GO_TO_OFF);
@@ -875,7 +885,8 @@ namespace lightstreamer::client::session {
         }
 
         void bindSent() {
-            sentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            sentTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
             if (isNot("PAUSE") && isNot("FIRST_PAUSE")) {
                 log.error("Unexpected phase after bind request sent: " + phase);
                 shutdown(GO_TO_OFF);
@@ -887,57 +898,96 @@ namespace lightstreamer::client::session {
             launchTimeout("bindTimeout", bindTimeout, "", false);
         }
 
+        virtual void
+        doOnErrorEvent(const std::string &reason, bool closedOnServer, bool unableToOpen, bool startRecovery,
+                       long timeLeftMs, bool wsError) {
+            log.Debug("Evento de error por " + reason + " mientras " + phase);
+
+            if (is(RECEIVING) || is(STALLED) || is(STALLING) || is(BINDING) || is(PAUSE)) {
+                if (startRecovery) {
+                    log.Debug("Iniciar recuperación de la sesión. Causa: fallo de socket mientras se recibían datos.");
+                    changePhaseType(SLEEP, startRecovery);
+                } else {
+                    closeSession(reason, closedOnServer, RECOVERY_SCHEDULED);
+                    assert(is(SLEEP));
+                    long pause = static_cast<long>(std::round(GlobalRandom::NextDouble() * options.FirstRetryMaxDelay));
+                    launchTimeout("firstRetryMaxDelay", pause, reason, startRecovery);
+                }
+            } else if (is(CREATING) || is(CREATED) || is(FIRST_BINDING)) {
+                if (recoveryBean.Recovery && timeLeftMs > 0 && !closedOnServer) {
+                    log.Debug("Iniciar recuperación de la sesión. Causa: fallo de socket durante la recuperación.");
+                    changePhaseType(SLEEP, true);
+                    launchTimeout("currentRetryDelay", calculateRetryDelay(), reason, startRecovery);
+                    options.increaseRetryDelay();
+                } else if (switchRequired && !isForced) {
+                    handler.streamSense(handlerPhase, switchCause + ".error", switchForced);
+                } else {
+                    std::string cause = (closedOnServer ? "cerrado por el servidor" : "error de socket");
+                    long crd = calculateRetryDelay();
+                    log.Debug("Iniciar nueva sesión. Causa: " + cause + " en " + std::to_string(crd));
+                    closeSession(reason, closedOnServer, RECOVERY_SCHEDULED);
+                    launchTimeout("currentRetryDelay", crd, reason, false);
+                    options.increaseRetryDelay();
+                }
+            } else {
+                log.Error("Evento de error inesperado mientras la sesión está en un estado no activo: " + phase);
+            }
+        }
+
+        virtual void changeControlLink(const std::string &controlLink) {}
+
     public:
-        void sendSubscription(SubscribeRequest& request, RequestTutor& tutor) {
+        void sendSubscription(SubscribeRequest &request, RequestTutor &tutor) {
             request.setServer(pushServerAddress());
             request.setSession(sessionId);
             protocol.sendSubscriptionRequest(request, tutor);
         }
 
-        void sendUnsubscription(UnsubscribeRequest& request, RequestTutor& tutor) {
+        void sendUnsubscription(UnsubscribeRequest &request, RequestTutor &tutor) {
             request.setServer(pushServerAddress());
             request.setSession(sessionId);
             protocol.sendUnsubscriptionRequest(request, tutor);
         }
 
-        void sendSubscriptionChange(ChangeSubscriptionRequest& request, RequestTutor& tutor) {
+        void sendSubscriptionChange(ChangeSubscriptionRequest &request, RequestTutor &tutor) {
             request.setServer(pushServerAddress());
             request.setSession(sessionId);
             protocol.sendConfigurationRequest(request, tutor);
         }
 
-        void sendReverseHeartbeat(ReverseHeartbeatRequest& request, RequestTutor& tutor) {
+        void sendReverseHeartbeat(ReverseHeartbeatRequest &request, RequestTutor &tutor) {
             request.setServer(pushServerAddress());
             request.setSession(sessionId);
             protocol.sendReverseHeartbeat(request, tutor);
         }
 
         /// Closes the session and notifies the error to ClientListener.
-        void notifyServerError(int errorCode, const std::string& errorMessage) {
+        void notifyServerError(int errorCode, const std::string &errorMessage) {
             closeSession("end", true, true);
             handler.onServerError(errorCode, errorMessage);
         }
 
         class TextProtocolListener : public protocol::ProtocolListener {
-            Session& outerInstance;
+            Session &outerInstance;
 
         public:
-            TextProtocolListener(Session& outerInstance) : outerInstance(outerInstance) {}
+            TextProtocolListener(Session &outerInstance) : outerInstance(outerInstance) {}
 
             void onInterrupted(bool wsError, bool unableToOpen) override {
                 // An interruption triggers an attempt to recover the session.
                 onErrorEvent("network.error", false, unableToOpen, true, wsError);
             }
 
-            void onConstrainResponse(const ConstrainTutor& tutor) override {
+            void onConstrainResponse(const ConstrainTutor &tutor) override {
                 outerInstance.bwRetransmissionMonitor.onReceivedResponse(tutor.getRequest());
             }
 
-            void onServerSentBandwidth(const std::string& maxBandwidth) override {
+            void onServerSentBandwidth(const std::string &maxBandwidth) override {
                 if (maxBandwidth == "unmanaged") {
                     outerInstance.options.BandwidthUnmanaged = true;
                 }
-                outerInstance.options.InternalRealMaxBandwidth = (maxBandwidth == "unmanaged") ? "unlimited" : maxBandwidth;
+                outerInstance.options.InternalRealMaxBandwidth = (maxBandwidth == "unmanaged") ? "unlimited"
+                                                                                               : maxBandwidth;
             }
 
             void onTakeover(int specificCode) override {
@@ -948,7 +998,8 @@ namespace lightstreamer::client::session {
                 onEvent();
             }
 
-            void onOKReceived(const std::string& newSession, const std::string& controlLink, long requestLimitLength, long keepaliveIntervalDefault) override {
+            void onOKReceived(const std::string &newSession, const std::string &controlLink, long requestLimitLength,
+                              long keepaliveIntervalDefault) override {
                 outerInstance.logDebug("OK event while " + outerInstance.phase);
                 if (!outerInstance.is(CREATING) && !outerInstance.is(FIRST_BINDING) && !outerInstance.is(BINDING)) {
                     outerInstance.logError("Unexpected OK event while session is in status: " + outerInstance.phase);
@@ -957,7 +1008,8 @@ namespace lightstreamer::client::session {
                 }
 
                 std::string lastUsedAddress = outerInstance.PushServerAddress();
-                std::string addressToUse = (!controlLink.empty() && !outerInstance.ignoreServerAddressCache) ? controlLink : lastUsedAddress;
+                std::string addressToUse = (!controlLink.empty() && !outerInstance.ignoreServerAddressCache)
+                                           ? controlLink : lastUsedAddress;
                 outerInstance.sessionServerAddress = addressToUse;
 
                 outerInstance.logDebug("Address to use after create: " + outerInstance.sessionServerAddress);
@@ -990,16 +1042,19 @@ namespace lightstreamer::client::session {
             }
 
             void onLoopReceived(long serverSentPause) override {
-                if (outerInstance.is(RECEIVING) || outerInstance.is(STALLING) || outerInstance.is(STALLED) || outerInstance.is(CREATED)) {
+                if (outerInstance.is(RECEIVING) || outerInstance.is(STALLING) || outerInstance.is(STALLED) ||
+                    outerInstance.is(CREATED)) {
                     if (outerInstance.switchRequired) {
-                        outerInstance.handler.switchReady(outerInstance.handlerPhase, outerInstance.switchCause, outerInstance.switchForced, false);
+                        outerInstance.handler.switchReady(outerInstance.handlerPhase, outerInstance.switchCause,
+                                                          outerInstance.switchForced, false);
                     } else if (outerInstance.slowRequired) {
                         outerInstance.handler.slowReady(outerInstance.handlerPhase);
                     } else {
                         doPause(serverSentPause);
                     }
                 } else {
-                    outerInstance.logError("Unexpected loop event while session is in non-active status: " + outerInstance.phase);
+                    outerInstance.logError(
+                            "Unexpected loop event while session is in non-active status: " + outerInstance.phase);
                     outerInstance.shutdown(GO_TO_OFF);
                 }
             }
@@ -1017,7 +1072,7 @@ namespace lightstreamer::client::session {
                 onErrorEvent("expired", true, false, false, false);
             }
 
-            void onUpdateReceived(int subscriptionId, int item, const std::vector<std::string>& args) override {
+            void onUpdateReceived(int subscriptionId, int item, const std::vector<std::string> &args) override {
                 onEvent();
                 outerInstance.subscriptions.onUpdateReceived(subscriptionId, item, args);
             }
@@ -1037,52 +1092,55 @@ namespace lightstreamer::client::session {
                 outerInstance.subscriptions.onLostUpdatesEvent(subscriptionId, item, lost);
             }
 
-            void onConfigurationEvent(int subscriptionId, const std::string& frequency) override {
+            void onConfigurationEvent(int subscriptionId, const std::string &frequency) override {
                 onEvent();
                 outerInstance.subscriptions.onConfigurationEvent(subscriptionId, frequency);
             }
 
-            void onMessageAck(const std::string& sequence, int number, bool async) override {
+            void onMessageAck(const std::string &sequence, int number, bool async) override {
                 if (async) {
                     onEvent();
                 }
                 outerInstance.messages.onMessageAck(sequence, number);
             }
 
-            void onMessageOk(const std::string& sequence, int number) override {
+            void onMessageOk(const std::string &sequence, int number) override {
                 onEvent();
                 outerInstance.messages.onMessageOk(sequence, number);
             }
 
-            void onMessageDeny(const std::string& sequence, int denyCode, const std::string& denyMessage, int number, bool async) override {
+            void onMessageDeny(const std::string &sequence, int denyCode, const std::string &denyMessage, int number,
+                               bool async) override {
                 if (async) {
                     onEvent();
                 }
                 outerInstance.messages.onMessageDeny(sequence, denyCode, denyMessage, number);
             }
 
-            void onMessageDiscarded(const std::string& sequence, int number, bool async) override {
+            void onMessageDiscarded(const std::string &sequence, int number, bool async) override {
                 if (async) {
                     onEvent();
                 }
                 outerInstance.messages.onMessageDiscarded(sequence, number);
             }
 
-            void onMessageError(const std::string& sequence, int errorCode, const std::string& errorMessage, int number, bool async) override {
+            void onMessageError(const std::string &sequence, int errorCode, const std::string &errorMessage, int number,
+                                bool async) override {
                 if (async) {
                     onEvent();
                 }
                 outerInstance.messages.onMessageError(sequence, errorCode, errorMessage, number);
             }
 
-            void onSubscriptionError(int subscriptionId, int errorCode, const std::string& errorMessage, bool async) override {
+            void onSubscriptionError(int subscriptionId, int errorCode, const std::string &errorMessage,
+                                     bool async) override {
                 if (async) {
                     onEvent();
                 }
                 outerInstance.subscriptions.onSubscriptionError(subscriptionId, errorCode, errorMessage);
             }
 
-            void onServerError(int errorCode, const std::string& errorMessage) override {
+            void onServerError(int errorCode, const std::string &errorMessage) override {
                 outerInstance.notifyServerError(errorCode, errorMessage);
             }
 
@@ -1100,9 +1158,11 @@ namespace lightstreamer::client::session {
                 outerInstance.subscriptions.onSubscriptionAck(subscriptionId);
             }
 
-            void onSubscription(int subscriptionId, int totalItems, int totalFields, int keyPosition, int commandPosition) override {
+            void onSubscription(int subscriptionId, int totalItems, int totalFields, int keyPosition,
+                                int commandPosition) override {
                 onEvent();
-                outerInstance.subscriptions.onSubscription(subscriptionId, totalItems, totalFields, keyPosition, commandPosition);
+                outerInstance.subscriptions.onSubscription(subscriptionId, totalItems, totalFields, keyPosition,
+                                                           commandPosition);
             }
 
             void onSubscriptionReconf(int subscriptionId, long reconfId, bool async) override {
@@ -1122,11 +1182,11 @@ namespace lightstreamer::client::session {
                 }
             }
 
-            void onServerName(const std::string& serverName) override {
+            void onServerName(const std::string &serverName) override {
                 outerInstance.details.ServerSocketName = serverName;
             }
 
-            void onClientIp(const std::string& clientIp) override {
+            void onClientIp(const std::string &clientIp) override {
                 outerInstance.details.ClientIp = clientIp;
                 outerInstance.handler.onIPReceived(clientIp);
             }
@@ -1139,7 +1199,8 @@ namespace lightstreamer::client::session {
                 outerInstance.timeoutForExecution();
             }
 
-            void onErrorEvent(const std::string& reason, bool closedOnServer, bool unableToOpen, bool tryRecovery, bool wsError) {
+            void onErrorEvent(const std::string &reason, bool closedOnServer, bool unableToOpen, bool tryRecovery,
+                              bool wsError) {
                 long timeLeftMs = outerInstance.recoveryBean.timeLeftMs(outerInstance.options.SessionRecoveryTimeout);
                 if (outerInstance.is(OFF)) {
                     return;
@@ -1169,12 +1230,12 @@ namespace lightstreamer::client::session {
 
         class ForceRebindTutor : public requests::RequestTutor {
         private:
-            Session& outerInstance;
+            Session &outerInstance;
             int currentPhase;
             std::string cause;
 
         public:
-            ForceRebindTutor(Session& outerInstance, int currentPhase, const std::string& cause)
+            ForceRebindTutor(Session &outerInstance, int currentPhase, const std::string &cause)
                     : RequestTutor(outerInstance.thread, outerInstance.options),
                       outerInstance(outerInstance),
                       currentPhase(currentPhase),
@@ -1207,10 +1268,11 @@ namespace lightstreamer::client::session {
 
         class ConstrainTutor : public requests::RequestTutor {
         private:
-            ConstrainRequest& request;
+            ConstrainRequest &request;
 
         public:
-            ConstrainTutor(long timeoutMs, ConstrainRequest& request, SessionThread& sessionThread, InternalConnectionOptions& options)
+            ConstrainTutor(long timeoutMs, ConstrainRequest &request, SessionThread &sessionThread,
+                           InternalConnectionOptions &options)
                     : RequestTutor(timeoutMs, sessionThread, options, false),
                       request(request) {}
 
@@ -1220,7 +1282,7 @@ namespace lightstreamer::client::session {
             }
 
             void doRecovery() override {
-                Session* session = sessionThread.getSessionManager().getSession();
+                Session *session = sessionThread.getSessionManager().getSession();
                 if (session) {
                     session->sendConstrain(this->timeoutMs, request);
                 }
@@ -1242,11 +1304,10 @@ namespace lightstreamer::client::session {
                 return true;
             }
 
-            ConstrainRequest& getRequest() const {
+            ConstrainRequest &getRequest() const {
                 return request;
             }
         };
-
 
 
     };

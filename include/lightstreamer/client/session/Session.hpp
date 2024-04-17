@@ -611,6 +611,87 @@ namespace lightstreamer::client::session {
             return spent > currentRetryDelay ? 0 : currentRetryDelay - spent;
         }
 
+        void sendForceRebind(const std::string& rebindCause) {
+            log.info("Sending request to the server to force a rebind on the current connection during " + phase);
+
+            ForceRebindRequest request(pushServerAddress(), sessionId, rebindCause, slowing.delay());
+            ForceRebindTutor tutor(*this, phaseCount, rebindCause);
+
+            protocol.sendForceRebind(request, tutor);
+        }
+
+        void sendDestroySession(const std::string& closeReason) {
+            log.info("Sending request to the server to destroy the current session during " + phase);
+
+            DestroyRequest request(pushServerAddress(), sessionId, closeReason);
+            protocol.sendDestroy(request);
+
+            // we do not retry destroy requests: just fire and forget
+        }
+
+        void sendMessage(MessageRequest request, RequestTutor tutor) {
+            request.setServer(pushServerAddress());
+            request.setSession(sessionId);
+
+            if (log.isDebugEnabled()) {
+                log.debug("Sending client message request to the server. " + std::to_string(request.requestId()));
+            }
+
+            protocol.sendMessageRequest(request, tutor);
+        }
+
+        /// Sends a bandwidth request to the transport layer.
+        void sendConstrain(long timeoutMs, ConstrainRequest* clientRequest) {
+            if (is("OFF") || is("SLEEP")) {
+                return;
+            } else if (bandwidthUnmanaged) {
+                // If the bandwidth is unmanaged, it is useless to try to change it.
+                return;
+            } else if (is("CREATING")) {
+                // Too late to send it via create_session, too early to send it via control.
+                cachedRequiredBW = true;
+                return;
+            }
+
+            ConstrainRequest request(options.internalMaxBandwidth, clientRequest);
+            request.setSession(sessionId);
+            ConstrainTutor tutor(timeoutMs, request, *this, options);
+            request.setServer(pushServerAddress());
+
+            if (bwRetransmissionMonitor.canSend(request)) {
+                protocol.sendConstrainRequest(request, tutor);
+            }
+        }
+
+        class BandwidthRetransmissionMonitor {
+        public:
+            BandwidthRetransmissionMonitor() : lastReceivedRequestId(-1), lastPendingRequestId(-1) {}
+
+            // Must be checked before sending a request to ensure it does not override newer requests
+            bool canSend(const ConstrainRequest& request) {
+                std::lock_guard<std::mutex> lock(mutex);
+                long clientId = request.getClientRequestId();
+                bool isForbidden = (clientId < lastPendingRequestId || clientId <= lastReceivedRequestId);
+                if (!isForbidden) {
+                    lastPendingRequestId = clientId;
+                }
+                return !isForbidden;
+            }
+
+            // Must be checked after receiving a response to update the state correctly
+            void onReceivedResponse(const ConstrainRequest& request) {
+                std::lock_guard<std::mutex> lock(mutex);
+                long clientId = request.getClientRequestId();
+                if (clientId > lastReceivedRequestId) {
+                    lastReceivedRequestId = clientId;
+                }
+            }
+
+        private:
+            std::mutex mutex;
+            long lastReceivedRequestId;
+            long lastPendingRequestId;
+        };
 
     protected:
 
@@ -804,9 +885,36 @@ namespace lightstreamer::client::session {
             launchTimeout("bindTimeout", bindTimeout, "", false);
         }
 
+    public:
+        void sendSubscription(SubscribeRequest& request, RequestTutor& tutor) {
+            request.setServer(pushServerAddress());
+            request.setSession(sessionId);
+            protocol.sendSubscriptionRequest(request, tutor);
+        }
 
+        void sendUnsubscription(UnsubscribeRequest& request, RequestTutor& tutor) {
+            request.setServer(pushServerAddress());
+            request.setSession(sessionId);
+            protocol.sendUnsubscriptionRequest(request, tutor);
+        }
 
+        void sendSubscriptionChange(ChangeSubscriptionRequest& request, RequestTutor& tutor) {
+            request.setServer(pushServerAddress());
+            request.setSession(sessionId);
+            protocol.sendConfigurationRequest(request, tutor);
+        }
 
+        void sendReverseHeartbeat(ReverseHeartbeatRequest& request, RequestTutor& tutor) {
+            request.setServer(pushServerAddress());
+            request.setSession(sessionId);
+            protocol.sendReverseHeartbeat(request, tutor);
+        }
+
+        /// Closes the session and notifies the error to ClientListener.
+        void notifyServerError(int errorCode, const std::string& errorMessage) {
+            closeSession("end", true, true);
+            handler.onServerError(errorCode, errorMessage);
+        }
     };
 }
 

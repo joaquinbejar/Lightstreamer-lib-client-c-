@@ -36,6 +36,7 @@
 #include <lightstreamer/client/requests/MessageRequest.hpp>
 #include <lightstreamer/client/requests/ChangeSubscriptionRequest.hpp>
 #include <lightstreamer/client/requests/ReverseHeartbeatRequest.hpp>
+#include <lightstreamer/client/transport/WebSocket.hpp>
 
 namespace lightstreamer::client::session {
 
@@ -547,7 +548,7 @@ namespace lightstreamer::client::session {
 
             if (sessionPhase == "FIRST_BINDING" && status == Status::STREAMING_WS && switchType == Status::SWITCHING_STREAMING_HTTP) {
                 log->info("WebSocket support has been disabled.");
-                WebSocket::disable();
+                transport::WebSocket::disable();
             }
 
             changeStatus(switchType);
@@ -635,8 +636,8 @@ namespace lightstreamer::client::session {
          * @param clientIP The new client IP address received.
          */
         void onIPReceived(const std::string& clientIP) {
-            if (!this->clientIP.empty() && clientIP != this->clientIP && WebSocket::isDisabled()) {
-                WebSocket::restore();
+            if (!this->clientIP.empty() && clientIP != this->clientIP && transport::WebSocket::isDisabled()) {
+                transport::WebSocket::restore();
                 session->restoreWebSocket();
             }
             this->clientIP = clientIP;

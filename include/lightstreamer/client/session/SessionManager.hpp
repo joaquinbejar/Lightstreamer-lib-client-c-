@@ -648,6 +648,52 @@ namespace lightstreamer::client::session {
                 session->sendMessage(request, tutor);
             }
         }
+
+        /**
+         * Sends a subscription request using the current session.
+         * @param request The subscription request to send.
+         * @param tutor An object that manages the reliability and retry logic for the request.
+         */
+        void sendSubscription(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            if (session != nullptr) {
+                session->sendSubscription(request, tutor);
+            }
+        }
+
+        /**
+         * Sends an unsubscription request using the current session.
+         * @param request The unsubscription request to send.
+         * @param tutor An object that manages the reliability and retry logic for the request.
+         */
+        void sendUnsubscription(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            if (session != nullptr) {
+                session->sendUnsubscription(request, tutor);
+            }
+        }
+
+        /**
+         * Sends a subscription change request using the current session.
+         * @param request The change subscription request to send.
+         * @param tutor An object that manages the reliability and retry logic for the request.
+         */
+        void sendSubscriptionChange(std::shared_ptr<ChangeSubscriptionRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            if (session != nullptr) {
+                session->sendSubscriptionChange(request, tutor);
+            }
+        }
+
+        /**
+         * Sends a reverse heartbeat request using the current session.
+         * @param request The reverse heartbeat request to send.
+         * @param tutor An object that manages the reliability and retry logic for the request.
+         */
+        void sendReverseHeartbeat(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            if (session != nullptr) {
+                session->sendReverseHeartbeat(request, tutor);
+            }
+        }
+
+
     };
 
 

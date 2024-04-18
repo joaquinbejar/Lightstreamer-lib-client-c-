@@ -643,7 +643,7 @@ namespace lightstreamer::client::session {
          * @param request The message request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendMessage(std::shared_ptr<MessageRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendMessage(std::shared_ptr<MessageRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendMessage(request, tutor);
             }
@@ -654,7 +654,7 @@ namespace lightstreamer::client::session {
          * @param request The subscription request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendSubscription(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendSubscription(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendSubscription(request, tutor);
             }
@@ -665,7 +665,7 @@ namespace lightstreamer::client::session {
          * @param request The unsubscription request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendUnsubscription(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendUnsubscription(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendUnsubscription(request, tutor);
             }
@@ -676,7 +676,7 @@ namespace lightstreamer::client::session {
          * @param request The change subscription request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendSubscriptionChange(std::shared_ptr<ChangeSubscriptionRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendSubscriptionChange(std::shared_ptr<ChangeSubscriptionRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendSubscriptionChange(request, tutor);
             }
@@ -687,13 +687,83 @@ namespace lightstreamer::client::session {
          * @param request The reverse heartbeat request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendReverseHeartbeat(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<RequestTutor> tutor) {
+        void sendReverseHeartbeat(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendReverseHeartbeat(request, tutor);
             }
         }
 
+        /**
+         * Switches to WebSocket transport.
+         * @param startRecovery Indicates if recovery should start with the new session.
+         */
+        void switchToWebSocket(bool startRecovery) {
+            createSession(false, isFrozen, false, false, false, "ip", false, false, startRecovery);
+        }
 
+        /**
+         * Senses the need for switching the current session type based on the provided handler phase and cause.
+         * @param handlerPhase The current phase of the handler.
+         * @param switchCause The cause for potentially switching the session.
+         * @param forced Indicates if the switch is forced.
+         */
+        void streamSense(int handlerPhase, const std::string& switchCause, bool forced) {
+            if (handlerPhase != statusPhase) {
+                log->warn("Mismatching phase; handler: " + std::to_string(handlerPhase) + " != " + std::to_string(statusPhase));
+                return;
+            }
+
+            Status switchType = getNextSensePhase();
+            log->info("Setting up new session type " + statusToString(status) + "->" + statusToString(switchType));
+
+            if (switchType == Status::OFF || switchType == Status::END) {
+                log->warn("Unexpected fallback type switching with new session");
+                return;
+            }
+
+            bool strOrPoll = switchType == Status::SWITCHING_STREAMING_WS || switchType == Status::SWITCHING_STREAMING_HTTP ? STREAMING_SESSION : POLLING_SESSION;
+            bool wsOrHttp = switchType == Status::SWITCHING_STREAMING_WS || switchType == Status::SWITCHING_POLLING_WS ? WS_SESSION : HTTP_SESSION;
+
+            createSession(false, isFrozen, forced, strOrPoll, wsOrHttp, switchCause, AVOID_SWITCH, false, false);
+        }
+
+        /**
+         * Prepares for a switch in session type, possibly forced, and potentially starting recovery.
+         * @param handlerPhase The current phase of the handler.
+         * @param switchCause The cause for the switch.
+         * @param forced Indicates if the switch is forced.
+         * @param startRecovery Indicates if recovery should start with the new session.
+         */
+        void switchReady(int handlerPhase, const std::string& switchCause, bool forced, bool startRecovery) {
+            if (handlerPhase != statusPhase) {
+                return;
+            }
+
+            Status switchType = status;
+            log->info("Switching current session type " + statusToString(status));
+
+            if (isNot(Status::SWITCHING_STREAMING_WS) && isNot(Status::SWITCHING_STREAMING_HTTP) && isNot(Status::SWITCHING_POLLING_HTTP) && isNot(Status::SWITCHING_POLLING_WS)) {
+                log->error("Unexpected fallback type switching with a force rebind");
+                return;
+            }
+
+            bool strOrPoll = switchType == Status::SWITCHING_STREAMING_WS || switchType == Status::SWITCHING_STREAMING_HTTP ? STREAMING_SESSION : POLLING_SESSION;
+            bool wsOrHttp = switchType == Status::SWITCHING_STREAMING_WS || switchType == Status::SWITCHING_POLLING_WS ? WS_SESSION : HTTP_SESSION;
+
+            bindSession(forced, strOrPoll, wsOrHttp, switchCause, startRecovery);
+        }
+
+        /**
+         * Handles the transition to a slower connection mode.
+         * @param handlerPhase The current phase of the handler.
+         */
+        void slowReady(int handlerPhase) {
+            if (handlerPhase != statusPhase) {
+                return;
+            }
+            log->info("Slow session switching");
+            switchReady(handlerPhase, "slow", false, false);
+        }
     };
 
 

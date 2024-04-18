@@ -126,9 +126,38 @@ namespace lightstreamer::client::session {
          */
         int nBindAfterCreate = 0;
 
+        /**
+         * Constructs a SessionManager with basic session components.
+         * @param options Options for the internal connection.
+         * @param details Details of the internal connection.
+         * @param thread Thread handling session operations.
+         */
+        SessionManager(std::shared_ptr<InternalConnectionOptions> options, std::shared_ptr<InternalConnectionDetails> details, SessionThread& thread)
+                : options(options), details(details), thread(thread) {
+        }
+
+        /**
+         * Constructs a SessionManager with listeners for testing.
+         * This constructor initializes session management with various listeners.
+         * @param options Options for the internal connection.
+         * @param details Details of the internal connection.
+         * @param listener Session event listener.
+         * @param subscriptions Subscription event listener.
+         * @param messages Message event listener.
+         * @param thread Thread handling session operations.
+         */
+        SessionManager(std::shared_ptr<InternalConnectionOptions> options, std::shared_ptr<InternalConnectionDetails> details, std::shared_ptr<SessionsListener> listener, std::shared_ptr<SubscriptionsListener> subscriptions, std::shared_ptr<MessagesListener> messages, SessionThread& thread)
+                : SessionManager(options, details, thread) {
+            this->subscriptions = subscriptions;
+            this->messages = messages;
+            this->listener = listener;
+        }
+
+
+
     };
 
-    std::shared_ptr<SessionFactory> SessionManager::sessionFactory = std::make_shared<SessionFactory>();
+
 }
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_SESSIONMANAGER_HPP

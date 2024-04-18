@@ -456,6 +456,24 @@ namespace lightstreamer::client::session {
             createSession(false, isFrozen, forced, strOrPoll, wsOrHttp, retryCause, AVOID_SWITCH, retryAgainIfStreamFails, false);
         }
 
+//        /**
+//         * Attempts to reconnect or re-establish a session when conditions are deemed necessary for a retry.
+//         * @param handlerPhase The phase of the handler at the time of retry.
+//         * @param retryCause The cause or reason for the retry.
+//         * @param forced Indicates if the retry is forced.
+//         * @param retryAgainIfStreamFails Indicates if another retry should be attempted if the stream fails again.
+//         */
+//        void retry(int handlerPhase, const std::string& retryCause, bool forced, bool retryAgainIfStreamFails) {
+//            if (handlerPhase != statusPhase) {
+//                return;
+//            }
+//
+//            bool strOrPoll = is(Status::STREAMING_WS) || is(Status::STREAMING_HTTP) ? STREAMING_SESSION : POLLING_SESSION;
+//            bool wsOrHttp = is(Status::STREAMING_WS) || is(Status::POLLING_WS) ? WS_SESSION : HTTP_SESSION;
+//
+//            createSession(false, isFrozen, forced, strOrPoll, wsOrHttp, retryCause, AVOID_SWITCH, retryAgainIfStreamFails, false);
+//        }
+
         /**
          * Similar to {@code bindSession} but with session recovery set to true.
          * A special bind_session request is sent during the recovery process.
@@ -464,18 +482,42 @@ namespace lightstreamer::client::session {
          * @param forced Indicates if the recovery is forced.
          * @param retryAgainIfStreamFails Indicates if retries should be made if streaming fails.
          */
+//        void recoverSession(int handlerPhase, const std::string& retryCause, bool forced, bool retryAgainIfStreamFails) {
+//            if (handlerPhase != statusPhase) {
+//                return;
+//            }
+//
+//            bool isPolling = is(Status::STREAMING_WS) || is(Status::STREAMING_HTTP) ? STREAMING_SESSION : POLLING_SESSION;
+//            bool isHTTP = is(Status::STREAMING_WS) || is(Status::POLLING_WS) ? WS_SESSION : HTTP_SESSION;
+//            Status nextPH = isPolling ? (isHTTP ? Status::POLLING_HTTP : Status::POLLING_WS) : (isHTTP ? Status::STREAMING_HTTP : Status::STREAMING_WS);
+//            changeStatus(nextPH);
+//
+//            prepareNewSessionInstance(isPolling, forced, isHTTP, session, retryAgainIfStreamFails, true);
+//            session->recoverSession();
+//        }
+
+        // Session recovery handling
         void recoverSession(int handlerPhase, const std::string& retryCause, bool forced, bool retryAgainIfStreamFails) {
             if (handlerPhase != statusPhase) {
                 return;
             }
+            try {
+                bool isPolling = is(Status::STREAMING_WS) || is(Status::STREAMING_HTTP) ? STREAMING_SESSION : POLLING_SESSION;
+                bool isHTTP = is(Status::STREAMING_WS) || is(Status::POLLING_WS) ? WS_SESSION : HTTP_SESSION;
+                Status nextPH = isPolling ? (isHTTP ? Status::POLLING_HTTP : Status::POLLING_WS) : (isHTTP ? Status::STREAMING_HTTP : Status::STREAMING_WS);
+                changeStatus(nextPH);
 
-            bool isPolling = is(Status::STREAMING_WS) || is(Status::STREAMING_HTTP) ? STREAMING_SESSION : POLLING_SESSION;
-            bool isHTTP = is(Status::STREAMING_WS) || is(Status::POLLING_WS) ? WS_SESSION : HTTP_SESSION;
-            Status nextPH = isPolling ? (isHTTP ? Status::POLLING_HTTP : Status::POLLING_WS) : (isHTTP ? Status::STREAMING_HTTP : Status::STREAMING_WS);
-            changeStatus(nextPH);
+                prepareNewSessionInstance(isPolling, forced, isHTTP, session, retryAgainIfStreamFails, true);
 
-            prepareNewSessionInstance(isPolling, forced, isHTTP, session, retryAgainIfStreamFails, true);
-            session->recoverSession();
+                if (session != nullptr) {
+                    session->recoverSession();
+                }
+            } catch (const std::exception& e) {
+                log->warn("Something went wrong here ::::: " + std::string(e.what()));
+                if (log->isDebugEnabled()) {
+                    log->debug("Exception details: " + std::string(e.what()));
+                }
+            }
         }
 
         /**
@@ -509,10 +551,34 @@ namespace lightstreamer::client::session {
             session->requestSwitch(statusPhase, reason, false, startRecovery);
         }
 
+//        /**
+//         * Responds to a slow connection detection by attempting to switch the session type accordingly.
+//         * @param handlerPhase The current phase of the handler.
+//         * @param delay Delay to apply to the switch timeout.
+//         */
+//        void onSlowRequired(int handlerPhase, long delay) {
+//            if (handlerPhase != statusPhase) {
+//                return;
+//            }
+//
+//            Status switchType = getNextSlowPhase();
+//
+//            log->info("Slow session detected. Switching session type " + statusToString(status) + "->" + statusToString(switchType));
+//
+//            if (switchType == Status::ERROR) {
+//                log->error("Unexpected fallback type; switching because of a slow connection was detected" + statusToString(status) + ", " + session->toString());
+//                return;
+//            }
+//
+//            changeStatus(switchType);
+//            startSwitchTimeout("slow", delay);
+//            session->requestSlow(statusPhase);
+//        }
+
         /**
          * Responds to a slow connection detection by attempting to switch the session type accordingly.
-         * @param handlerPhase The current phase of the handler.
-         * @param delay Delay to apply to the switch timeout.
+         * @param handlerPhase The phase of the handler when the detection was made.
+         * @param delay The delay before the switch should occur.
          */
         void onSlowRequired(int handlerPhase, long delay) {
             if (handlerPhase != statusPhase) {
@@ -524,10 +590,9 @@ namespace lightstreamer::client::session {
             log->info("Slow session detected. Switching session type " + statusToString(status) + "->" + statusToString(switchType));
 
             if (switchType == Status::ERROR) {
-                log->error("Unexpected fallback type; switching because of a slow connection was detected" + statusToString(status) + ", " + session->toString());
+                log->error("Unexpected fallback type; switching because of a slow connection was detected " + statusToString(status) + ", " + session->toString());
                 return;
             }
-
             changeStatus(switchType);
             startSwitchTimeout("slow", delay);
             session->requestSlow(statusPhase);
@@ -550,16 +615,27 @@ namespace lightstreamer::client::session {
             listener->onStatusChanged(getHighLevelStatus(sessionRecovery));
         }
 
+//        /**
+//         * Handles the reception of a new client IP. If the IP has changed and WebSocket was disabled, restores it.
+//         * @param newIP The newly received IP address.
+//         */
+//        void onIPReceived(const std::string& newIP) {
+//            if (clientIP && newIP != clientIP && WebSocket::isDisabled()) {
+//                WebSocket::restore();
+//                session->restoreWebSocket();
+//            }
+//            clientIP = newIP;
+//        }
         /**
-         * Handles the reception of a new client IP. If the IP has changed and WebSocket was disabled, restores it.
-         * @param newIP The newly received IP address.
+         * Handles the reception of a new client IP.
+         * @param clientIP The new client IP address received.
          */
-        void onIPReceived(const std::string& newIP) {
-            if (clientIP && newIP != clientIP && WebSocket::isDisabled()) {
+        void onIPReceived(const std::string& clientIP) {
+            if (!this->clientIP.empty() && clientIP != this->clientIP && WebSocket::isDisabled()) {
                 WebSocket::restore();
                 session->restoreWebSocket();
             }
-            clientIP = newIP;
+            this->clientIP = clientIP;
         }
 
         /**
@@ -571,6 +647,14 @@ namespace lightstreamer::client::session {
             }
             nBindAfterCreate++;
         }
+//        /**
+//         * Called when a session is successfully bound to the server.
+//         */
+//        void onSessionBound() {
+//            // Implementation required or uncomment below if needed
+//            // throw std::runtime_error("Not implemented");
+//            nBindAfterCreate++;
+//        }
 
         /**
          * Called at the start of a session.
@@ -578,6 +662,13 @@ namespace lightstreamer::client::session {
         void onSessionStart() {
             nBindAfterCreate = 0;
         }
+
+//        /**
+//         * Called at the start of a session.
+//         */
+//        void onSessionStart() {
+//            nBindAfterCreate = 0;
+//        }
 
         /**
          * Notifies about a server-side error.
@@ -587,6 +678,15 @@ namespace lightstreamer::client::session {
         void onServerError(int errorCode, const std::string& errorMessage) {
             listener->onServerError(errorCode, errorMessage);
         }
+
+//        /**
+//         * Notifies about a server-side error.
+//         * @param errorCode The error code received from the server.
+//         * @param errorMessage The error message received from the server.
+//         */
+//        void onServerError(int errorCode, const std::string& errorMessage) {
+//            listener->onServerError(errorCode, errorMessage);
+//        }
 
         /**
          * Handles session closure.
@@ -701,6 +801,14 @@ namespace lightstreamer::client::session {
             createSession(false, isFrozen, false, false, false, "ip", false, false, startRecovery);
         }
 
+//        /**
+//         * Switches to WebSocket transport.
+//         * @param startRecovery Indicates if recovery should start with the new session.
+//         */
+//        void switchToWebSocket(bool startRecovery) {
+//            createSession(false, isFrozen, false, false, false, "ip", false, false, startRecovery);
+//        }
+
         /**
          * Senses the need for switching the current session type based on the provided handler phase and cause.
          * @param handlerPhase The current phase of the handler.
@@ -765,144 +873,53 @@ namespace lightstreamer::client::session {
             switchReady(handlerPhase, "slow", false, false);
         }
 
-        /**
-         * Handles session closure from the server or client.
-         * @param handlerPhase The phase of the handler when the event was triggered.
-         * @param noRecoveryScheduled Indicates whether a recovery was scheduled.
-         * @return The current status phase after processing the closure.
-         */
-        int onSessionClose(int handlerPhase, bool noRecoveryScheduled) {
-            if (handlerPhase != statusPhase) {
-                return 0;
-            }
-
-            if (noRecoveryScheduled) {
-                changeStatus(Status::OFF);
-            } else {
-                changeStatus(status);  // to change the statusPhase
-            }
-
-            // mpnEventManager.onSessionClose(!noRecoveryScheduled);  // Uncomment or modify as necessary
-
-            return statusPhase;
+        // Placeholder functions for Mobile Push Notification (MPN) events
+        void onMpnRegisterOK(const std::string& deviceId, const std::string& adapterName) {
+            throw std::runtime_error("Not implemented");
         }
 
-        /**
-         * Senses the need to switch session type based on the current session phase and starts recovery if necessary.
-         * @param handlerPhase The phase of the handler when the event was triggered.
-         * @param reason The reason for switching the session type.
-         * @param sessionPhase The current phase of the session.
-         * @param startRecovery Indicates if recovery should start.
-         */
-        void streamSenseSwitch(int handlerPhase, const std::string& reason, const std::string& sessionPhase, bool startRecovery) {
-            if (handlerPhase != statusPhase) {
-                return;
-            }
-
-            Status switchType = getNextSensePhase();
-
-            if (switchType == Status::OFF || switchType == Status::END) {
-                log->warn("Unexpected fallback type switching with new session");
-                return;
-            }
-
-            log->info("Unable to establish session of the current type. Switching session type " + statusToString(status) + "->" + statusToString(switchType));
-
-            if (sessionPhase == "FIRST_BINDING" && status == Status::STREAMING_WS && switchType == Status::SWITCHING_STREAMING_HTTP) {
-                log->debug("WebSocket support has been disabled.");
-                WebSocket::disable();
-            }
-
-            changeStatus(switchType);
-            startSwitchTimeout(reason, 0);
-            session->requestSwitch(statusPhase, reason, false, startRecovery);
+        void onMpnRegisterError(int code, const std::string& message) {
+            throw std::runtime_error("Not implemented");
         }
 
-        /**
-         * Handles the reception of a new client IP.
-         * @param clientIP The new client IP address received.
-         */
-        void onIPReceived(const std::string& clientIP) {
-            if (!this->clientIP.empty() && clientIP != this->clientIP && WebSocket::isDisabled()) {
-                WebSocket::restore();
-                session->restoreWebSocket();
-            }
-            this->clientIP = clientIP;
+        void onMpnSubscribeOK(const std::string& lsSubId, const std::string& pnSubId) {
+            throw std::runtime_error("Not implemented");
         }
 
-        /**
-         * Called when a session is successfully bound to the server.
-         */
-        void onSessionBound() {
-            // Implementation required or uncomment below if needed
-            // throw std::runtime_error("Not implemented");
-            nBindAfterCreate++;
+        void onMpnSubscribeError(const std::string& subId, int code, const std::string& message) {
+            throw std::runtime_error("Not implemented");
         }
 
-        /**
-         * Called at the start of a session.
-         */
-        void onSessionStart() {
-            nBindAfterCreate = 0;
+        void onMpnUnsubscribeError(const std::string& subId, int code, const std::string& message) {
+            throw std::runtime_error("Not implemented");
         }
 
-        /**
-         * Notifies about a server-side error.
-         * @param errorCode The error code received from the server.
-         * @param errorMessage The error message received from the server.
-         */
-        void onServerError(int errorCode, const std::string& errorMessage) {
-            listener->onServerError(errorCode, errorMessage);
+        void onMpnUnsubscribeOK(const std::string& subId) {
+            throw std::runtime_error("Not implemented");
         }
 
-        /**
-         * Responds to a slow connection detection by attempting to switch the session type accordingly.
-         * @param handlerPhase The phase of the handler when the detection was made.
-         * @param delay The delay before the switch should occur.
-         */
-        void onSlowRequired(int handlerPhase, long delay) {
-            if (handlerPhase != statusPhase) {
-                return;
-            }
-
-            Status switchType = getNextSlowPhase();
-
-            log->info("Slow session detected. Switching session type " + statusToString(status) + "->" + statusToString(switchType));
-
-            if (switchType == Status::ERROR) {
-                log->error("Unexpected fallback type; switching because of a slow connection was detected " + statusToString(status) + ", " + session->toString());
-                return;
-            }
-            changeStatus(switchType);
-            startSwitchTimeout("slow", delay);
-            session->requestSlow(statusPhase);
+        void onMpnResetBadgeOK(const std::string& deviceId) {
+            throw std::runtime_error("Not implemented");
         }
 
-        /**
-         * Attempts to reconnect or re-establish a session when conditions are deemed necessary for a retry.
-         * @param handlerPhase The phase of the handler at the time of retry.
-         * @param retryCause The cause or reason for the retry.
-         * @param forced Indicates if the retry is forced.
-         * @param retryAgainIfStreamFails Indicates if another retry should be attempted if the stream fails again.
-         */
-        void retry(int handlerPhase, const std::string& retryCause, bool forced, bool retryAgainIfStreamFails) {
-            if (handlerPhase != statusPhase) {
-                return;
-            }
-
-            bool strOrPoll = is(Status::STREAMING_WS) || is(Status::STREAMING_HTTP) ? STREAMING_SESSION : POLLING_SESSION;
-            bool wsOrHttp = is(Status::STREAMING_WS) || is(Status::POLLING_WS) ? WS_SESSION : HTTP_SESSION;
-
-            createSession(false, isFrozen, forced, strOrPoll, wsOrHttp, retryCause, AVOID_SWITCH, retryAgainIfStreamFails, false);
+        void onMpnBadgeResetError(int code, const std::string& message) {
+            throw std::runtime_error("Not implemented");
         }
 
-        /**
-         * Switches to WebSocket transport.
-         * @param startRecovery Indicates if recovery should start with the new session.
-         */
-        void switchToWebSocket(bool startRecovery) {
-            createSession(false, isFrozen, false, false, false, "ip", false, false, startRecovery);
-        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

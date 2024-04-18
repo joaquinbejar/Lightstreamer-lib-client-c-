@@ -612,6 +612,42 @@ namespace lightstreamer::client::session {
             return statusPhase;
         }
 
+        /**
+         * Retrieves the high-level status of the session, indicating if it's connected, disconnected, etc.
+         * @param sessionRecovery Indicates if session recovery is being considered.
+         * @return The high-level status as a string.
+         */
+        std::string getHighLevelStatus(bool sessionRecovery) {
+            std::string hlStatus = session == nullptr ? Constants::DISCONNECTED : session->getHighLevelStatus(sessionRecovery);
+            return hlStatus;
+        }
+
+        /**
+         * Accessor for the current session.
+         * @return A pointer to the current Session object, which may be null.
+         */
+        std::shared_ptr<Session> getSession() const {
+            return session;
+        }
+
+        /**
+         * Accessor for the current server session.
+         * @return A pointer to the current ServerSession object.
+         */
+        std::shared_ptr<ServerSession> getServerSession() const {
+            return serverSession;
+        }
+
+        /**
+         * Sends a message using the current session.
+         * @param request The message request to send.
+         * @param tutor An object that manages the reliability and retry logic for the request.
+         */
+        void sendMessage(std::shared_ptr<MessageRequest> request, std::shared_ptr<RequestTutor> tutor) {
+            if (session != nullptr) {
+                session->sendMessage(request, tutor);
+            }
+        }
     };
 
 

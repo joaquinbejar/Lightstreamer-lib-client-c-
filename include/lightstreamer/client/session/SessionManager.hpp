@@ -31,7 +31,11 @@
 #include <lightstreamer/client/session/Session.hpp>
 #include <lightstreamer/client/session/ServerSession.hpp>
 #include <Logger.hpp>
-
+#include <lightstreamer/client/requests/SubscribeRequest.hpp>
+#include <lightstreamer/client/requests/UnsubscribeRequest.hpp>
+#include <lightstreamer/client/requests/MessageRequest.hpp>
+#include <lightstreamer/client/requests/ChangeSubscriptionRequest.hpp>
+#include <lightstreamer/client/requests/ReverseHeartbeatRequest.hpp>
 
 namespace lightstreamer::client::session {
 
@@ -743,7 +747,7 @@ namespace lightstreamer::client::session {
          * @param request The message request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendMessage(std::shared_ptr<MessageRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void sendMessage(std::shared_ptr<requests::MessageRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendMessage(request, tutor);
             }
@@ -754,7 +758,7 @@ namespace lightstreamer::client::session {
          * @param request The subscription request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendSubscription(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void sendSubscription(std::shared_ptr<requests::SubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendSubscription(request, tutor);
             }
@@ -765,7 +769,7 @@ namespace lightstreamer::client::session {
          * @param request The unsubscription request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendUnsubscription(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void sendUnsubscription(std::shared_ptr<requests::UnsubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendUnsubscription(request, tutor);
             }
@@ -776,7 +780,7 @@ namespace lightstreamer::client::session {
          * @param request The change subscription request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendSubscriptionChange(std::shared_ptr<ChangeSubscriptionRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void sendSubscriptionChange(std::shared_ptr<requests::ChangeSubscriptionRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendSubscriptionChange(request, tutor);
             }
@@ -787,7 +791,7 @@ namespace lightstreamer::client::session {
          * @param request The reverse heartbeat request to send.
          * @param tutor An object that manages the reliability and retry logic for the request.
          */
-        void sendReverseHeartbeat(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void sendReverseHeartbeat(std::shared_ptr<requests::ReverseHeartbeatRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             if (session != nullptr) {
                 session->sendReverseHeartbeat(request, tutor);
             }

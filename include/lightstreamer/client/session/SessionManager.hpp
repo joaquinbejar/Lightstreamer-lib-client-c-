@@ -322,7 +322,32 @@ namespace lightstreamer::client::session {
             }).detach();
         }
 
+        /**
+         * Handles a timeout for switching sessions, and attempts to create a new session if necessary.
+         * @param ph Phase of status when the timeout was started.
+         * @param reason Reason for the timeout.
+         */
+        void switchTimeout(int ph, const std::string& reason) {
+            if (ph != statusPhase) {
+                return;
+            }
 
+            log->info("Failed to switch session type. Starting new session " + statusToString(status));
+
+            Status switchType = status;
+
+            if (isNot(Status::SWITCHING_STREAMING_WS) && isNot(Status::SWITCHING_STREAMING_HTTP) &&
+                isNot(Status::SWITCHING_POLLING_HTTP) && isNot(Status::SWITCHING_POLLING_WS)) {
+                log->error("Unexpected fallback type switching because of a failed force rebind");
+                return;
+            }
+
+            std::string timeoutReason = "switch.timeout." + reason;
+            bool strOrPoll = switchType == Status::SWITCHING_STREAMING_WS || switchType == Status::SWITCHING_STREAMING_HTTP ? STREAMING_SESSION : POLLING_SESSION;
+            bool wsOrHttp = switchType == Status::SWITCHING_STREAMING_WS || switchType == Status::SWITCHING_POLLING_WS ? WS_SESSION : HTTP_SESSION;
+
+            createSession(false, isFrozen, false, strOrPoll, wsOrHttp, timeoutReason, AVOID_SWITCH, false, false);
+        }
 
     public:
 
@@ -453,7 +478,139 @@ namespace lightstreamer::client::session {
             session->recoverSession();
         }
 
+        /**
+         * Senses if a session switch is necessary due to issues with the current session and initiates the switch.
+         * @param handlerPhase The current phase of the handler.
+         * @param reason Reason for the switch.
+         * @param sessionPhase Phase of the session, particularly important for handling first bindings.
+         * @param startRecovery Indicates if recovery should start.
+         */
+        void streamSenseSwitch(int handlerPhase, const std::string& reason, const std::string& sessionPhase, bool startRecovery) {
+            if (handlerPhase != statusPhase) {
+                return;
+            }
 
+            Status switchType = getNextSensePhase();
+
+            if (switchType == Status::OFF || switchType == Status::END) {
+                log->warn("Unexpected fallback type switching with new session");
+                return;
+            }
+
+            log->info("Unable to establish session of the current type. Switching session type " + statusToString(status) + "->" + statusToString(switchType));
+
+            if (sessionPhase == "FIRST_BINDING" && status == Status::STREAMING_WS && switchType == Status::SWITCHING_STREAMING_HTTP) {
+                log->info("WebSocket support has been disabled.");
+                WebSocket::disable();
+            }
+
+            changeStatus(switchType);
+            startSwitchTimeout(reason, 0);
+            session->requestSwitch(statusPhase, reason, false, startRecovery);
+        }
+
+        /**
+         * Responds to a slow connection detection by attempting to switch the session type accordingly.
+         * @param handlerPhase The current phase of the handler.
+         * @param delay Delay to apply to the switch timeout.
+         */
+        void onSlowRequired(int handlerPhase, long delay) {
+            if (handlerPhase != statusPhase) {
+                return;
+            }
+
+            Status switchType = getNextSlowPhase();
+
+            log->info("Slow session detected. Switching session type " + statusToString(status) + "->" + statusToString(switchType));
+
+            if (switchType == Status::ERROR) {
+                log->error("Unexpected fallback type; switching because of a slow connection was detected" + statusToString(status) + ", " + session->toString());
+                return;
+            }
+
+            changeStatus(switchType);
+            startSwitchTimeout("slow", delay);
+            session->requestSlow(statusPhase);
+        }
+
+        /**
+         * Notifies about the change in session status.
+         * @param handlerPhase The phase of the handler when the event was triggered.
+         * @param phase The current phase description.
+         * @param sessionRecovery Indicates if the session recovery mechanism is active.
+         */
+        void sessionStatusChanged(int handlerPhase, const std::string& phase, bool sessionRecovery) {
+            if (log->isDebugEnabled()) {
+                log->debug("sessionStatusChanged: " + std::to_string(handlerPhase) + " = " + std::to_string(statusPhase));
+            }
+
+            if (handlerPhase != statusPhase) {
+                return;
+            }
+            listener->onStatusChanged(getHighLevelStatus(sessionRecovery));
+        }
+
+        /**
+         * Handles the reception of a new client IP. If the IP has changed and WebSocket was disabled, restores it.
+         * @param newIP The newly received IP address.
+         */
+        void onIPReceived(const std::string& newIP) {
+            if (clientIP && newIP != clientIP && WebSocket::isDisabled()) {
+                WebSocket::restore();
+                session->restoreWebSocket();
+            }
+            clientIP = newIP;
+        }
+
+        /**
+         * Called when a session is successfully bound.
+         */
+        void onSessionBound() {
+            if (nBindAfterCreate == 0) {
+                // mpnEventManager.onSessionStart(); // Uncomment or modify as necessary
+            }
+            nBindAfterCreate++;
+        }
+
+        /**
+         * Called at the start of a session.
+         */
+        void onSessionStart() {
+            nBindAfterCreate = 0;
+        }
+
+        /**
+         * Notifies about a server-side error.
+         * @param errorCode The error code received from the server.
+         * @param errorMessage The error message received from the server.
+         */
+        void onServerError(int errorCode, const std::string& errorMessage) {
+            listener->onServerError(errorCode, errorMessage);
+        }
+
+        /**
+         * Handles session closure.
+         * @param handlerPhase The phase of the handler when the session was closed.
+         * @param noRecoveryScheduled Indicates whether a recovery was scheduled.
+         * @return The status phase after processing the closure.
+         */
+        int onSessionClose(int handlerPhase, bool noRecoveryScheduled) {
+            if (handlerPhase != statusPhase) {
+                return 0;
+            }
+
+            log->debug("Session closed: " + getSessionId());
+
+            if (noRecoveryScheduled) {
+                changeStatus(Status::OFF);
+            } else {
+                changeStatus(status); // to change the statusPhase
+            }
+
+            // mpnEventManager.onSessionClose(!noRecoveryScheduled); // Uncomment or modify as necessary
+
+            return statusPhase;
+        }
 
     };
 

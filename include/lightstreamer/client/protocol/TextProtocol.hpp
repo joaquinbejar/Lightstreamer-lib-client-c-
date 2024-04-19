@@ -297,7 +297,7 @@ namespace lightstreamer::client::protocol {
         HttpTransport httpTransport;
 
     public:
-        TextProtocol(int objectId, std::shared_ptr<session::SessionThread> thread, InternalConnectionOptions options,
+        TextProtocol(int objectId, std::shared_ptr<session::SessionThread> thread, session::InternalConnectionOptions options,
                      std::unique_ptr<HttpTransport> httpTransport)
                 : objectId(objectId), sessionThread(thread), options(options), httpTransport(std::move(httpTransport)) {
             if (log.IsDebugEnabled()) {
@@ -356,11 +356,6 @@ namespace lightstreamer::client::protocol {
         void setListener(std::shared_ptr<ProtocolListener> listener) {
             this->session = listener;
         }
-
-        // Abstract method to dispatch control requests to the transport layer
-        virtual void
-        sendControlRequest(std::shared_ptr<requests::LightstreamerRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
-                           std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         // Method to handle reverse heartbeat
         void handleReverseHeartbeat() {
@@ -438,7 +433,7 @@ namespace lightstreamer::client::protocol {
         }
 
 
-        void TextProtocol::sendCreateRequest(std::shared_ptr<requests::CreateSessionRequest> request) {
+        void sendCreateRequest(std::shared_ptr<requests::CreateSessionRequest> request) {
             activeListener = std::make_shared<OpenSessionListener>(this);
 
             long connectDelay = request->getDelay();
@@ -456,7 +451,7 @@ namespace lightstreamer::client::protocol {
             setStatus(StreamStatus::OPENING_STREAM);
         }
 
-        std::shared_ptr<util::ListenableFuture> TextProtocol::sendBindRequest(std::shared_ptr<requests::SessionRequest> request) {
+        std::shared_ptr<util::ListenableFuture> sendBindRequest(std::shared_ptr<requests::SessionRequest> request) {
             activeListener = std::make_shared<BindSessionListener>(this);
 
             long connectDelay = request->getDelay();
@@ -476,7 +471,7 @@ namespace lightstreamer::client::protocol {
             return bindFuture;
         }
 
-        void TextProtocol::sendRecoveryRequest(std::shared_ptr<requests::CreateSessionRequest> request) {
+        void sendRecoveryRequest(std::shared_ptr<requests::CreateSessionRequest> request) {
             activeListener = std::make_shared<OpenSessionListener>(this);
 
             long connectDelay = request->getDelay();
@@ -757,10 +752,6 @@ namespace lightstreamer::client::protocol {
             } else {
                 onIllegalMessage("Malformed message received: " + message);
             }
-        }
-
-        void onIllegalMessage(const std::string &message) {
-            std::cerr << message << std::endl;
         }
 
         void processCONF(const std::string &message) {

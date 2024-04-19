@@ -24,8 +24,8 @@
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SESSIONWS_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_SESSIONWS_HPP
 
-#include "Logger.h" // Assuming the existence of a similar logging system
-#include "Session.h" // Assuming Session is a base class of SessionWS
+#include "Logger.hpp" // Assuming the existence of a similar logging system
+#include <lightstreamer/client/session/Session.hpp>
 #include <memory>
 #include <functional>
 #include <cassert>

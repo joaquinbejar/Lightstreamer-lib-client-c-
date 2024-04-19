@@ -26,7 +26,7 @@
 
 #include <vector>
 #include <string>
-#include "ConstrainTutor.h"
+#include <lightstreamer/client/session/Session.hpp>
 
 namespace lightstreamer::client::protocol {
 
@@ -34,7 +34,7 @@ namespace lightstreamer::client::protocol {
     public:
         virtual ~ProtocolListener() = default;
 
-        virtual void onConstrainResponse(ConstrainTutor tutor) = 0;
+        virtual void onConstrainResponse(session::Session::ConstrainTutor tutor) = 0;
 
         virtual void onServerSentBandwidth(const std::string& maxBandwidth) = 0;
 

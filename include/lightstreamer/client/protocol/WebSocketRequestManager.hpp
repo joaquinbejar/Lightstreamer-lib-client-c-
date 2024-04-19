@@ -358,7 +358,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void copyTo(ControlRequestHandler *newHandler) {
+        void copyTo(std::shared_ptr<ControlRequestHandler> newHandler) override {
             if (ongoingRequest != nullptr) {
                 newHandler->addRequest(ongoingRequest->request, ongoingRequest->tutor, ongoingRequest->reqListener);
             }

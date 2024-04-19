@@ -206,7 +206,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void copyTo(ControlRequestHandler &newHandler) override {
+        void copyTo(std::shared_ptr<ControlRequestHandler> newHandler) override {
             // Skip destroy requests logic here
 
             if (!ongoingRequests.empty()) {

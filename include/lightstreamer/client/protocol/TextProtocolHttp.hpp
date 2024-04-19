@@ -28,19 +28,20 @@
 #include <lightstreamer/client/protocol/TextProtocol.hpp>
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
 #include <lightstreamer/client/requests/RequestTutor.hpp>
-#include "Http.hpp" // Assuming Http is a class representing HTTP transport
+#include <lightstreamer/client/transport/Http.hpp>
 #include <lightstreamer/client/protocol/RequestManager.hpp>
 #include <lightstreamer/util/ListenableFuture.hpp>
 #include <cassert>
 #include <memory>
 #include <lightstreamer/client/transport/RequestListener.hpp>
-//#include <lightstreamer/client/protocol/HttpRequestManager.hpp>
+#include <lightstreamer/client/session/SessionThread.hpp>
 
 namespace lightstreamer::client::protocol {
 
     class TextProtocolHttp : public TextProtocol {
     public:
-        TextProtocolHttp(int objectId, SessionThread &thread, InternalConnectionOptions &options, Http &httpTransport)
+        TextProtocolHttp(int objectId, session::SessionThread &thread, session::InternalConnectionOptions &options,
+                         transport::Http &httpTransport)
                 : TextProtocol(objectId, thread, options, httpTransport) {
             // Constructor implementation, possibly empty if all initialization happens in the base class
         }
@@ -72,7 +73,7 @@ namespace lightstreamer::client::protocol {
             this->httpRequestManager->close(waitPendingControlRequests);
         }
 
-        std::shared_ptr<util::ListenableFuture> openWebSocketConnection(const std::string &serverAddress)  {
+        std::shared_ptr<util::ListenableFuture> openWebSocketConnection(const std::string &serverAddress) {
             // This method should never be called in this class, as stated
             assert(false);
             return util::ListenableFuture::rejected(); // TODO: Adjust according to your ListenableFuture implementation
@@ -83,7 +84,7 @@ namespace lightstreamer::client::protocol {
             reverseHeartbeatTimer.onBindSession(false);
         }
 
-        void forwardDestroyRequest(DestroyRequest &request, requests::RequestTutor &tutor,
+        void forwardDestroyRequest(requests::DestroyRequest &request, requests::RequestTutor &tutor,
                                    transport::RequestListener &reqListener) override {
             // Don't send destroy request when transport is http
         }

@@ -37,7 +37,7 @@
 #include "Logger.hpp" // Assuming Logger is implemented
 #include <lightstreamer/client/events/EventDispatcher.hpp>
 #include <lightstreamer/client/events/ClientListenerPropertyChangeEvent.hpp>
-#include "LogManager.h"
+#include "LogManager.hpp"
 #include <lightstreamer/client/Proxy.hpp>
 #include <lightstreamer/util/Number.hpp>
 #include <lightstreamer/client/transport/providers/HttpProvider.hpp>
@@ -93,7 +93,7 @@ namespace lightstreamer::client::session {
         }
 
         void setContentLength(long long newContentLength) {
-            Number::verifyPositive(newContentLength, NumberUtility::DONT_ACCEPT_ZERO);
+            util::Number::verifyPositive(newContentLength, util::Number::DONT_ACCEPT_ZERO);
             contentLength = newContentLength;
             eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("contentLength"));
             log->Info(std::format("Content Length value changed to {}", newContentLength));
@@ -106,7 +106,7 @@ namespace lightstreamer::client::session {
 
         void setFirstRetryMaxDelay(long long value) {
             std::lock_guard<std::mutex> guard(this->mutex);
-            NumberUtility::verifyPositive(value, NumberUtility::DONT_ACCEPT_ZERO);
+            util::Number::verifyPositive(value, util::Number::DONT_ACCEPT_ZERO);
             firstRetryMaxDelay = value;
             eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("firstRetryMaxDelay"));
             log->Info(std::format("First Retry Max Delay value changed to {}", value));

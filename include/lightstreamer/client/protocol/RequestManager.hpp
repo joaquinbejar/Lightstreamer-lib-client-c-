@@ -28,6 +28,9 @@
 #include <memory>
 #include <vector>
 #include <lightstreamer/client/protocol/ControlRequestHandler.hpp>
+#include <lightstreamer/client/requests/BindSessionRequest.hpp>
+#include <lightstreamer/client/transport/RequestHandle.hpp>
+#include <lightstreamer/client/protocol/TextProtocol.hpp>
 
 namespace lightstreamer::client::protocol {
 
@@ -37,8 +40,9 @@ namespace lightstreamer::client::protocol {
         ~RequestManager() override = default;
 
         // bindSession abstract method
-        virtual std::unique_ptr<RequestHandle>
-        bindSession(std::unique_ptr<BindSessionRequest> request, std::shared_ptr<StreamListener> reqListener,
+        virtual std::unique_ptr<transport::RequestHandle>
+        bindSession(std::unique_ptr<requests::BindSessionRequest> request,
+                    std::shared_ptr<TextProtocol::StreamListener> reqListener,
                     long tcpConnectTimeout, long tcpReadTimeout, std::future<void> bindFuture) = 0;
     };
 

@@ -28,10 +28,11 @@
 #include <lightstreamer/client/protocol/BatchRequest.hpp>
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
 #include <lightstreamer/client/session/SessionThread.hpp>
-#include "Transport.h" // Placeholder for Transport class
-#include "Protocol.h" // Placeholder for Protocol class
-#include "InternalConnectionOptions.h" // Placeholder for InternalConnectionOptions class
-#include "Logger.h" // Placeholder for Logger class
+#include <lightstreamer/client/transport/Transport.hpp>
+#include <lightstreamer/client/protocol/Protocol.hpp>
+#include <lightstreamer/client/session/InternalConnectionOptions.hpp>
+#include <lightstreamer/client/protocol/TextProtocol.hpp>
+#include "Logger.hpp" // Placeholder for Logger class
 #include <array>
 #include <list>
 #include <string>
@@ -124,11 +125,11 @@ namespace lightstreamer::client::protocol {
         std::string status = IDLE;
         int statusPhase = 1;
         session::SessionThread *sessionThread;
-        Transport *transport;
+        transport::Transport *transport;
         Protocol *protocol;
-        InternalConnectionOptions *options;
+        session::InternalConnectionOptions *options;
 
-        RequestHandle *activeConnection;
+        transport::RequestHandle *activeConnection;
 
         FatalErrorListener *errorListener;
         std::list<RequestObjects> ongoingRequests; // List of requests that the manager has sent but no response has still arrived
@@ -142,7 +143,7 @@ namespace lightstreamer::client::protocol {
         }
 
     public:
-        HttpRequestManager(session::SessionThread *thread, Transport *transport, InternalConnectionOptions *options)
+        HttpRequestManager(session::SessionThread *thread, transport::Transport *transport, session::InternalConnectionOptions *options)
                 : HttpRequestManager(thread, nullptr, transport, options, nullptr) {
             if (!instanceFieldsInitialized) {
                 initializeInstanceFields();
@@ -150,8 +151,8 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        HttpRequestManager(session::SessionThread *thread, Protocol *protocol, Transport *transport,
-                           InternalConnectionOptions *options, FatalErrorListener *errListener) {
+        HttpRequestManager(session::SessionThread *thread, Protocol *protocol, transport::Transport *transport,
+                           session::InternalConnectionOptions *options, FatalErrorListener *errListener) {
             if (!instanceFieldsInitialized) {
                 initializeInstanceFields();
                 instanceFieldsInitialized = true;
@@ -189,15 +190,15 @@ namespace lightstreamer::client::protocol {
             requestLimit = limit;
         }
 
-        bool addToProperBatch(std::unique_ptr<LightstreamerRequest> request, std::unique_ptr<RequestTutor> tutor,
-                              std::unique_ptr<RequestListener> listener) {
+        bool addToProperBatch(std::unique_ptr<requests::LightstreamerRequest> request, std::unique_ptr<requests::RequestTutor> tutor,
+                              std::unique_ptr<transport::RequestListener> listener) {
             // Example for MessageRequest, similar for others
-            if (auto *msgRequest = dynamic_cast<MessageRequest *>(request.get())) {
+            if (auto *msgRequest = dynamic_cast<requests::MessageRequest *>(request.get())) {
                 if (log.isDebugEnabled()) {
                     log.debug("New Message request: " + request->getRequestName());
                 }
                 return messageQueue.addRequestToBatch(std::move(request), std::move(tutor), std::move(listener));
-            } else if (auto *hbRequest = dynamic_cast<ReverseHeartbeatRequest *>(request.get())) {
+            } else if (auto *hbRequest = dynamic_cast<requests::ReverseHeartbeatRequest *>(request.get())) {
                 return hbQueue.addRequestToBatch(std::move(request), std::move(tutor), std::move(listener));
             }
                 // Similar checks and casts for other request types
@@ -206,7 +207,7 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void copyTo(ControlRequestHandler &newHandler) override {
+        void copyTo(std::shared_ptr<ControlRequestHandler> newHandler) override {
             // Skip destroy requests logic here
 
             if (!ongoingRequests.empty()) {
@@ -227,8 +228,8 @@ namespace lightstreamer::client::protocol {
             newHandler.setRequestLimit(requestLimit);
         }
 
-        void addRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<RequestTutor> tutor, std::shared_ptr<RequestListener> listener) override {
-            assert(dynamic_cast<ControlRequest*>(request.get()) || dynamic_cast<MessageRequest*>(request.get()) || dynamic_cast<ReverseHeartbeatRequest*>(request.get()));
+        void addRequest(std::shared_ptr<requests::LightstreamerRequest> request, std::shared_ptr<requests::RequestTutor> tutor, std::shared_ptr<transport::RequestListener> listener) override {
+            assert(dynamic_cast<requests::ControlRequest*>(request.get()) || dynamic_cast<requests::MessageRequest*>(request.get()) || dynamic_cast<requests::ReverseHeartbeatRequest*>(request.get()));
 
             if (is("END") || is("ENDING")) {
                 log.error("Unexpected call on dismissed batch manager: " + request->getTransportUnawareQueryString());
@@ -244,11 +245,11 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        std::unique_ptr<RequestHandle> createSession(std::unique_ptr<CreateSessionRequest> request, std::unique_ptr<StreamListener> reqListener, long tcpConnectTimeout, long tcpReadTimeout) override {
+        std::unique_ptr<transport::RequestHandle> createSession(std::unique_ptr<CreateSessionRequest> request, std::unique_ptr<StreamListener> reqListener, long tcpConnectTimeout, long tcpReadTimeout) override {
             return transport->sendRequest(protocol, std::move(request), std::move(reqListener), options->getHttpExtraHeaders(), options->getProxy(), tcpConnectTimeout, tcpReadTimeout);
         }
 
-        std::unique_ptr<RequestHandle> bindSession(std::unique_ptr<BindSessionRequest> request, std::unique_ptr<StreamListener> reqListener, long tcpConnectTimeout, long tcpReadTimeout, std::promise<void>& requestFuture) {
+        std::unique_ptr<transport::RequestHandle> bindSession(std::unique_ptr<BindSessionRequest> request, std::unique_ptr<StreamListener> reqListener, long tcpConnectTimeout, long tcpReadTimeout, std::promise<void>& requestFuture) {
             auto handle = transport->sendRequest(protocol.get(), std::move(request), std::move(reqListener),
                                                  options->getHttpExtraHeadersOnSessionCreationOnly() ? nullptr : options->getHttpExtraHeaders(),
                                                  options->getProxy(), tcpConnectTimeout, tcpReadTimeout);
@@ -256,7 +257,7 @@ namespace lightstreamer::client::protocol {
             return handle;
         }
 
-        std::unique_ptr<RequestHandle> recoverSession(std::unique_ptr<RecoverSessionRequest> request, std::unique_ptr<StreamListener> reqListener, long tcpConnectTimeout, long tcpReadTimeout) {
+        std::unique_ptr<transport::RequestHandle> recoverSession(std::unique_ptr<RecoverSessionRequest> request, std::unique_ptr<StreamListener> reqListener, long tcpConnectTimeout, long tcpReadTimeout) {
             return transport->sendRequest(protocol.get(), std::move(request), std::move(reqListener),
                                           options->getHttpExtraHeadersOnSessionCreationOnly() ? nullptr : options->getHttpExtraHeaders(),
                                           options->getProxy(), tcpConnectTimeout, tcpReadTimeout);

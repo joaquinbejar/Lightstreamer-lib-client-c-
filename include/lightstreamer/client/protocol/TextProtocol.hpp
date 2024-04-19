@@ -34,10 +34,9 @@
 #include <lightstreamer/client/session/SessionThread.hpp>
 #include <lightstreamer/client/session/InternalConnectionOptions.hpp>
 #include <lightstreamer/client/protocol/ProtocolListener.hpp>
-#include "StreamListener.h"
-#include "RequestManager.h"
+#include <lightstreamer/client/protocol/RequestManager.hpp>
 #include "HttpTransport.hpp"
-#include "ReverseHeartbeatTimer.h"
+#include <lightstreamer/client/protocol/ReverseHeartbeatTimer.hpp>
 #include <lightstreamer/client/transport/RequestListener.hpp>
 #include <lightstreamer/client/Constants.hpp>
 #include <lightstreamer/client/protocol/ProtocolConstants.hpp>
@@ -45,6 +44,7 @@
 #include <lightstreamer/client/protocol/HttpRequestManager.hpp>
 #include <lightstreamer/client/requests/RequestTutor.hpp>
 #include <lightstreamer/client/transport/SessionRequestListener.hpp>
+#include <lightstreamer/client/requests/CreateSessionRequest.hpp>
 
 namespace lightstreamer::client::protocol {
     class TextProtocol {
@@ -73,11 +73,222 @@ namespace lightstreamer::client::protocol {
         static const std::regex END_REGEX;
         static const std::regex LOOP_REGEX;
 
+        class StreamListener : transport::SessionRequestListener {
+        protected:
+            TextProtocol &outerInstance;
+
+            bool disabled = false;
+            bool isOpen = false;
+            bool isInterrupted = false;
+
+        public:
+            StreamListener(TextProtocol &outerInstance) : outerInstance(outerInstance) {}
+
+            virtual ~StreamListener() = default;
+
+            // Disables this listener.
+            void disable() {
+                disabled = true;
+            }
+
+            // Handles an incoming message.
+            virtual void onMessage(const std::string &message) {
+                if (disabled) {
+                    // Log a warning about the discarded message with corresponding object ID.
+                    // Note: Implement logging mechanism as per your application needs.
+                    return;
+                }
+                doMessage(message);
+            }
+
+        protected:
+            // Processes the incoming message.
+            virtual void doMessage(const std::string &message) {
+                outerInstance.onProtocolMessage(message);
+            }
+
+        public:
+            // Notifies this listener that the connection has been opened.
+            virtual void onOpen() {
+                if (!disabled) {
+                    doOpen();
+                }
+            }
+
+        protected:
+            // Handles the connection opening event.
+            virtual void doOpen() {
+                isOpen = true;
+            }
+
+        public:
+            // Notifies this listener that the connection has been closed.
+            virtual void onClosed() {
+                if (!disabled) {
+                    doClosed();
+                }
+            }
+
+        protected:
+            // Handles the connection closing event.
+            virtual void doClosed() {
+                interruptSession(false);
+            }
+
+        public:
+            // Notifies this listener that the connection is broken.
+            virtual void onBroken() {
+                if (!disabled) {
+                    doBroken(false);
+                }
+            }
+
+            // Notifies this listener that the WebSocket connection is broken.
+            virtual void onBrokenWS() {
+                if (!disabled) {
+                    doBroken(true);
+                }
+            }
+
+        protected:
+            // Handles a broken connection.
+            virtual void doBroken(bool wsError) {
+                interruptSession(wsError);
+            }
+
+            // Interrupts the current session in case of an error or unexpected session closure.
+            virtual void interruptSession(bool wsError) {
+                if (!isInterrupted) {
+                    // Assuming session has an onInterrupted method to handle interruption.
+                    // This method needs to be implemented in the TextProtocol or related session management class.
+                    isInterrupted = true;
+                }
+            }
+        };
+
     protected:
         Logger::Logger log; // Simplified logging mechanism for C++
         session::SessionThread sessionThread;
         std::unique_ptr<HttpRequestManager> httpRequestManager;
         std::shared_ptr<ProtocolListener> session = nullptr;
+
+
+        // Listener for create_session and recovery requests.
+        class OpenSessionListener : public StreamListener {
+        public:
+            OpenSessionListener(TextProtocol &outerInstance) : StreamListener(outerInstance) {
+                // No additional constructor logic needed for OpenSessionListener.
+            }
+        };
+
+        // Listener for bind_session requests supporting reverse heartbeats.
+        class BindSessionListener : public StreamListener {
+        public:
+            BindSessionListener(TextProtocol &outerInstance) : StreamListener(outerInstance) {
+                // No additional constructor logic needed for BindSessionListener.
+            }
+
+        protected:
+            void doOpen() override {
+                StreamListener::doOpen(); // Call the base class implementation.
+                // Trigger action related to opening a bind session for reverse heartbeats.
+                // Assuming outerInstance has a method named onBindSessionForTheSakeOfReverseHeartbeat, which should be defined.
+                outerInstance.onBindSessionForTheSakeOfReverseHeartbeat();
+            }
+        };
+
+        class BaseControlRequestListener : public transport::RequestListener {
+        protected:
+            TextProtocol &outerInstance;
+            bool opened = false;
+            bool completed = false;
+            std::unique_ptr<requests::RequestTutor> tutor;
+            std::string response;
+
+        public:
+            BaseControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<requests::RequestTutor> &tutor)
+                    : outerInstance(outerInstance), tutor(std::move(tutor)) {}
+
+            virtual void onOK() = 0;
+
+            virtual void onError(int code, const std::string &message) = 0;
+
+            virtual void onOpen() {
+                if (tutor) {
+                    opened = true;
+                    tutor->notifySender(false);
+                }
+            }
+
+            virtual void onMessage(const std::string &message) {
+                response += message;
+            }
+
+            virtual void onClosed() {
+                if (completed) return;
+                completed = true;
+                if (!opened && tutor) {
+                    tutor->notifySender(true);
+                } else {
+                    this->onComplete(response);
+                }
+            }
+
+            // Handles the complete response message
+            virtual void onComplete(const std::string &message) {
+                if (message.empty()) {
+                    // An empty message means that the server has probably closed the socket.
+                    // Ignore it and wait for the request timeout to expire and the request to be transmitted again.
+                    return;
+                }
+
+                // Try to parse the response and act accordingly. You'll need to implement the parsing logic
+                // based on the specific content of the response, as done in the original C# code.
+
+                ControlResponseParser parser = ControlResponseParser.parseControlResponse(message);
+                if (parser is REQOKParser) {
+                    this->onOK();
+                } else if (/* parser is REQERRParser */) {
+                    outerInstance.forwardControlResponseError(/* errorCode */, /* errorMsg */, *this);
+                } else if (/* parser is ERRORParser */) {
+                    outerInstance.forwardControlResponseError(/* errorCode */, /* errorMsg */, *this);
+                } else {
+                    // Should not happen
+                    outerInstance.onIllegalMessage("Unexpected response to control request: " + message);
+                }
+            }
+
+            virtual void onBroken() {
+                if (completed) return;
+                completed = true;
+                if (!opened && tutor) {
+                    tutor->notifySender(true);
+                }
+            }
+        };
+
+        // Abstract class ControlRequestListener supporting reverse heartbeats.
+        class ControlRequestListener : public BaseControlRequestListener {
+        protected:
+            TextProtocol &outerInstance; // Reference to the parent TextProtocol object
+
+        public:
+            // Constructor that initializes the external instance and passes the tutor to the base constructor.
+            ControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<requests::RequestTutor> tutor)
+                    : BaseControlRequestListener(outerInstance, std::move(tutor)), outerInstance(outerInstance) {}
+
+            // Overrides the onOpen method to implement ControlRequestListener specific logic.
+            void onOpen() override {
+                BaseControlRequestListener::onOpen(); // First call the base implementation
+                outerInstance.onControlRequestForReverseHeartbeat(); // Trigger reverse heartbeat
+            }
+
+            // Ensure to implement the abstract methods onOK and onError.
+            virtual void onOK() = 0;
+
+            virtual void onError(int code, const std::string &message) = 0;
+        };
+
         StreamListener *activeListener = nullptr;
         StreamStatus status = StreamStatus::NO_STREAM;
         long currentProg = 0;
@@ -87,7 +298,8 @@ namespace lightstreamer::client::protocol {
         HttpTransport httpTransport;
 
     public:
-        TextProtocol(int objectId, std::shared_ptr<session::SessionThread> thread, InternalConnectionOptions options,
+        TextProtocol(int objectId, std::shared_ptr<session::SessionThread> thread,
+                     session::InternalConnectionOptions options,
                      std::unique_ptr<HttpTransport> httpTransport)
                 : objectId(objectId), sessionThread(thread), options(options), httpTransport(std::move(httpTransport)) {
             if (log.IsDebugEnabled()) {
@@ -147,11 +359,6 @@ namespace lightstreamer::client::protocol {
             this->session = listener;
         }
 
-        // Abstract method to dispatch control requests to the transport layer
-        virtual void
-        sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
-                           std::shared_ptr<transport::RequestListener> reqListener) = 0;
-
         // Method to handle reverse heartbeat
         void handleReverseHeartbeat() {
             // Assuming reverseHeartbeatTimer is an object of a class that manages reverse heartbeat timing
@@ -159,14 +366,17 @@ namespace lightstreamer::client::protocol {
         }
 
         // Method to send a force rebind request
-        void sendForceRebind(std::shared_ptr<ForceRebindRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void
+        sendForceRebind(std::shared_ptr<requests::ForceRebindRequest> request,
+                        std::shared_ptr<requests::RequestTutor> tutor) {
             // Assuming httpRequestManager is an object that can manage HTTP requests
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass>(this, tutor);
             httpRequestManager.addRequest(request, tutor, reqListener);
         }
 
         // Method to send a Destroy request
-        void sendDestroy(std::shared_ptr<DestroyRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void
+        sendDestroy(std::shared_ptr<requests::DestroyRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass2>(this, tutor);
             // Assuming httpRequestManager is an object that can manage HTTP requests
             // httpRequestManager.addRequest(request, tutor, reqListener); // Uncomment if httpRequestManager is implemented
@@ -174,17 +384,22 @@ namespace lightstreamer::client::protocol {
         }
 
         // Abstract method to forward Destroy request to the derived class for custom handling
-        virtual void forwardDestroyRequest(std::shared_ptr<DestroyRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
-                                           std::shared_ptr<transport::RequestListener> reqListener) = 0;
+        virtual void
+        forwardDestroyRequest(std::shared_ptr<requests::DestroyRequest> request,
+                              std::shared_ptr<requests::RequestTutor> tutor,
+                              std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         // Method to send a Message request
-        void sendMessageRequest(std::shared_ptr<MessageRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void
+        sendMessageRequest(std::shared_ptr<requests::MessageRequest> request,
+                           std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass3>(this, tutor, request);
             sendControlRequest(request, tutor, reqListener);
         }
 
         // Method to send a subscription request
-        void sendSubscriptionRequest(std::shared_ptr<SubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        void sendSubscriptionRequest(std::shared_ptr<requests::SubscribeRequest> request,
+                                     std::shared_ptr<requests::RequestTutor> tutor) {
             if (log.isDebugEnabled()) {
                 // Log debug message about the subscription request
                 std::cout << "Subscription parameters: " << request->getTransportUnawareQueryString() << std::endl;
@@ -198,31 +413,34 @@ namespace lightstreamer::client::protocol {
             }
         }
 
-        void sendConfigurationRequest(std::shared_ptr<ChangeSubscriptionRequest> request,
+        void sendConfigurationRequest(std::shared_ptr<requests::ChangeSubscriptionRequest> request,
                                       std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass5>(this, tutor, request);
             sendControlRequest(request, tutor, reqListener);
         }
 
         void
-        sendUnsubscriptionRequest(std::shared_ptr<UnsubscribeRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        sendUnsubscriptionRequest(std::shared_ptr<requests::UnsubscribeRequest> request,
+                                  std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass6>(this, tutor, request);
             sendControlRequest(request, tutor, reqListener);
         }
 
-        void sendConstrainRequest(std::shared_ptr<ConstrainRequest> request, std::shared_ptr<ConstrainTutor> tutor) {
+        void sendConstrainRequest(std::shared_ptr<requests::ConstrainRequest> request,
+                                  std::shared_ptr<ConstrainTutor> tutor) {
             auto reqListener = std::make_shared<ControlRequestListenerAnonymousInnerClass7>(this, tutor, request);
             sendControlRequest(request, tutor, reqListener);
         }
 
         void
-        sendReverseHeartbeat(std::shared_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<requests::RequestTutor> tutor) {
+        sendReverseHeartbeat(std::shared_ptr<requests::ReverseHeartbeatRequest> request,
+                             std::shared_ptr<requests::RequestTutor> tutor) {
             auto reqListener = std::make_shared<BaseControlRequestListenerAnonymousInnerClass>(this, tutor);
             sendControlRequest(request, tutor, reqListener);
         }
 
 
-        void TextProtocol::sendCreateRequest(std::shared_ptr<CreateSessionRequest> request) {
+        void sendCreateRequest(std::shared_ptr<requests::CreateSessionRequest> request) {
             activeListener = std::make_shared<OpenSessionListener>(this);
 
             long connectDelay = request->getDelay();
@@ -240,7 +458,7 @@ namespace lightstreamer::client::protocol {
             setStatus(StreamStatus::OPENING_STREAM);
         }
 
-        std::shared_ptr<ListenableFuture> TextProtocol::sendBindRequest(std::shared_ptr<BindSessionRequest> request) {
+        std::shared_ptr<util::ListenableFuture> sendBindRequest(std::shared_ptr<requests::SessionRequest> request) {
             activeListener = std::make_shared<BindSessionListener>(this);
 
             long connectDelay = request->getDelay();
@@ -260,7 +478,7 @@ namespace lightstreamer::client::protocol {
             return bindFuture;
         }
 
-        void TextProtocol::sendRecoveryRequest(std::shared_ptr<RecoverSessionRequest> request) {
+        void sendRecoveryRequest(std::shared_ptr<requests::CreateSessionRequest> request) {
             activeListener = std::make_shared<OpenSessionListener>(this);
 
             long connectDelay = request->getDelay();
@@ -317,7 +535,8 @@ namespace lightstreamer::client::protocol {
 
         // Abstract method for sending control requests, to be implemented by derived classes
         virtual void
-        sendControlRequest(std::shared_ptr<LightstreamerRequest> request, std::shared_ptr<requests::RequestTutor> tutor,
+        sendControlRequest(std::shared_ptr<requests::LightstreamerRequest> request,
+                           std::shared_ptr<requests::RequestTutor> tutor,
                            std::shared_ptr<transport::RequestListener> reqListener) = 0;
 
         std::smatch matchLine(const std::regex &pattern, const std::string &message) {
@@ -415,7 +634,8 @@ namespace lightstreamer::client::protocol {
             std::shared_ptr<requests::RequestTutor> tutor;
 
         public:
-            ControlRequestListenerAnonymousInnerClass(TextProtocol *outerInstance, std::shared_ptr<requests::RequestTutor> tutor)
+            ControlRequestListenerAnonymousInnerClass(TextProtocol *outerInstance,
+                                                      std::shared_ptr<requests::RequestTutor> tutor)
                     : outerInstance(outerInstance), tutor(tutor) {}
 
             void onOK() override {
@@ -435,7 +655,8 @@ namespace lightstreamer::client::protocol {
             std::shared_ptr<requests::RequestTutor> tutor;
 
         public:
-            ControlRequestListenerAnonymousInnerClass2(TextProtocol *outerInstance, std::shared_ptr<requests::RequestTutor> tutor)
+            ControlRequestListenerAnonymousInnerClass2(TextProtocol *outerInstance,
+                                                       std::shared_ptr<requests::RequestTutor> tutor)
                     : outerInstance(outerInstance), tutor(tutor) {}
 
             void onOK() override {
@@ -454,7 +675,8 @@ namespace lightstreamer::client::protocol {
             std::shared_ptr<MessageRequest> request;
 
         public:
-            ControlRequestListenerAnonymousInnerClass3(TextProtocol *outerInstance, std::shared_ptr<requests::RequestTutor> tutor,
+            ControlRequestListenerAnonymousInnerClass3(TextProtocol *outerInstance,
+                                                       std::shared_ptr<requests::RequestTutor> tutor,
                                                        std::shared_ptr<MessageRequest> request)
                     : ControlRequestListener(outerInstance, tutor), request(request) {}
 
@@ -478,7 +700,8 @@ namespace lightstreamer::client::protocol {
             std::shared_ptr<SubscribeRequest> request;
 
         public:
-            ControlRequestListenerAnonymousInnerClass4(TextProtocol *outerInstance, std::shared_ptr<requests::RequestTutor> tutor,
+            ControlRequestListenerAnonymousInnerClass4(TextProtocol *outerInstance,
+                                                       std::shared_ptr<requests::RequestTutor> tutor,
                                                        std::shared_ptr<SubscribeRequest> request)
                     : outerInstance(outerInstance), request(request) {}
 
@@ -537,10 +760,6 @@ namespace lightstreamer::client::protocol {
             } else {
                 onIllegalMessage("Malformed message received: " + message);
             }
-        }
-
-        void onIllegalMessage(const std::string &message) {
-            std::cerr << message << std::endl;
         }
 
         void processCONF(const std::string &message) {
@@ -1014,221 +1233,11 @@ namespace lightstreamer::client::protocol {
         }
 
 
-
         // Returns the maximum reverse heartbeat interval in milliseconds.
         long getMaxReverseHeartbeatIntervalMs() const {
             return reverseHeartbeatTimer->getMaxIntervalMs();
         }
 
-        class StreamListener {
-        protected:
-            TextProtocol &outerInstance;
-
-            bool disabled = false;
-            bool isOpen = false;
-            bool isInterrupted = false;
-
-        public:
-            StreamListener(TextProtocol &outerInstance) : outerInstance(outerInstance) {}
-
-            virtual ~StreamListener() = default;
-
-            // Disables this listener.
-            void disable() {
-                disabled = true;
-            }
-
-            // Handles an incoming message.
-            virtual void onMessage(const std::string &message) {
-                if (disabled) {
-                    // Log a warning about the discarded message with corresponding object ID.
-                    // Note: Implement logging mechanism as per your application needs.
-                    return;
-                }
-                doMessage(message);
-            }
-
-        protected:
-            // Processes the incoming message.
-            virtual void doMessage(const std::string &message) {
-                outerInstance.onProtocolMessage(message);
-            }
-
-        public:
-            // Notifies this listener that the connection has been opened.
-            virtual void onOpen() {
-                if (!disabled) {
-                    doOpen();
-                }
-            }
-
-        protected:
-            // Handles the connection opening event.
-            virtual void doOpen() {
-                isOpen = true;
-            }
-
-        public:
-            // Notifies this listener that the connection has been closed.
-            virtual void onClosed() {
-                if (!disabled) {
-                    doClosed();
-                }
-            }
-
-        protected:
-            // Handles the connection closing event.
-            virtual void doClosed() {
-                interruptSession(false);
-            }
-
-        public:
-            // Notifies this listener that the connection is broken.
-            virtual void onBroken() {
-                if (!disabled) {
-                    doBroken(false);
-                }
-            }
-
-            // Notifies this listener that the WebSocket connection is broken.
-            virtual void onBrokenWS() {
-                if (!disabled) {
-                    doBroken(true);
-                }
-            }
-
-        protected:
-            // Handles a broken connection.
-            virtual void doBroken(bool wsError) {
-                interruptSession(wsError);
-            }
-
-            // Interrupts the current session in case of an error or unexpected session closure.
-            virtual void interruptSession(bool wsError) {
-                if (!isInterrupted) {
-                    // Assuming session has an onInterrupted method to handle interruption.
-                    // This method needs to be implemented in the TextProtocol or related session management class.
-                    isInterrupted = true;
-                }
-            }
-        };
-
-        // Listener for create_session and recovery requests.
-        class OpenSessionListener : public StreamListener {
-        public:
-            OpenSessionListener(TextProtocol &outerInstance) : StreamListener(outerInstance) {
-                // No additional constructor logic needed for OpenSessionListener.
-            }
-        };
-
-        // Listener for bind_session requests supporting reverse heartbeats.
-        class BindSessionListener : public StreamListener {
-        public:
-            BindSessionListener(TextProtocol &outerInstance) : StreamListener(outerInstance) {
-                // No additional constructor logic needed for BindSessionListener.
-            }
-
-        protected:
-            void doOpen() override {
-                StreamListener::doOpen(); // Call the base class implementation.
-                // Trigger action related to opening a bind session for reverse heartbeats.
-                // Assuming outerInstance has a method named onBindSessionForTheSakeOfReverseHeartbeat, which should be defined.
-                outerInstance.onBindSessionForTheSakeOfReverseHeartbeat();
-            }
-        };
-
-        class BaseControlRequestListener : public RequestListener {
-        protected:
-            TextProtocol &outerInstance;
-            bool opened = false;
-            bool completed = false;
-            std::unique_ptr<requests::RequestTutor> tutor;
-            std::string response;
-
-        public:
-            BaseControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<requests::RequestTutor> &tutor)
-                    : outerInstance(outerInstance), tutor(std::move(tutor)) {}
-
-            virtual void onOK() = 0;
-
-            virtual void onError(int code, const std::string &message) = 0;
-
-            virtual void onOpen() {
-                if (tutor) {
-                    opened = true;
-                    tutor->notifySender(false);
-                }
-            }
-
-            virtual void onMessage(const std::string &message) {
-                response += message;
-            }
-
-            virtual void onClosed() {
-                if (completed) return;
-                completed = true;
-                if (!opened && tutor) {
-                    tutor->notifySender(true);
-                } else {
-                    this->onComplete(response);
-                }
-            }
-
-            // Handles the complete response message
-            virtual void onComplete(const std::string &message) {
-                if (message.empty()) {
-                    // An empty message means that the server has probably closed the socket.
-                    // Ignore it and wait for the request timeout to expire and the request to be transmitted again.
-                    return;
-                }
-
-                // Try to parse the response and act accordingly. You'll need to implement the parsing logic
-                // based on the specific content of the response, as done in the original C# code.
-
-                ControlResponseParser parser = ControlResponseParser.parseControlResponse(message);
-                if (parser is REQOKParser) {
-                    this->onOK();
-                } else if (/* parser is REQERRParser */) {
-                    outerInstance.forwardControlResponseError(/* errorCode */, /* errorMsg */, *this);
-                } else if (/* parser is ERRORParser */) {
-                    outerInstance.forwardControlResponseError(/* errorCode */, /* errorMsg */, *this);
-                } else {
-                    // Should not happen
-                    outerInstance.onIllegalMessage("Unexpected response to control request: " + message);
-                }
-            }
-
-            virtual void onBroken() {
-                if (completed) return;
-                completed = true;
-                if (!opened && tutor) {
-                    tutor->notifySender(true);
-                }
-            }
-        };
-
-
-        // Abstract class ControlRequestListener supporting reverse heartbeats.
-        class ControlRequestListener : public BaseControlRequestListener {
-        protected:
-            TextProtocol &outerInstance; // Reference to the parent TextProtocol object
-
-        public:
-            // Constructor that initializes the external instance and passes the tutor to the base constructor.
-            ControlRequestListener(TextProtocol &outerInstance, std::unique_ptr<requests::RequestTutor> tutor)
-                    : BaseControlRequestListener(outerInstance, std::move(tutor)), outerInstance(outerInstance) {}
-
-            // Overrides the onOpen method to implement ControlRequestListener specific logic.
-            void onOpen() override {
-                BaseControlRequestListener::onOpen(); // First call the base implementation
-                outerInstance.onControlRequestForReverseHeartbeat(); // Trigger reverse heartbeat
-            }
-
-            // Ensure to implement the abstract methods onOK and onError.
-            virtual void onOK() = 0;
-
-            virtual void onError(int code, const std::string &message) = 0;
-        };
 
     };
 

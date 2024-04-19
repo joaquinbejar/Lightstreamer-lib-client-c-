@@ -101,7 +101,7 @@ namespace lightstreamer::client::session {
             log.info("User value changed to " + value);
         }
 
-        std::string getServerInstanceAddress() const {
+        std::string getServerInstanceAddress()  {
             std::scoped_lock lock(mutex); // TODO: Using std::scoped_lock for thread safety
             return serverInstanceAddress;
         }
@@ -113,7 +113,7 @@ namespace lightstreamer::client::session {
             log.info("Server Instance Address value changed to " + value);
         }
 
-        std::string getServerSocketName() const {
+        std::string getServerSocketName()  {
             std::scoped_lock lock(mutex);
             return serverSocketName;
         }
@@ -125,7 +125,7 @@ namespace lightstreamer::client::session {
             log.info("Server Socket Name value changed to " + value);
         }
 
-        std::string getClientIp() const {
+        std::string getClientIp()  {
             std::scoped_lock lock(mutex);
             return clientIp;
         }
@@ -137,7 +137,7 @@ namespace lightstreamer::client::session {
             log.info("Client IP value changed to " + value);
         }
 
-        std::string getSessionId() const {
+        std::string getSessionId()  {
             std::scoped_lock lock(mutex);
             return sessionId;
         }
@@ -149,7 +149,7 @@ namespace lightstreamer::client::session {
             log.info("Session ID value changed to " + value);
         }
 
-        std::string getPassword() const {
+        std::string getPassword()  {
             std::scoped_lock lock(mutex);
             return password;
         }
@@ -161,15 +161,7 @@ namespace lightstreamer::client::session {
             log.info("Password value changed");
         }
 
-        // TODO: Verification function adapted for C++ context
-        static void verifyServerAddress(const std::string& serverAddress) {
-            // URL validation in C++ requires using third-party libraries or custom validation.
-            // This function is a placeholder for such validation, focusing on the scheme.
-            if (serverAddress.find("http://") != 0 && serverAddress.find("https://") != 0) {
-                throw std::invalid_argument("The given server address has not a valid scheme");
-            }
-            // Further validation can be added here based on requirements.
-        }
+
 
     };
 

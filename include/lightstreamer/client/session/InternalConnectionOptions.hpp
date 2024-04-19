@@ -39,7 +39,7 @@
 #include <lightstreamer/client/events/ClientListenerPropertyChangeEvent.hpp>
 #include "LogManager.h"
 #include <lightstreamer/client/Proxy.hpp>
-#include "NumberUtility.h"
+#include <lightstreamer/util/Number.hpp>
 #include <lightstreamer/client/transport/providers/HttpProvider.hpp>
 
 namespace lightstreamer::client::session {
@@ -93,7 +93,7 @@ namespace lightstreamer::client::session {
         }
 
         void setContentLength(long long newContentLength) {
-            NumberUtility::verifyPositive(newContentLength, NumberUtility::DONT_ACCEPT_ZERO);
+            Number::verifyPositive(newContentLength, NumberUtility::DONT_ACCEPT_ZERO);
             contentLength = newContentLength;
             eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("contentLength"));
             log->Info(std::format("Content Length value changed to {}", newContentLength));

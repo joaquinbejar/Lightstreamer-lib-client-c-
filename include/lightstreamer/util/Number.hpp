@@ -29,36 +29,52 @@
 
 namespace lightstreamer::util {
 
-    constexpr bool ACCEPT_ZERO = true;
-    constexpr bool DONT_ACCEPT_ZERO = false;
+    class Number {
+    public:
+        static constexpr bool ACCEPT_ZERO = true;
+        static constexpr bool DONT_ACCEPT_ZERO = false;
 
-    bool isPositive(double num, bool zeroAccepted) {
-        if (zeroAccepted) {
-            if (num < 0) {
-                return false;
+        /**
+         * Verifies that a given number is positive. Throws an exception if the check fails.
+         * @param num The number to verify.
+         * @param zeroAccepted Whether zero is considered a valid positive number.
+         */
+        static void verifyPositive(double num, bool zeroAccepted) {
+            bool positive = isPositive(num, zeroAccepted);
+            if (!positive) {
+                if (zeroAccepted) {
+                    throw std::invalid_argument("The given value is not valid. Use a positive number or 0");
+                } else {
+                    throw std::invalid_argument("The given value is not valid. Use a positive number");
+                }
             }
-        } else if (num <= 0) {
-            return false;
         }
-        return true;
-    }
 
-    void verifyPositive(double num, bool zeroAccepted) {
-        bool positive = isPositive(num, zeroAccepted);
-        if (!positive) {
+        /**
+         * Checks if a number is positive based on the acceptance of zero.
+         * @param num The number to check.
+         * @param zeroAccepted Whether zero is considered a positive number.
+         * @return True if the number is considered positive, otherwise false.
+         */
+        static bool isPositive(double num, bool zeroAccepted) {
             if (zeroAccepted) {
-                throw std::invalid_argument("The given value is not valid. Use a positive number or 0");
-            } else {
-                throw std::invalid_argument("The given value is not valid. Use a positive number");
+                return num >= 0;
             }
+            return num > 0;
         }
-    }
 
-    // Static regex objects should be declared as const or constexpr in global scope or inside functions to avoid static initialization order issues
-    bool isNumber(const std::string& num) {
-        static const std::regex pattern(R"(^[+-]?\d*\.?\d+$)");
-        return std::regex_match(num, pattern);
-    }
-}
+        /**
+         * Determines if a string represents a valid number.
+         * @param num The string to check.
+         * @return True if the string is a valid number, otherwise false.
+         */
+        static bool isNumber(const std::string& num) {
+            static const std::regex pattern("^[+-]?\\d*\\.?\\d+$");
+            return std::regex_match(num, pattern);
+        }
+    };
+
+} // namespace lightstreamer::util
+
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_NUMBER_HPP

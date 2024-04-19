@@ -38,6 +38,7 @@
 #include <lightstreamer/client/transport/RequestHandle.hpp>
 
 
+
 namespace lightstreamer::client::protocol {
 
     /**
@@ -102,11 +103,11 @@ namespace lightstreamer::client::protocol {
         util::ListenableFuture openWsFuture;
 
         class MyRunnableError {
-            std::shared_ptr<StreamListener> reqListener;
+            std::shared_ptr<TextProtocol::StreamListener> reqListener;
             std::shared_ptr<ILogger> log;
 
         public:
-            MyRunnableError(std::shared_ptr<StreamListener> listener, std::shared_ptr<ILogger> logger)
+            MyRunnableError(std::shared_ptr<TextProtocol::StreamListener> listener, std::shared_ptr<ILogger> logger)
                     : reqListener(listener), log(logger) {}
 
             // Constructor por defecto
@@ -284,7 +285,7 @@ namespace lightstreamer::client::protocol {
          * @return A handle to the request, which can be used to close the stream connection.
          */
         std::shared_ptr<transport::RequestHandle>
-        bindSession(std::shared_ptr<requests::BindSessionRequest> request, std::shared_ptr<StreamListener> reqListener,
+        bindSession(std::shared_ptr<requests::BindSessionRequest> request, std::shared_ptr<TextProtocol::StreamListener> reqListener,
                     long tcpConnectTimeout, long tcpReadTimeout, std::promise<void> &bindFuture) {
             if (!wsTransport) {
                 // No transport: this can occur when transport is in polling mode
@@ -391,7 +392,7 @@ namespace lightstreamer::client::protocol {
         // Method to find the listener associated with the request.
         // If found, removes it from the list of pending requests.
         transport::RequestListener *getAndRemoveRequestListener(long reqId) {
-            RequestListener *reqListener = pendingRequestMap.GetValueOrNull(reqId);
+            transport::RequestListener *reqListener = pendingRequestMap.GetValueOrNull(reqId);
             pendingRequestMap.Remove(reqId);
 
             return reqListener;

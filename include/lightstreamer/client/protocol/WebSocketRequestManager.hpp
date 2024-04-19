@@ -283,7 +283,7 @@ namespace lightstreamer::client::protocol {
          * @param bindFuture A future object to signal the completion of the bind operation.
          * @return A handle to the request, which can be used to close the stream connection.
          */
-        std::shared_ptr<RequestHandle>
+        std::shared_ptr<transport::RequestHandle>
         bindSession(std::shared_ptr<requests::BindSessionRequest> request, std::shared_ptr<StreamListener> reqListener,
                     long tcpConnectTimeout, long tcpReadTimeout, std::promise<void> &bindFuture) {
             if (!wsTransport) {
@@ -300,17 +300,17 @@ namespace lightstreamer::client::protocol {
                 // Transport exists, meaning openSocket has already been called; the state is CONNECTED or CONNECTING
                 auto state = wsTransport->getState();
                 switch (state) {
-                    case WebSocket::InternalState::CONNECTED:
+                    case transport::InternalState::CONNECTED:
                         sendBindRequest(*request, *reqListener, bindFuture);
                         break;
 
-                    case WebSocket::InternalState::CONNECTING:
+                    case transport::InternalState::CONNECTING:
                         // Buffer the request, to be flushed once the connection state is CONNECTED
                         assert(!bindRequest); // Ensure there's no existing bind request
                         bindRequest = std::make_unique<PendingBind>(request, reqListener, bindFuture);
                         break;
 
-                    case WebSocket::InternalState::BROKEN:
+                    case transport::InternalState::BROKEN:
                         // Discard bind request; it must be sent via HTTP
                         break;
 
@@ -324,11 +324,11 @@ namespace lightstreamer::client::protocol {
             return std::make_shared<RequestHandleAnonymousInnerClass>(*this);
         }
 
-        void addRequest(const LightstreamerRequest &request, const RequestTutor &tutor,
+        void addRequest(const requests::LightstreamerRequest &request, const requests::RequestTutor &tutor,
                         std::shared_ptr<transport::RequestListener> reqListener) {
-            assert(dynamic_cast<const ControlRequest *>(&request) || dynamic_cast<const MessageRequest *>(&request) ||
-                   dynamic_cast<const ReverseHeartbeatRequest *>(&request));
-            if (const auto numberedReq = dynamic_cast<const NumberedRequest *>(&request)) {
+            assert(dynamic_cast<const requests::ControlRequest *>(&request) || dynamic_cast<const requests::MessageRequest *>(&request) ||
+                   dynamic_cast<const requests::ReverseHeartbeatRequest *>(&request));
+            if (const auto numberedReq = dynamic_cast<const requests::NumberedRequest *>(&request)) {
                 // Para solicitudes numeradas (es decir, con un LS_reqId), el cliente espera una notificación REQOK/REQERR del servidor.
                 assert(pendingRequestMap.find(numberedReq->getRequestId()) == pendingRequestMap.end());
                 pendingRequestMap[numberedReq->getRequestId()] = reqListener;
@@ -342,10 +342,10 @@ namespace lightstreamer::client::protocol {
                 // Hay transporte, por lo que ya se llamó a openSocket: el estado es CONNECTED o CONNECTING.
                 auto state = wsTransport->getState();
                 switch (state) {
-                    case WebSocket::InternalState::CONNECTED:
+                    case transport::InternalState::CONNECTED:
                         sendControlRequest(request, reqListener, tutor);
                         break;
-                    case WebSocket::InternalState::CONNECTING:
+                    case transport::InternalState::CONNECTING:
                         // Se almacenan las solicitudes en búfer, que se enviarán cuando el estado del cliente sea CONNECTED.
                         controlRequestQueue.emplace_back(request, reqListener, tutor);
                         break;

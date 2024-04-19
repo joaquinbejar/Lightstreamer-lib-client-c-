@@ -40,6 +40,7 @@
 #include "LogManager.h"
 #include <lightstreamer/client/Proxy.hpp>
 #include "NumberUtility.h"
+#include <lightstreamer/client/transport/providers/HttpProvider.hpp>
 
 namespace lightstreamer::client::session {
 
@@ -77,7 +78,7 @@ namespace lightstreamer::client::session {
         InternalConnectionOptions(std::shared_ptr<EventDispatcher<ClientListener>> eventDispatcher, std::shared_ptr<ClientListener> internalListener)
         : eventDispatcher(std::move(eventDispatcher)), internalListener(std::move(internalListener)) {
             // Example of adapting C# static property access to C++ method call
-            if (TransportFactory<HttpProvider>::DefaultHttpFactory()->ResponseBuffered()) {
+            if (TransportFactory<transport::providers::HttpProvider>::DefaultHttpFactory()->ResponseBuffered()) {
                 this->contentLength = 4'000'000;
             }
         }

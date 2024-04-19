@@ -27,11 +27,16 @@
 #include <list>
 #include <memory>
 #include <unordered_map>
-#include "WebSocket.h" // Assume WebSocket is a class defined elsewhere.
+#include <lightstreamer/client/transport/WebSocket.hpp>
 #include <lightstreamer/client/transport/RequestListener.hpp>
 #include <lightstreamer/client/session/SessionThread.hpp>
-#include "InternalConnectionOptions.h"
+#include <lightstreamer/client/session/InternalConnectionOptions.hpp>
 #include <lightstreamer/client/protocol/RequestManager.hpp>
+#include <lightstreamer/client/protocol/TextProtocol.hpp>
+#include <lightstreamer/client/requests/RequestTutor.hpp>
+#include <lightstreamer/client/requests/BindSessionRequest.hpp>
+#include <lightstreamer/client/transport/RequestHandle.hpp>
+
 
 namespace lightstreamer::client::protocol {
 
@@ -50,12 +55,40 @@ namespace lightstreamer::client::protocol {
     class WebSocketRequestManager : public RequestManager {
         ILogger &log;
         ILogger &sessionLog;
-        std::unique_ptr<WebSocket> wsTransport;
+        std::unique_ptr<transport::WebSocket> wsTransport;
         Protocol &protocol;
         session::SessionThread &sessionThread;
-        InternalConnectionOptions &options;
+        session::InternalConnectionOptions &options;
+
+
+        class PendingRequest {
+        public:
+            // Members
+            std::shared_ptr<requests::LightstreamerRequest> request;
+            std::shared_ptr<transport::RequestListener> reqListener;
+            std::shared_ptr<requests::RequestTutor> tutor;
+
+            // Constructor
+            PendingRequest(std::shared_ptr<requests::LightstreamerRequest> request,
+                           std::shared_ptr<transport::RequestListener> reqListener, std::shared_ptr<requests::RequestTutor> tutor)
+                    : request(request), reqListener(reqListener), tutor(tutor) {}
+        };
+
+        class PendingBind : public PendingRequest {
+        public:
+            // Member
+            std::shared_ptr<util::ListenableFuture> bindFuture;
+
+            // Constructor
+            PendingBind(std::shared_ptr<requests::LightstreamerRequest> request,
+                        std::shared_ptr<transport::RequestListener> reqListener,
+                        std::shared_ptr<util::ListenableFuture> bindFuture)
+                    : PendingRequest(request, reqListener, nullptr), bindFuture(bindFuture) {}
+        };
+
         std::list<PendingRequest> controlRequestQueue;
         std::unique_ptr<PendingBind> bindRequest;
+
 
         /**
          * @brief A request that the manager has sent but has not yet been written to the WebSocket.
@@ -66,7 +99,7 @@ namespace lightstreamer::client::protocol {
          * @brief Maps the LS_reqId of a request to the request's listener.
          */
         std::unordered_map<long, std::shared_ptr<transport::RequestListener>> pendingRequestMap;
-        ListenableFuture openWsFuture;
+        util::ListenableFuture openWsFuture;
 
         class MyRunnableError {
             std::shared_ptr<StreamListener> reqListener;
@@ -98,8 +131,8 @@ namespace lightstreamer::client::protocol {
         };
 
         void
-        sendControlRequest(const LightstreamerRequest &request, std::shared_ptr<transport::RequestListener> reqListener,
-                           const RequestTutor &tutor) {
+        sendControlRequest(const requests::LightstreamerRequest &request, std::shared_ptr<transport::RequestListener> reqListener,
+                           const requests::RequestTutor &tutor) {
             ongoingRequest = PendingRequest(request, reqListener, tutor);
             wsTransport->sendRequest(*protocol, request,
                                      std::make_shared<ListenerWrapperAnonymousInnerClass>(*this, reqListener), nullptr,
@@ -112,7 +145,7 @@ namespace lightstreamer::client::protocol {
 
         public:
             // Constructor
-            ListenerWrapperAnonymousInnerClass(WebSocketRequestManager *outerInstance, RequestListener *reqListener)
+            ListenerWrapperAnonymousInnerClass(WebSocketRequestManager *outerInstance, transport::RequestListener *reqListener)
                     : ListenerWrapper(outerInstance, reqListener), outerInstance(outerInstance) {}
 
             // Implementación de doOpen
@@ -122,13 +155,13 @@ namespace lightstreamer::client::protocol {
             }
         };
 
-        void sendBindRequest(LightstreamerRequest *request, transport::RequestListener *reqListener,
-                             ListenableFuture *bindFuture) {
+        void sendBindRequest(requests::LightstreamerRequest *request, transport::RequestListener *reqListener,
+                             util::ListenableFuture *bindFuture) {
             wsTransport.sendRequest(protocol, request, new ListenerWrapper(this, reqListener), nullptr, nullptr, 0, 0);
             bindFuture->fulfill();
         }
 
-        class MyConnectionListener : public WebSocket::ConnectionListener {
+        class MyConnectionListener : public transport::WebSocket::ConnectionListener {
         private:
             WebSocketRequestManager *outerInstance;
 
@@ -164,30 +197,6 @@ namespace lightstreamer::client::protocol {
             }
         };
 
-        class PendingRequest {
-        public:
-            // Members
-            std::shared_ptr<LightstreamerRequest> request;
-            std::shared_ptr<transport::RequestListener> reqListener;
-            std::shared_ptr<RequestTutor> tutor;
-
-            // Constructor
-            PendingRequest(std::shared_ptr<LightstreamerRequest> request,
-                           std::shared_ptr<transport::RequestListener> reqListener, std::shared_ptr<RequestTutor> tutor)
-                    : request(request), reqListener(reqListener), tutor(tutor) {}
-        };
-
-        class PendingBind : public PendingRequest {
-        public:
-            // Member
-            std::shared_ptr<ListenableFuture> bindFuture;
-
-            // Constructor
-            PendingBind(std::shared_ptr<LightstreamerRequest> request,
-                        std::shared_ptr<transport::RequestListener> reqListener,
-                        std::shared_ptr<ListenableFuture> bindFuture)
-                    : PendingRequest(request, reqListener, nullptr), bindFuture(bindFuture) {}
-        };
 
         /// \brief A wrapper ensuring that the method `RequestListener::onOpen()` is executed
         ///        in the SessionThread.
@@ -230,20 +239,20 @@ namespace lightstreamer::client::protocol {
 
     public:
         WebSocketRequestManager(std::shared_ptr<session::SessionThread> thread, std::shared_ptr<Protocol> prot,
-                                std::shared_ptr<InternalConnectionOptions> opts)
+                                std::shared_ptr<session::InternalConnectionOptions> opts)
                 : options(opts), sessionThread(thread), protocol(prot) {}
 
         std::future<void> openWS(std::shared_ptr<Protocol> prot, const std::string &serverAddress,
-                                 std::shared_ptr<StreamListener> streamListener) {
+                                 std::shared_ptr<TextProtocol::BindSessionListener::StreamListener> streamListener) {
             if (wsTransport) {
                 // Close old connection
                 wsTransport->close();
             }
 
-            wsTransport = std::make_unique<WebSocket>(sessionThread, options, serverAddress, streamListener,
+            wsTransport = std::make_unique<transport::WebSocket>(sessionThread, options, serverAddress, streamListener,
                                                       std::make_unique<MyConnectionListener>(*this));
 
-            assert(wsTransport->getState() == WebSocket::InternalState::CONNECTING);
+            assert(wsTransport->getState() ==  transport::InternalState::CONNECTING);
 
             auto future = openWsPromise.get_future();
             // Abort connection if opening takes too long
@@ -251,8 +260,8 @@ namespace lightstreamer::client::protocol {
             auto timeout = options->getCurrentConnectTimeout();
 
             sessionThread->schedule([wsTransportCopy, timeout, this]() {
-                if (wsTransportCopy->getState() == WebSocket::InternalState::CONNECTING ||
-                    wsTransportCopy->getState() == WebSocket::InternalState::UNEXPECTED_ERROR) {
+                if (wsTransportCopy->getState() == transport::InternalState::CONNECTING ||
+                    wsTransportCopy->getState() == transport::InternalState::UNEXPECTED_ERROR) {
                     this->log->Debug("WS connection: aborted");
                     openWsPromise.set_value();
                     wsTransportCopy->close();
@@ -275,7 +284,7 @@ namespace lightstreamer::client::protocol {
          * @return A handle to the request, which can be used to close the stream connection.
          */
         std::shared_ptr<RequestHandle>
-        bindSession(std::shared_ptr<BindSessionRequest> request, std::shared_ptr<StreamListener> reqListener,
+        bindSession(std::shared_ptr<requests::BindSessionRequest> request, std::shared_ptr<StreamListener> reqListener,
                     long tcpConnectTimeout, long tcpReadTimeout, std::promise<void> &bindFuture) {
             if (!wsTransport) {
                 // No transport: this can occur when transport is in polling mode

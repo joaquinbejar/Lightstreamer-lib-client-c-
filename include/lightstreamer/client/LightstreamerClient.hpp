@@ -62,6 +62,8 @@
 #include <lightstreamer/client/ClientListener.hpp>
 
 #include <lightstreamer/client/transport/providers/WebSocketProvider.hpp>
+#include <lightstreamer/client/transport/providers/HttpCookie.hpp>
+
 
 
 namespace lightstreamer::client {

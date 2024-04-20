@@ -53,12 +53,15 @@
 
 #include <lightstreamer/client/Constants.hpp>
 #include <lightstreamer/client/LightstreamerEngine.hpp>
+#include <lightstreamer/client/ClientMessageListener.hpp>
 #include <lightstreamer/client/MessageManager.hpp>
 #include <lightstreamer/client/SubscriptionManager.hpp>
 #include <lightstreamer/client/ConnectionOptions.hpp>
 #include <lightstreamer/client/Subscription.hpp>
 #include <lightstreamer/client/ConnectionDetails.hpp>
 #include <lightstreamer/client/ClientListener.hpp>
+
+#include <lightstreamer/client/transport/providers/WebSocketProvider.hpp>
 
 
 namespace lightstreamer::client {
@@ -207,17 +210,17 @@ namespace lightstreamer::client {
             LogManager::setLoggerProvider(provider);
         }
 
-        static std::shared_ptr<EventsThread> eventsThread = EventsThread::instance();
+        static std::shared_ptr<events::EventsThread> eventsThread = events::EventsThread::instance();
 
-        std::unique_ptr<EventDispatcher<ClientListener>> dispatcher;
+        std::unique_ptr<events::EventDispatcher<ClientListener>> dispatcher;
         std::shared_ptr<ILogger> log = LogManager::getLogger(Constants::ACTIONS_LOG);
 
         std::unique_ptr<InternalListener> internalListener;
-        std::unique_ptr<InternalConnectionDetails> internalConnectionDetails;
-        std::unique_ptr<InternalConnectionOptions> internalConnectionOptions;
-        static std::shared_ptr<SessionThread> sessionThread = std::make_shared<SessionThread>();
+        std::unique_ptr<session::InternalConnectionDetails> internalConnectionDetails;
+        std::unique_ptr<session::InternalConnectionOptions> internalConnectionOptions;
+        static std::shared_ptr<session::SessionThread> sessionThread = std::make_shared<session::SessionThread>();
 
-        std::unique_ptr<SessionManager> manager;
+        std::unique_ptr<session::SessionManager> manager;
 
         std::unique_ptr<LightstreamerEngine> engine;
 
@@ -277,7 +280,7 @@ namespace lightstreamer::client {
                 connectionDetails->adapterSet = adapterSet;
             }
 
-            if (TransportFactory<WebSocketProvider>::getDefaultWebSocketFactory() == nullptr) {
+            if (TransportFactory<transport::providers::WebSocketProvider>::getDefaultWebSocketFactory() == nullptr) {
                 log->info("WebSocket not available");
                 connectionOptions->forcedTransport = "HTTP";
             } else {
@@ -296,7 +299,7 @@ namespace lightstreamer::client {
         void addListener(std::shared_ptr<ClientListener> listener)
         {
             std::lock_guard<std::mutex> lock(mutex);
-            dispatcher->addListener(listener, std::make_shared<ClientListenerStartEvent>(this));
+            dispatcher->addListener(listener, std::make_shared<events::ClientListenerStartEvent>(this));
         }
 
         /**
@@ -308,7 +311,7 @@ namespace lightstreamer::client {
         void removeListener(std::shared_ptr<ClientListener> listener)
         {
             std::lock_guard<std::mutex> lock(mutex);
-            dispatcher->removeListener(listener, std::make_shared<ClientListenerEndEvent>(this));
+            dispatcher->removeListener(listener, std::make_shared<events::ClientListenerEndEvent>(this));
         }
 
         /**

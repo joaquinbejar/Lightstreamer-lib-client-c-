@@ -27,7 +27,7 @@
 #include <string>
 
 
-namespace Lightstreamer::Cpp::ConnectionDetails {
+namespace lightstreamer::client {
     typedef std::string Password; // TODO:  Define the type of Password
     typedef std::string User; // TODO:  Define the type of User
     typedef std::string ServerAddress; // TODO:  Define the type of ServerAddress

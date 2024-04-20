@@ -53,9 +53,9 @@
 #include "SessionManager.h"
 #include "LightstreamerEngine.h"
 #include "MessageManager.h"
-#include "SubscriptionManager.h"
+#include "lightstreamer/client/SubscriptionManager.hpp"
 #include "ConnectionOptions.h"
-#include "Subscription.h"
+#include "lightstreamer/client/Subscription.hpp"
 #include "LoggerProvider.h"
 #include "LogManager.h"
 
@@ -74,7 +74,7 @@ namespace lightstreamer::client {
         mutable std::mutex mutex;
         std::string lastStatus;
         std::vector<std::shared_ptr<Subscription>> subscriptionArray;
-        std::unique_ptr<EventsThread> eventsThread;
+        std::unique_ptr<events::EventsThread> eventsThread;
         std::unique_ptr<SubscriptionManager> subscriptions;
         bool instanceFieldsInitialized = false;
 

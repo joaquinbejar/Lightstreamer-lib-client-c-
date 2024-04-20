@@ -94,6 +94,8 @@ namespace lightstreamer::client {
         }
 
 
+
+
     public:
         static constexpr char const* LIB_NAME = "Lightstreamer.DotNetStandard.Client";
         static constexpr char const* LIB_VERSION = "5.1.10";
@@ -386,6 +388,104 @@ namespace lightstreamer::client {
             });
         }
 
+        /**
+         * Inquiry method that returns a list containing all the Subscription instances that are
+         * currently "active" on this LightstreamerClient. Internal second-level Subscription are not included.
+         * @return A vector, containing all the Subscription currently "active" on this LightstreamerClient.
+         *         The vector can be empty.
+         */
+        std::vector<std::shared_ptr<Subscription>> getSubscriptions()
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            return std::vector<std::shared_ptr<Subscription>>(subscriptionArray);  // Copy the vector to avoid external modifications.
+        }
+
+        /**
+         * A simplified version of sendMessage that uses default parameters for simplicity and an optimized
+         * fire-and-forget behavior, not involving sequence or listener.
+         * @param message A text message, whose interpretation is entirely demanded to the Metadata Adapter
+         *                associated to the current connection.
+         */
+        void sendMessage(std::string message)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            sendMessage(message, "", -1, nullptr, false);
+        }
+
+        /**
+         * Operation method that sends a message to the Server, handled by the Metadata Adapter associated to the current Session.
+         * This method supports in-order guaranteed message delivery with automatic batching.
+         * @param message A text message, whose interpretation is entirely demanded to the Metadata Adapter
+         *                associated to the current connection.
+         * @param sequence An alphanumeric identifier for the message sequence; if empty, "UNORDERED_MESSAGES" is assumed.
+         * @param delayTimeout A timeout in milliseconds, with server default used if negative.
+         * @param listener An object for receiving notifications about the processing outcome.
+         * @param enqueueWhileDisconnected If true, the message is queued during a disconnected state, waiting for a new session.
+         */
+        void sendMessage(std::string message, std::string sequence, int delayTimeout, std::shared_ptr<ClientMessageListener> listener, bool enqueueWhileDisconnected)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (sequence.empty()) {
+                sequence = Constants::UNORDERED_MESSAGES;
+            } else if (!std::regex_match(sequence, std::regex("^[a-zA-Z0-9_]*$"))) {
+                throw std::invalid_argument("The given sequence name is not valid, use only alphanumeric characters plus underscore, or empty for default");
+            }
+
+            eventsThread->queue([this, message, sequence, delayTimeout, listener, enqueueWhileDisconnected]() {
+                messages->send(message, sequence, delayTimeout, listener, enqueueWhileDisconnected);
+            });
+        }
+
+        /**
+         * Static method that allows sharing cookies between connections to the Server and other sites by the application.
+         * @param uri The URI from which the supplied cookies were received.
+         * @param cookies A vector of cookies, represented in the HttpCookie type.
+         */
+        static void addCookies(std::string uri, std::vector<HttpCookie> cookies)
+        {
+            CookieHelper::addCookies(uri, cookies);
+        }
+
+        /**
+         * Static inquiry method that can be used to retrieve cookies suitable for sending to a specified URI.
+         * This method allows cookies received from the Server to be extracted for sending through other connections,
+         * according to the URI to be accessed.
+         * @param uri The URI to which the cookies should be sent, or empty to retrieve all available non-expired cookies.
+         * @return A vector with the various cookies that can be sent in a HTTP request for the specified URI.
+         *         If an empty URI is supplied, all available non-expired cookies will be returned.
+         */
+        static std::vector<HttpCookie> getCookies(std::string uri)
+        {
+            return CookieHelper::getCookies(uri);
+        }
+
+        /**
+         * Provides a means to control the way TLS certificates are evaluated, with the possibility to accept untrusted ones.
+         * @param validator A function that acts as a callback to validate server certificates.
+         *
+         * <b>Lifecycle:</b> May be called only once before creating any LightstreamerClient instance.
+         */
+        static void setTrustManagerFactory(std::function<bool(const std::string& certData, bool preverified, int depth, std::string& error)> validator)
+        {
+            // Equivalent to attaching a validation callback, in environments like C++ where you control TLS directly, you'd set this on your SSL context setup.
+            SSLManager::setCertificateValidationCallback(validator);
+        }
+
+        /**
+         * Internal method to update the status of the client. If the status is different from the current one, it updates and returns true.
+         * @param status New status to be set.
+         * @return true if the status was updated, false otherwise.
+         */
+        virtual bool setStatus(std::string status)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (lastStatus != status)
+            {
+                lastStatus = status;
+                return true;
+            }
+            return false;
+        }
 
     };
 

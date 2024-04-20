@@ -82,11 +82,11 @@ namespace lightstreamer::client {
 
         void initializeInstanceFields()
         {
-            dispatcher = std::make_unique<EventDispatcher<ClientListener>>(eventsThread);
+            dispatcher = std::make_unique<events::EventDispatcher<ClientListener>>(eventsThread);
             internalListener = std::make_unique<InternalListener>(this);
-            internalConnectionDetails = std::make_unique<InternalConnectionDetails>(*dispatcher);
-            internalConnectionOptions = std::make_unique<InternalConnectionOptions>(*dispatcher, *internalListener);
-            manager = std::make_unique<SessionManager>(*internalConnectionOptions, *internalConnectionDetails, sessionThread);
+            internalConnectionDetails = std::make_unique<session::InternalConnectionDetails>(*dispatcher);
+            internalConnectionOptions = std::make_unique<session::InternalConnectionOptions>(*dispatcher, *internalListener);
+            manager = std::make_unique<session::SessionManager>(*internalConnectionOptions, *internalConnectionDetails, sessionThread);
             engine = std::make_unique<LightstreamerEngine>(*internalConnectionOptions, sessionThread, eventsThread, *internalListener, *manager);
             messages = std::make_unique<MessageManager>(eventsThread, sessionThread, *manager, *internalConnectionOptions);
             subscriptions = std::make_unique<SubscriptionManager>(sessionThread, *manager, *internalConnectionOptions);

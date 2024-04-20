@@ -28,6 +28,8 @@
 #include <vector>
 #include <mutex>
 #include <unordered_map>
+#include <lightstreamer/client/transport/providers/HttpCookie.hpp>
+#include <lightstreamer/client/transport/providers/CookieContainer.hpp>
 
 namespace lightstreamer::client::transport::providers {
 

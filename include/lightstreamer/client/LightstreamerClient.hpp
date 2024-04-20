@@ -24,6 +24,10 @@
 #ifndef LIGHTSTREAMERCLIENT_HPP
 #define LIGHTSTREAMERCLIENT_HPP
 
+#include <memory>
+#include <vector>
+#include <regex>
+#include <string>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -32,32 +36,30 @@
 #include <functional>
 
 
-#include <lightstreamer/client/ConnectionDetails.hpp>
-#include <lightstreamer/client/ClientListener.hpp>
-#include <lightstreamer/client/events/Event.hpp>
+
+
 #include <Logger.hpp>
-#include <lightstreamer/client/Constants.hpp>
+
 #include <lightstreamer/client/events/EventDispatcher.hpp>
 #include <lightstreamer/client/events/ClientListenerStartEvent.hpp>
 #include <lightstreamer/client/events/ClientListenerEndEvent.hpp>
+#include <lightstreamer/client/events/EventsThread.hpp>
+#include <lightstreamer/client/events/EventDispatcher.hpp>
+#include <lightstreamer/client/events/Event.hpp>
 
-#include <memory>
-#include <vector>
-#include <regex>
-#include <string>
-#include "EventsThread.h"
-#include "EventDispatcher.h"
-#include "InternalListener.h"
-#include "InternalConnectionDetails.h"
-#include "InternalConnectionOptions.h"
-#include "SessionManager.h"
-#include "LightstreamerEngine.h"
-#include "MessageManager.h"
-#include "lightstreamer/client/SubscriptionManager.hpp"
-#include "ConnectionOptions.h"
-#include "lightstreamer/client/Subscription.hpp"
-#include "LoggerProvider.h"
-#include "LogManager.h"
+#include <lightstreamer/client/session/InternalConnectionDetails.hpp>
+#include <lightstreamer/client/session/InternalConnectionOptions.hpp>
+#include <lightstreamer/client/session/SessionManager.hpp>
+
+#include <lightstreamer/client/Constants.hpp>
+#include <lightstreamer/client/LightstreamerEngine.hpp>
+#include <lightstreamer/client/MessageManager.hpp>
+#include <lightstreamer/client/SubscriptionManager.hpp>
+#include <lightstreamer/client/ConnectionOptions.hpp>
+#include <lightstreamer/client/Subscription.hpp>
+#include <lightstreamer/client/ConnectionDetails.hpp>
+#include <lightstreamer/client/ClientListener.hpp>
+
 
 namespace lightstreamer::client {
 
@@ -93,7 +95,80 @@ namespace lightstreamer::client {
             connectionDetails = std::make_unique<ConnectionDetails>(*internalConnectionDetails);
         }
 
+        /**
+         * Internal listener class for handling client events within the LightstreamerClient context.
+         * This class acts as a mediator between the LightstreamerClient and various system components,
+         * responding to events such as server errors and status changes.
+         */
+        class InternalListener : public ClientListener {
+        private:
+            LightstreamerClient& outerInstance;
 
+        public:
+            /**
+             * Constructs an InternalListener with a reference to its outer LightstreamerClient instance.
+             * @param outerInstance Reference to the LightstreamerClient that this listener belongs to.
+             */
+            explicit InternalListener(LightstreamerClient& outerInstance)
+                    : outerInstance(outerInstance) {}
+
+            /**
+             * Event handler for when listening ends. Currently not used.
+             * @param client Reference to the LightstreamerClient.
+             */
+            virtual void onListenEnd(LightstreamerClient& client) override {
+                // Currently not used
+            }
+
+            /**
+             * Event handler for when listening starts. Currently not used.
+             * @param client Reference to the LightstreamerClient.
+             */
+            virtual void onListenStart(LightstreamerClient& client) override {
+                // Currently not used
+            }
+
+            /**
+             * Event handler for server errors.
+             * @param errorCode Error code provided by the server.
+             * @param errorMessage Detailed error message.
+             */
+            virtual void onServerError(int errorCode, std::string errorMessage) override {
+                outerInstance.dispatcher->dispatchEvent(std::make_shared<ClientListenerServerErrorEvent>(errorCode, errorMessage));
+            }
+
+            /**
+             * Event handler for status changes. Dispatches a status change event if the status has actually changed.
+             * @param status New status string to be set.
+             */
+            virtual void onStatusChange(std::string status) override {
+                if (outerInstance.setStatus(status)) {
+                    outerInstance.dispatcher->dispatchEvent(std::make_shared<ClientListenerStatusChangeEvent>(status));
+                }
+            }
+
+            /**
+             * Event handler for property changes. Depending on the property, different actions are triggered.
+             * @param property Name of the property that has changed.
+             */
+            virtual void onPropertyChange(std::string property) override {
+                if (property == "requestedMaxBandwidth") {
+                    outerInstance.eventsThread->queue([this] {
+                        outerInstance.engine->onRequestedMaxBandwidthChanged();
+                    });
+                } else if (property == "reverseHeartbeatInterval") {
+                    outerInstance.eventsThread->queue([this] {
+                        outerInstance.engine->onReverseHeartbeatIntervalChanged();
+                    });
+                } else if (property == "forcedTransport") {
+                    outerInstance.eventsThread->queue([this] {
+                        outerInstance.engine->onForcedTransportChanged();
+                    });
+                } else {
+                    outerInstance.log->error("Unexpected call to internal onPropertyChange");
+                }
+            }
+        };
 
 
     public:

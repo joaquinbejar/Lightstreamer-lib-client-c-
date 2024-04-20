@@ -63,6 +63,7 @@
 
 #include <lightstreamer/client/transport/providers/WebSocketProvider.hpp>
 #include <lightstreamer/client/transport/providers/HttpCookie.hpp>
+#include <lightstreamer/client/transport/providers/CookieHelper.hpp>
 
 
 
@@ -521,9 +522,9 @@ namespace lightstreamer::client {
          * @param uri The URI from which the supplied cookies were received.
          * @param cookies A vector of cookies, represented in the HttpCookie type.
          */
-        static void addCookies(std::string uri, std::vector<HttpCookie> cookies)
+        static void addCookies(std::string uri, std::vector<transport::providers::HttpCookie> cookies)
         {
-            CookieHelper::addCookies(uri, cookies);
+            transport::providers::CookieHelper::addCookies(uri, cookies);
         }
 
         /**
@@ -534,7 +535,7 @@ namespace lightstreamer::client {
          * @return A vector with the various cookies that can be sent in a HTTP request for the specified URI.
          *         If an empty URI is supplied, all available non-expired cookies will be returned.
          */
-        static std::vector<HttpCookie> getCookies(std::string uri)
+        static std::vector<transport::providers::HttpCookie> getCookies(std::string uri)
         {
             return CookieHelper::getCookies(uri);
         }

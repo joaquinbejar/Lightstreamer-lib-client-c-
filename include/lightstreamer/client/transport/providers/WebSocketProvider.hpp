@@ -27,16 +27,11 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <lightstreamer/client/transport/SessionRequestListener.hpp>
+#include <lightstreamer/client/Proxy.hpp>
+#include <lightstreamer/util/threads/ThreadShutdownHook.hpp>
 
 namespace lightstreamer::client::transport::providers {
-    // Forward declarations for dependencies
-    class SessionRequestListener;
-
-    class RequestListener;
-
-    class ThreadShutdownHook;
-
-    class Proxy; // Assuming Proxy is a previously defined class
 
     /**
      * Interface used to decouple the application classes from a specific WebSocket implementation.
@@ -80,7 +75,7 @@ namespace lightstreamer::client::transport::providers {
          *
          * @return A smart pointer to the ThreadShutdownHook.
          */
-        virtual std::shared_ptr<ThreadShutdownHook> getThreadShutdownHook() const = 0;
+        virtual std::shared_ptr<util::threads::ThreadShutdownHook> getThreadShutdownHook() const = 0;
 
         // Ensure virtual destructor for proper cleanup of derived classes
         virtual ~WebSocketProvider() = default;

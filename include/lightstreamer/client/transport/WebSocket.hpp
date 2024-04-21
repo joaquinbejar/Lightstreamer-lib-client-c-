@@ -34,12 +34,13 @@
 #include <lightstreamer/client/transport/providers/WebSocketProvider.hpp>
 #include "lightstreamer/client/session/SessionThread.hpp"
 #include <lightstreamer/client/protocol/TextProtocol.hpp>
-#include <lightstreamer/client/transport/WebSocket.hpp>
 #include "lightstreamer/client/session/InternalConnectionOptions.hpp"
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
 #include <lightstreamer/client/protocol/Protocol.hpp>
 #include <lightstreamer/client/transport/Transport.hpp>
 #include "Logger.hpp"
+#include <lightstreamer/client/Proxy.hpp>
+#include <lightstreamer/util/threads/ThreadShutdownHook.hpp>
 
 namespace lightstreamer::client::transport {
 
@@ -88,11 +89,13 @@ namespace lightstreamer::client::transport {
             session::SessionThread &sessionThread;
             protocol::TextProtocol::StreamListener &streamListener;
             ConnectionListener &connectionListener;
-            // State must be volatile because it is read by methods not called by Session Thread.
-            std::atomic<InternalState> state = InternalState::NOT_CONNECTED;
+
 
         public:
-            MySessionRequestListener( session::SessionThread &sessionThread, protocol::TextProtocol::StreamListener &streamListener,
+            // State must be volatile because it is read by methods not called by Session Thread.
+            std::atomic<InternalState> state = InternalState::NOT_CONNECTED;
+            MySessionRequestListener(session::SessionThread &sessionThread,
+                                     protocol::TextProtocol::StreamListener &streamListener,
                                      ConnectionListener &connListener)
                     : sessionThread(sessionThread), streamListener(streamListener), connectionListener(connListener) {}
 
@@ -179,9 +182,9 @@ namespace lightstreamer::client::transport {
              * This is a dummy implementation and does nothing.
              */
             void connect(const std::string &address,
-                              std::shared_ptr<SessionRequestListener> networkListener,
-                              const std::unordered_map<std::string, std::string> &extraHeaders,
-                              const std::string &cookies, std::shared_ptr<Proxy> proxy, long timeout) override {}
+                         std::shared_ptr<SessionRequestListener> networkListener,
+                         const std::unordered_map<std::string, std::string> &extraHeaders,
+                         const std::string &cookies, std::shared_ptr<Proxy> proxy, long timeout) override {}
 
             /**
              * Closes the WebSocket connection.
@@ -199,10 +202,12 @@ namespace lightstreamer::client::transport {
              * Returns a hook to be called on thread shutdown.
              * This is a dummy implementation and does nothing.
              */
-            std::shared_ptr<providers::ThreadShutdownHook> getThreadShutdownHook() const override {
+            std::shared_ptr<util::threads::ThreadShutdownHook> getThreadShutdownHook() const override {
                 return nullptr;
             }
         };
+
+        MySessionRequestListener sessionListener;
 
     public:
         WebSocket(std::shared_ptr<session::SessionThread> sessionThread,
@@ -211,7 +216,7 @@ namespace lightstreamer::client::transport {
                   std::shared_ptr<ConnectionListener> connListener)
                 : sessionThread(sessionThread), options(options) {
             // Simplification for the example: directly create an appropriate WebSocketProvider instance
-            wsClient = std::make_unique<WebSocketProvider>();
+            wsClient = std::make_unique<transport::providers::WebSocketProvider>();
             open(serverAddress, streamListener, connListener);
             if (log->isDebugEnabled()) {
                 log->debug("WebSocket transport - state: " + std::to_string(static_cast<int>(state)));
@@ -225,15 +230,15 @@ namespace lightstreamer::client::transport {
          *                       For each event, the corresponding listener method is executed on the SessionThread.
          * @param connListener Is only exposed to the event opening connection. The listener method is executed on the SessionThread.
          */
-        void open(std::string serverAddress, std::shared_ptr<StreamListener> streamListener,
+        void open(std::string serverAddress, std::shared_ptr<protocol::TextProtocol::StreamListener> streamListener,
                   std::shared_ptr<ConnectionListener> connListener) {
-            assert(sessionListener->state == InternalState::NOT_CONNECTED);
+            assert(sessionListener.state == InternalState::NOT_CONNECTED);
 
             sessionThread->registerWebSocketShutdownHook(wsClient->getThreadShutdownHook());
             try {
                 auto uri = serverAddress + "lightstreamer";
 
-                auto cookies = CookieHelper::getCookieHeader(uri);
+                auto cookies = providers::CookieHelper::getCookieHeader(uri);
                 log->info("Requested cookies for URI " + uri + ": " + cookies);
                 wsClient->connect(uri, sessionListener,
                                   options->httpExtraHeadersOnSessionCreationOnly ? nullptr : options->httpExtraHeaders,
@@ -262,17 +267,21 @@ namespace lightstreamer::client::transport {
          * @param tcpReadTimeout Ignored in the context of WebSocket.
          * @return A handle to the request, which can be used to manage the request.
          */
-        std::shared_ptr<RequestHandle>
-        sendRequest(std::shared_ptr<Protocol> protocol, std::shared_ptr<LightstreamerRequest> request,
-                    std::shared_ptr<RequestListener> listener, const std::map<std::string, std::string> &extraHeaders,
-                    std::shared_ptr<Proxy> proxy, long tcpConnectTimeout, long tcpReadTimeout) {
+        std::unique_ptr<RequestHandle> sendRequest(
+                std::shared_ptr<protocol::Protocol> protocol,
+                std::shared_ptr<requests::LightstreamerRequest> request,
+                std::shared_ptr<RequestListener> listener,
+                const std::map<std::string, std::string> &extraHeaders,
+                std::shared_ptr<Proxy> proxy,
+                long tcpConnectTimeout,
+                long tcpReadTimeout) {
             // Asserting the expected conditions for WebSocket connections.
             assert(extraHeaders.empty() && !proxy && tcpConnectTimeout == 0 && tcpReadTimeout == 0);
 
             std::string frame =
                     request->getRequestName() + "\r\n" + request->getTransportAwareQueryString(defaultSessionId, false);
             wsClient->send(frame, listener);
-            return std::make_shared<RequestHandleAnonymousInnerClass>(this);
+            return std::make_unique<RequestHandleAnonymousInnerClass>(*this);
         }
 
     private:

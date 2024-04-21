@@ -23,6 +23,7 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_INTERNALCONNECTIONOPTIONS_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_INTERNALCONNECTIONOPTIONS_HPP
+
 #include <string>
 #include <unordered_map>
 #include <memory>
@@ -34,13 +35,13 @@
 #include <lightstreamer/client/ClientListener.hpp>
 #include <lightstreamer/client/session/RetryDelayCounter.hpp>
 #include <lightstreamer/client/Constants.hpp>
-#include "Logger.hpp" // Assuming Logger is implemented
+#include "Logger.hpp"
 #include <lightstreamer/client/events/EventDispatcher.hpp>
 #include <lightstreamer/client/events/ClientListenerPropertyChangeEvent.hpp>
-#include "LogManager.hpp"
 #include <lightstreamer/client/Proxy.hpp>
 #include <lightstreamer/util/Number.hpp>
 #include <lightstreamer/client/transport/providers/HttpProvider.hpp>
+#include <lightstreamer/client/transport/providers/TransportFactory.hpp>
 
 namespace lightstreamer::client::session {
 
@@ -52,8 +53,7 @@ namespace lightstreamer::client::session {
         long long firstRetryMaxDelay = 100;
         long long forceBindTimeout = 2000; // Not exposed
         std::string forcedTransport;
-        std::unordered_map<std::string, std::string> httpExtraHeaders;
-        bool httpExtraHeadersOnSessionCreationOnly = false;
+
         long long idleTimeout = 19000;
         long long keepaliveInterval = 0;
         double requestedMaxBandwidth = 0;
@@ -71,14 +71,16 @@ namespace lightstreamer::client::session {
         std::unique_ptr<Proxy> proxy;
 
         std::shared_ptr<ILogger> log = LogManager::GetLogger(Constants::ACTIONS_LOG);
-        std::shared_ptr<EventDispatcher<ClientListener>> eventDispatcher;
+        std::shared_ptr<events::EventDispatcher<ClientListener>> eventDispatcher;
         std::shared_ptr<ClientListener> internalListener;
 
     public:
-        InternalConnectionOptions(std::shared_ptr<EventDispatcher<ClientListener>> eventDispatcher, std::shared_ptr<ClientListener> internalListener)
-        : eventDispatcher(std::move(eventDispatcher)), internalListener(std::move(internalListener)) {
-            // Example of adapting C# static property access to C++ method call
-            if (TransportFactory<transport::providers::HttpProvider>::DefaultHttpFactory()->ResponseBuffered()) {
+        bool httpExtraHeadersOnSessionCreationOnly = false;
+
+        InternalConnectionOptions(std::shared_ptr<events::EventDispatcher<ClientListener>> eventDispatcher,
+                                  std::shared_ptr<ClientListener> internalListener)
+                : eventDispatcher(std::move(eventDispatcher)), internalListener(std::move(internalListener)) {
+            if (transport::providers::TransportFactory<transport::providers::HttpProvider>::getDefaultHttpFactory()->ResponseBuffered()) {
                 this->contentLength = 4'000'000;
             }
         }
@@ -95,12 +97,14 @@ namespace lightstreamer::client::session {
         void setContentLength(long long newContentLength) {
             util::Number::verifyPositive(newContentLength, util::Number::DONT_ACCEPT_ZERO);
             contentLength = newContentLength;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("contentLength"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("contentLength"));
             log->Info(std::format("Content Length value changed to {}", newContentLength));
         }
 
         long long getFirstRetryMaxDelay() {
-            std::lock_guard<std::mutex> guard(this->mutex); // Asumiendo que existe un std::mutex mutex como miembro de la clase
+            std::lock_guard<std::mutex> guard(
+                    this->mutex); // Asumiendo que existe un std::mutex mutex como miembro de la clase
             return firstRetryMaxDelay;
         }
 
@@ -108,7 +112,8 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(this->mutex);
             util::Number::verifyPositive(value, util::Number::DONT_ACCEPT_ZERO);
             firstRetryMaxDelay = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("firstRetryMaxDelay"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("firstRetryMaxDelay"));
             log->Info(std::format("First Retry Max Delay value changed to {}", value));
         }
 
@@ -127,27 +132,30 @@ namespace lightstreamer::client::session {
             return forcedTransport;
         }
 
-        void setForcedTransport(const std::string& value) {
+        void setForcedTransport(const std::string &value) {
             std::lock_guard<std::mutex> guard(this->mutex);
             if (Constants::FORCED_TRANSPORTS.find(value) == Constants::FORCED_TRANSPORTS.end()) {
-                throw std::invalid_argument("The given value is not valid. Use one of: \"HTTP-STREAMING\", \"HTTP-POLLING\", \"WS-STREAMING\", \"WS-POLLING\", \"WS\", \"HTTP\", or null");
+                throw std::invalid_argument(
+                        "The given value is not valid. Use one of: \"HTTP-STREAMING\", \"HTTP-POLLING\", \"WS-STREAMING\", \"WS-POLLING\", \"WS\", \"HTTP\", or null");
             }
             forcedTransport = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("forcedTransport"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("forcedTransport"));
             internalListener->onPropertyChange("forcedTransport");
             log->Info(std::format("Forced Transport value changed to {}", value));
         }
 
-        std::unordered_map<std::string, std::string> getHttpExtraHeaders() {
+        std::map<std::string, std::string> getHttpExtraHeaders() {
             std::lock_guard<std::mutex> guard(mutex);
             return httpExtraHeaders;
         }
 
-        void setHttpExtraHeaders(const std::unordered_map<std::string, std::string>& value) {
+        void setHttpExtraHeaders(const std::map<std::string, std::string> &value) {
             std::lock_guard<std::mutex> guard(mutex);
             httpExtraHeaders = value;
             // Suponiendo que EventDispatcher y ClientListenerPropertyChangeEvent están definidos
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("httpExtraHeaders"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("httpExtraHeaders"));
             log->Info("Extra headers Map changed");
         }
 
@@ -160,7 +168,7 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(mutex);
             if (value < 0) throw std::invalid_argument("Value must be positive or zero.");
             idleTimeout = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("idleTimeout"));
+            eventDispatcher->dispatchEvent(std::make_shared<events::ClientListenerPropertyChangeEvent>("idleTimeout"));
             log->Info(std::format("Idle Timeout value changed to {}", value));
         }
 
@@ -173,7 +181,8 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(mutex);
             if (value < 0) throw std::invalid_argument("Value must be positive or zero.");
             keepaliveInterval = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("keepaliveInterval"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("keepaliveInterval"));
             log->Info(std::format("Keepalive Interval value changed to {}", value));
         }
 
@@ -186,7 +195,7 @@ namespace lightstreamer::client::session {
             }
         }
 
-        void setRequestedMaxBandwidth(const std::string& value) {
+        void setRequestedMaxBandwidth(const std::string &value) {
             std::lock_guard<std::mutex> guard(mutex);
             setMaxBandwidthInternal(value, false);
         }
@@ -201,10 +210,11 @@ namespace lightstreamer::client::session {
             return realMaxBandwidth;
         }
 
-        void setInternalRealMaxBandwidth(const std::string& value) {
+        void setInternalRealMaxBandwidth(const std::string &value) {
             std::lock_guard<std::mutex> guard(mutex);
             realMaxBandwidth = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("realMaxBandwidth"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("realMaxBandwidth"));
         }
 
         bool getBandwidthUnmanaged() {
@@ -226,7 +236,8 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(mutex);
             if (value < 0) throw std::invalid_argument("Value must be positive or zero.");
             pollingInterval = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("pollingInterval"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("pollingInterval"));
             log->Info(std::format("Polling Interval value changed to {}", pollingInterval));
         }
 
@@ -239,7 +250,8 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(mutex);
             if (value <= 0) throw std::invalid_argument("Value must be positive and non-zero.");
             reconnectTimeout = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("reconnectTimeout"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("reconnectTimeout"));
             log->Info(std::format("Reconnect Timeout value changed to {}", reconnectTimeout));
         }
 
@@ -252,7 +264,7 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(mutex);
             if (value <= 0) throw std::invalid_argument("Value must be positive and non-zero.");
             currentRetryDelay->reset(value);
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("retryDelay"));
+            eventDispatcher->dispatchEvent(std::make_shared<events::ClientListenerPropertyChangeEvent>("retryDelay"));
             log->Info(std::format("Retry Delay value changed to {}", value));
         }
 
@@ -270,7 +282,8 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(mutex);
             if (value < 0) throw std::invalid_argument("Value must be positive or zero.");
             reverseHeartbeatInterval = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("reverseHeartbeatInterval"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("reverseHeartbeatInterval"));
             internalListener->onPropertyChange("reverseHeartbeatInterval");
             log->Info(std::format("Reverse Heartbeat Interval value changed to {}", reverseHeartbeatInterval));
         }
@@ -284,7 +297,8 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(mutex);
             if (value <= 0) throw std::invalid_argument("Value must be positive and non-zero.");
             stalledTimeout = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("stalledTimeout"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("stalledTimeout"));
             log->Info(std::format("Stalled Timeout value changed to {}", stalledTimeout));
         }
 
@@ -297,20 +311,20 @@ namespace lightstreamer::client::session {
             std::lock_guard<std::mutex> guard(mutex);
             if (value < 0) throw std::invalid_argument("Value must be positive or zero.");
             sessionRecoveryTimeout = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("sessionRecoveryTimeout"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("sessionRecoveryTimeout"));
             log->Info(std::format("Session Recovery Timeout value changed to {}", sessionRecoveryTimeout));
         }
 
         std::unique_ptr<Proxy> getProxy() {
             std::lock_guard<std::mutex> guard(mutex);
-            return std::make_unique<Proxy>(*proxy); // Retorna una copia si es necesario evitar mutabilidad
+            return std::make_unique<Proxy>(*proxy);
         }
 
         void setProxy(std::unique_ptr<Proxy> newProxy) {
             std::lock_guard<std::mutex> guard(mutex);
             proxy = std::move(newProxy);
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("proxy"));
-            // Log the proxy change; asumir que Proxy tiene una forma de ser convertido a string para el log
+            eventDispatcher->dispatchEvent(std::make_shared<events::ClientListenerPropertyChangeEvent>("proxy"));
             log->Info("Proxy configuration changed.");
         }
 
@@ -322,7 +336,6 @@ namespace lightstreamer::client::session {
         void setSwitchCheckTimeout(long long value) {
             std::lock_guard<std::mutex> guard(mutex);
             switchCheckTimeout = value;
-            // Asumiendo que no hay necesidad de notificar este cambio a través del eventDispatcher
         }
 
         long long getTCPConnectTimeout() {
@@ -343,7 +356,8 @@ namespace lightstreamer::client::session {
         void setEarlyWSOpenEnabled(bool value) {
             std::lock_guard<std::mutex> guard(mutex);
             earlyWSOpenEnabled = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("earlyWSOpenEnabled"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("earlyWSOpenEnabled"));
             log->Info(std::format("Early WS Open Enabled value changed to {}", value));
         }
 
@@ -355,7 +369,9 @@ namespace lightstreamer::client::session {
         void setHttpExtraHeadersOnSessionCreationOnly(bool value) {
             std::lock_guard<std::mutex> guard(mutex);
             httpExtraHeadersOnSessionCreationOnly = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("httpExtraHeadersOnSessionCreationOnly"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>(
+                            "httpExtraHeadersOnSessionCreationOnly"));
             log->Info(std::format("Extra Headers On Session Creation Only flag changed to {}", value));
         }
 
@@ -367,7 +383,8 @@ namespace lightstreamer::client::session {
         void setServerInstanceAddressIgnored(bool value) {
             std::lock_guard<std::mutex> guard(mutex);
             serverInstanceAddressIgnored = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("serverInstanceAddressIgnored"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("serverInstanceAddressIgnored"));
             log->Info(std::format("Server Instance Address Ignored flag changed to {}", value));
         }
 
@@ -379,7 +396,8 @@ namespace lightstreamer::client::session {
         void setSlowingEnabled(bool value) {
             std::lock_guard<std::mutex> guard(mutex);
             slowingEnabled = value;
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("slowingEnabled"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("slowingEnabled"));
             log->Info(std::format("Slowing Enabled flag changed to {}", value));
         }
 
@@ -398,7 +416,7 @@ namespace lightstreamer::client::session {
             currentRetryDelay->reset(getRetryDelay());
         }
 
-        void setMaxBandwidthInternal(const std::string& maxBandwidth, bool serverCall) {
+        void setMaxBandwidthInternal(const std::string &maxBandwidth, bool serverCall) {
             std::lock_guard<std::mutex> guard(mutex);
             if (maxBandwidth == Constants::UNLIMITED) {
                 requestedMaxBandwidth = 0;
@@ -406,16 +424,18 @@ namespace lightstreamer::client::session {
             } else {
                 try {
                     double tmp = std::stod(maxBandwidth);
-                    if (tmp < 0 || (!serverCall && tmp == 0)) throw std::invalid_argument("Value must be positive or zero.");
+                    if (tmp < 0 || (!serverCall && tmp == 0))
+                        throw std::invalid_argument("Value must be positive or zero.");
                     requestedMaxBandwidth = tmp;
-                } catch (const std::invalid_argument& ia) {
+                } catch (const std::invalid_argument &ia) {
                     // Aquí se maneja la conversión fallida de string a double
-                    throw std::invalid_argument("The given value is not a valid value for setRequestedMaxBandwidth. Use a positive number or the string \"unlimited\"");
+                    throw std::invalid_argument(
+                            "The given value is not a valid value for setRequestedMaxBandwidth. Use a positive number or the string \"unlimited\"");
                 }
                 log->Info(std::format("Max Bandwidth value changed to {}", requestedMaxBandwidth));
             }
-            // Aquí se notifica a los listeners del cambio
-            eventDispatcher->dispatchEvent(std::make_shared<ClientListenerPropertyChangeEvent>("requestedMaxBandwidth"));
+            eventDispatcher->dispatchEvent(
+                    std::make_shared<events::ClientListenerPropertyChangeEvent>("requestedMaxBandwidth"));
         }
 
         long long getRetryDelay() const {
@@ -423,13 +443,13 @@ namespace lightstreamer::client::session {
             return currentRetryDelay->getRetryDelay();
         }
 
-        std::shared_ptr<EventDispatcher<ClientListener>> getEventDispatcher() const {
+        std::shared_ptr<events::EventDispatcher<ClientListener>> getEventDispatcher() const {
             return eventDispatcher;
         }
 
+        std::map<std::string, std::string> httpExtraHeaders;
     };
 }
-
 
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_INTERNALCONNECTIONOPTIONS_HPP

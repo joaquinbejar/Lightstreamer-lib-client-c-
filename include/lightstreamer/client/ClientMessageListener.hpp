@@ -33,19 +33,19 @@ namespace lightstreamer::client {
         virtual ~ClientMessageListener() = default;
 
         /// Notification that the related message has been aborted and its outcome is no longer expected.
-        virtual void onAbort(const std::string& originalMessage, bool sentOnNetwork) = 0;
+        virtual void onAbort(const std::string &originalMessage, bool sentOnNetwork) = 0;
 
         /// Notification that the related message has been denied by the server.
-        virtual void onDeny(const std::string& originalMessage, int code, const std::string& error) = 0;
+        virtual void onDeny(const std::string &originalMessage, int code, const std::string &error) = 0;
 
         /// Notification that the related message has been discarded by the server.
-        virtual void onDiscarded(const std::string& originalMessage) = 0;
+        virtual void onDiscarded(const std::string &originalMessage) = 0;
 
         /// Notification that an error occurred while processing the related message.
-        virtual void onError(const std::string& originalMessage) = 0;
+        virtual void onError(const std::string &originalMessage) = 0;
 
         /// Notification that the related message has been successfully processed.
-        virtual void onProcessed(const std::string& originalMessage) = 0;
+        virtual void onProcessed(const std::string &originalMessage) = 0;
     };
 
 } // namespace lightstreamer::client

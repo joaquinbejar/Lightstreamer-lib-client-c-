@@ -41,11 +41,11 @@ namespace lightstreamer::client::transport {
         protected:
             std::shared_ptr<Logger> log = Logger::getLogger("TRANSPORT_LOG");
 
-            std::shared_ptr<HttpProvider> httpProvider;
+            std::shared_ptr<providers::HttpProvider> httpProvider;
             std::shared_ptr<session::SessionThread> sessionThread;
 
         public:
-            Http(std::shared_ptr<session::SessionThread> thread, std::shared_ptr<HttpProvider> httpProvider)
+            Http(std::shared_ptr<session::SessionThread> thread, std::shared_ptr<providers::HttpProvider> httpProvider)
                     : sessionThread(thread), httpProvider(httpProvider) {
                 sessionThread->registerShutdownHook(httpProvider->getShutdownHook());
             }
@@ -88,7 +88,7 @@ namespace lightstreamer::client::transport {
                 }
             };
 
-            class MyHttpListener : public HttpProvider_HttpRequestListener {
+            class MyHttpListener : public providers::HttpProvider_HttpRequestListener {
             protected:
                 std::shared_ptr<Logger> log = Logger::getLogger("TRANSPORT_LOG");
 

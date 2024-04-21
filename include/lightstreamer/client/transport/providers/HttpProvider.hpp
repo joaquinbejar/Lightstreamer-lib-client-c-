@@ -36,12 +36,9 @@
 
 namespace lightstreamer::client::transport::providers {
 
-
-
-    // Interfaz equivalente a HttpProvider en C#
     class HttpProvider {
     public:
-        virtual ~HttpProvider() {}
+        virtual ~HttpProvider() = default;
 
         virtual std::shared_ptr<RequestHandle> createConnection(
                 std::shared_ptr<protocol::Protocol> protocol,
@@ -54,7 +51,7 @@ namespace lightstreamer::client::transport::providers {
         virtual std::shared_ptr<ThreadShutdownHook> getShutdownHook() const = 0;
     };
 
-    class HttpProvider_HttpRequestListener : public RequestListener {
+    class HttpProvider_HttpRequestListener : public transport::RequestListener {
     };
 
 } // namespace lightstreamer::client::transport::providers

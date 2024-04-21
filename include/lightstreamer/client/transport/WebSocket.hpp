@@ -243,12 +243,12 @@ namespace lightstreamer::client::transport {
                 wsClient->connect(uri, sessionListener,
                                   options->httpExtraHeadersOnSessionCreationOnly ? nullptr : options->httpExtraHeaders,
                                   cookies, options->proxy, options->retryDelay);
-                sessionListener->state = InternalState::CONNECTING;
+                sessionListener.state = InternalState::CONNECTING;
             } catch (const std::exception &e) {
                 // Exception handling logic should be here. In C++, throwing an exception from the catch block is more common.
                 log->error("Unexpected error during URI validation. " + std::string(e.what()));
-                sessionListener->state = InternalState::UNEXPECTED_ERROR;
-                sessionListener->onBroken();
+                sessionListener.state = InternalState::UNEXPECTED_ERROR;
+                sessionListener.onBroken();
             }
         }
 

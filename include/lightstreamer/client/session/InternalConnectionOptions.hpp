@@ -53,7 +53,6 @@ namespace lightstreamer::client::session {
         long long firstRetryMaxDelay = 100;
         long long forceBindTimeout = 2000; // Not exposed
         std::string forcedTransport;
-        std::map<std::string, std::string> httpExtraHeaders;
 
         long long idleTimeout = 19000;
         long long keepaliveInterval = 0;
@@ -448,6 +447,7 @@ namespace lightstreamer::client::session {
             return eventDispatcher;
         }
 
+        std::map<std::string, std::string> httpExtraHeaders;
     };
 }
 

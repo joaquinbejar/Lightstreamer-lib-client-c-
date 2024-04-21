@@ -34,10 +34,6 @@
 #include <future>
 #include <map>
 #include <functional>
-
-
-
-
 #include <Logger.hpp>
 
 #include <lightstreamer/client/events/EventDispatcher.hpp>
@@ -69,14 +65,14 @@
 
 namespace lightstreamer::client {
 
-/**
- * Facade class for the management of the communication to Lightstreamer Server. Used to provide configuration settings, event
- * handlers, operations for the control of the connection lifecycle, Subscription handling and to send messages.
- * An instance of LightstreamerClient handles the communication with Lightstreamer Server on a specified endpoint. Hence, it hosts one "Session";
- * or, more precisely, a sequence of Sessions, since any Session may fail and be recovered, or it can be interrupted on purpose.
- * So, normally, a single instance of LightstreamerClient is needed.
- * However, multiple instances of LightstreamerClient can be used, toward the same or multiple endpoints.
- */
+    /**
+     * Facade class for the management of the communication to Lightstreamer Server. Used to provide configuration settings, event
+     * handlers, operations for the control of the connection lifecycle, Subscription handling and to send messages.
+     * An instance of LightstreamerClient handles the communication with Lightstreamer Server on a specified endpoint. Hence, it hosts one "Session";
+     * or, more precisely, a sequence of Sessions, since any Session may fail and be recovered, or it can be interrupted on purpose.
+     * So, normally, a single instance of LightstreamerClient is needed.
+     * However, multiple instances of LightstreamerClient can be used, toward the same or multiple endpoints.
+     */
     class LightstreamerClient {
     private:
         mutable std::mutex mutex;

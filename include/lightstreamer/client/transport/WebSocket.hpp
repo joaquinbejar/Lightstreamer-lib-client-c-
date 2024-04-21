@@ -31,10 +31,10 @@
 #include <iostream>
 #include <functional>
 #include <unordered_map>
-#include "WebSocketProvider.hpp"
+#include <lightstreamer/client/transport/providers/WebSocketProvider.hpp>
 #include "lightstreamer/client/session/SessionThread.hpp"
-#include "StreamListener.hpp"
-#include "ConnectionListener.hpp"
+#include <lightstreamer/client/protocol/TextProtocol.hpp>
+#include <lightstreamer/client/transport/WebSocket.hpp>
 #include "lightstreamer/client/session/InternalConnectionOptions.hpp"
 #include <lightstreamer/client/requests/LightstreamerRequest.hpp>
 #include <lightstreamer/client/protocol/Protocol.hpp>
@@ -58,14 +58,156 @@ namespace lightstreamer::client::transport {
 
         std::shared_ptr<session::SessionThread> sessionThread;
         std::shared_ptr<session::InternalConnectionOptions> options;
-        std::unique_ptr<WebSocketProvider> wsClient;
+        std::unique_ptr<providers::WebSocketProvider> wsClient;
         InternalState state = InternalState::NOT_CONNECTED;
         std::string defaultSessionId;
+
+        /**
+ * Interface to capture connection opening events.
+ */
+        class ConnectionListener {
+        public:
+            /**
+             * Called when the connection is successfully established.
+             */
+            virtual void onOpen() = 0;
+
+            /**
+             * Called when the connection cannot be established.
+             */
+            virtual void onBroken() = 0;
+        };
+
+        /**
+         * Forwards the messages coming from the data stream to the connection listeners.
+         *
+         * Note: All the methods must be called by SessionThread to fulfill the contract of WebSocket::open.
+         */
+        class MySessionRequestListener : public SessionRequestListener {
+        private:
+            session::SessionThread &sessionThread;
+            protocol::TextProtocol::StreamListener &streamListener;
+            ConnectionListener &connectionListener;
+            // State must be volatile because it is read by methods not called by Session Thread.
+            std::atomic<InternalState> state = InternalState::NOT_CONNECTED;
+
+        public:
+            MySessionRequestListener( session::SessionThread &sessionThread, protocol::TextProtocol::StreamListener &streamListener,
+                                     ConnectionListener &connListener)
+                    : sessionThread(sessionThread), streamListener(streamListener), connectionListener(connListener) {}
+
+            /**
+             * Called when the WebSocket connection is opened.
+             */
+            virtual void onOpen() {
+                sessionThread.queue([this]() {
+                    if (state == InternalState::DISCONNECTED) {
+                        log.warn("onOpen event discarded");
+                        return;
+                    }
+                    state = InternalState::CONNECTED;
+                    if (log.isDebugEnabled()) {
+                        log.debug("WebSocket transport onOpen: " + std::to_string(state));
+                    }
+                    connectionListener.onOpen();
+                });
+            }
+
+            /**
+             * Called when a message is received through the WebSocket connection.
+             */
+            virtual void onMessage(const std::string &frame) {
+                sessionThread.queue([this, frame]() {
+                    if (state == InternalState::DISCONNECTED) {
+                        log.debug("onMessage event discarded: " + frame);
+                        return;
+                    }
+                    streamListener.onMessage(frame);
+                });
+            }
+
+            /**
+             * Called when the WebSocket connection is closed.
+             */
+            virtual void onClosed() {
+                sessionThread.queue([this]() {
+                    if (state == InternalState::DISCONNECTED) {
+                        log.warn("onClosed event discarded");
+                        return;
+                    }
+                    streamListener.onClosed();
+                });
+            }
+
+            /**
+             * Called when the WebSocket connection is broken.
+             */
+            virtual void onBroken() {
+                sessionThread.queue([this]() {
+                    if (state == InternalState::DISCONNECTED) {
+                        log.warn("onBroken event discarded");
+                        return;
+                    }
+                    state = InternalState::BROKEN;
+                    connectionListener.onBroken();
+                    streamListener.onBrokenWS();
+                });
+            }
+
+            /**
+             * Closes this listener and marks the connection as disconnected.
+             */
+            virtual void close() {
+                state = InternalState::DISCONNECTED;
+                if (streamListener) {
+                    streamListener.disable();
+                    streamListener.onClosed();
+                }
+                if (log.isDebugEnabled()) {
+                    log.debug("WebSocket transport (close): " + std::to_string(state));
+                }
+            }
+        };
+
+        /**
+         * A dummy WebSocket client used as a placeholder.
+         */
+        class DummyWebSocketClient : public providers::WebSocketProvider {
+        public:
+            /**
+             * Attempts to establish a WebSocket connection.
+             * This is a dummy implementation and does nothing.
+             */
+            void connect(const std::string &address,
+                              std::shared_ptr<SessionRequestListener> networkListener,
+                              const std::unordered_map<std::string, std::string> &extraHeaders,
+                              const std::string &cookies, std::shared_ptr<Proxy> proxy, long timeout) override {}
+
+            /**
+             * Closes the WebSocket connection.
+             * This is a dummy implementation and does nothing.
+             */
+            void disconnect() override {}
+
+            /**
+             * Sends a message through the WebSocket connection.
+             * This is a dummy implementation and does nothing.
+             */
+            void send(const std::string &message, std::shared_ptr<RequestListener> listener) override {}
+
+            /**
+             * Returns a hook to be called on thread shutdown.
+             * This is a dummy implementation and does nothing.
+             */
+            std::shared_ptr<providers::ThreadShutdownHook> getThreadShutdownHook() const override {
+                return nullptr;
+            }
+        };
 
     public:
         WebSocket(std::shared_ptr<session::SessionThread> sessionThread,
                   std::shared_ptr<session::InternalConnectionOptions> options,
-                  std::string serverAddress, std::shared_ptr<StreamListener> streamListener,
+                  std::string serverAddress, std::shared_ptr<protocol::TextProtocol::StreamListener> streamListener,
                   std::shared_ptr<ConnectionListener> connListener)
                 : sessionThread(sessionThread), options(options) {
             // Simplification for the example: directly create an appropriate WebSocketProvider instance
@@ -187,146 +329,6 @@ namespace lightstreamer::client::transport {
 
     private:
 
-        /**
-         * Forwards the messages coming from the data stream to the connection listeners.
-         *
-         * Note: All the methods must be called by SessionThread to fulfill the contract of WebSocket::open.
-         */
-        class MySessionRequestListener : public SessionRequestListener {
-        private:
-            SessionThread &sessionThread;
-            StreamListener &streamListener;
-            ConnectionListener &connectionListener;
-            // State must be volatile because it is read by methods not called by Session Thread.
-            std::atomic<InternalState> state = InternalState::NOT_CONNECTED;
-
-        public:
-            MySessionRequestListener(SessionThread &sessionThread, StreamListener &streamListener,
-                                     ConnectionListener &connListener)
-                    : sessionThread(sessionThread), streamListener(streamListener), connectionListener(connListener) {}
-
-            /**
-             * Called when the WebSocket connection is opened.
-             */
-            virtual void onOpen() {
-                sessionThread.queue([this]() {
-                    if (state == InternalState::DISCONNECTED) {
-                        log.warn("onOpen event discarded");
-                        return;
-                    }
-                    state = InternalState::CONNECTED;
-                    if (log.isDebugEnabled()) {
-                        log.debug("WebSocket transport onOpen: " + std::to_string(state));
-                    }
-                    connectionListener.onOpen();
-                });
-            }
-
-            /**
-             * Called when a message is received through the WebSocket connection.
-             */
-            virtual void onMessage(const std::string &frame) {
-                sessionThread.queue([this, frame]() {
-                    if (state == InternalState::DISCONNECTED) {
-                        log.debug("onMessage event discarded: " + frame);
-                        return;
-                    }
-                    streamListener.onMessage(frame);
-                });
-            }
-
-            /**
-             * Called when the WebSocket connection is closed.
-             */
-            virtual void onClosed() {
-                sessionThread.queue([this]() {
-                    if (state == InternalState::DISCONNECTED) {
-                        log.warn("onClosed event discarded");
-                        return;
-                    }
-                    streamListener.onClosed();
-                });
-            }
-
-            /**
-             * Called when the WebSocket connection is broken.
-             */
-            virtual void onBroken() {
-                sessionThread.queue([this]() {
-                    if (state == InternalState::DISCONNECTED) {
-                        log.warn("onBroken event discarded");
-                        return;
-                    }
-                    state = InternalState::BROKEN;
-                    connectionListener.onBroken();
-                    streamListener.onBrokenWS();
-                });
-            }
-
-            /**
-             * Closes this listener and marks the connection as disconnected.
-             */
-            virtual void close() {
-                state = InternalState::DISCONNECTED;
-                if (streamListener) {
-                    streamListener.disable();
-                    streamListener.onClosed();
-                }
-                if (log.isDebugEnabled()) {
-                    log.debug("WebSocket transport (close): " + std::to_string(state));
-                }
-            }
-        };
-
-        /**
-         * Interface to capture connection opening events.
-         */
-        class ConnectionListener {
-        public:
-            /**
-             * Called when the connection is successfully established.
-             */
-            virtual void onOpen() = 0;
-
-            /**
-             * Called when the connection cannot be established.
-             */
-            virtual void onBroken() = 0;
-        };
-
-        /**
-         * A dummy WebSocket client used as a placeholder.
-         */
-        class DummyWebSocketClient : public WebSocketProvider {
-        public:
-            /**
-             * Attempts to establish a WebSocket connection.
-             * This is a dummy implementation and does nothing.
-             */
-            void connect(const std::string &address, SessionRequestListener &networkListener,
-                         const std::unordered_map<std::string, std::string> &extraHeaders,
-                         const std::string &cookies, Proxy &proxy, long timeout) override {}
-
-            /**
-             * Closes the WebSocket connection.
-             * This is a dummy implementation and does nothing.
-             */
-            void disconnect() override {}
-
-            /**
-             * Sends a message through the WebSocket connection.
-             * This is a dummy implementation and does nothing.
-             */
-            void send(const std::string &message, RequestListener &listener) override {}
-
-            /**
-             * Returns a hook to be called on thread shutdown.
-             * This is a dummy implementation and does nothing.
-             */
-            std::function<void()> getThreadShutdownHook() const override {
-                return []() { /* Do nothing */ };
-            }
-        };
 
         /**
          * Checks if the WebSocket functionality is disabled.

@@ -23,6 +23,7 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPROVIDER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPROVIDER_HPP
+
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -30,8 +31,11 @@
 namespace lightstreamer::client::transport::providers {
     // Forward declarations for dependencies
     class SessionRequestListener;
+
     class RequestListener;
+
     class ThreadShutdownHook;
+
     class Proxy; // Assuming Proxy is a previously defined class
 
     /**
@@ -50,7 +54,10 @@ namespace lightstreamer::client::transport::providers {
          * @param proxy If not null, the client connects to the proxy and the proxy forwards the messages to the host.
          * @param timeout Connection timeout in milliseconds.
          */
-        virtual void connect(const std::string& address, std::shared_ptr<SessionRequestListener> networkListener, const std::unordered_map<std::string, std::string>& extraHeaders, const std::string& cookies, std::shared_ptr<Proxy> proxy, long timeout) = 0;
+        virtual void connect(const std::string &address,
+                             std::shared_ptr<SessionRequestListener> networkListener,
+                             const std::unordered_map<std::string, std::string> &extraHeaders,
+                             const std::string &cookies, std::shared_ptr<Proxy> proxy, long timeout) = 0;
 
         /**
          * Sends a message.
@@ -61,7 +68,7 @@ namespace lightstreamer::client::transport::providers {
          * @param message The message to be sent.
          * @param listener Listener to notify about the request's outcome.
          */
-        virtual void send(const std::string& message, std::shared_ptr<RequestListener> listener) = 0;
+        virtual void send(const std::string &message, std::shared_ptr<RequestListener> listener) = 0;
 
         /**
          * Closes the connection.

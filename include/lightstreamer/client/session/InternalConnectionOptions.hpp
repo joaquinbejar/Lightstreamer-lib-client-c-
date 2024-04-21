@@ -53,7 +53,7 @@ namespace lightstreamer::client::session {
         long long firstRetryMaxDelay = 100;
         long long forceBindTimeout = 2000; // Not exposed
         std::string forcedTransport;
-        std::unordered_map<std::string, std::string> httpExtraHeaders;
+        std::map<std::string, std::string> httpExtraHeaders;
 
         long long idleTimeout = 19000;
         long long keepaliveInterval = 0;
@@ -146,12 +146,12 @@ namespace lightstreamer::client::session {
             log->Info(std::format("Forced Transport value changed to {}", value));
         }
 
-        std::unordered_map<std::string, std::string> getHttpExtraHeaders() {
+        std::map<std::string, std::string> getHttpExtraHeaders() {
             std::lock_guard<std::mutex> guard(mutex);
             return httpExtraHeaders;
         }
 
-        void setHttpExtraHeaders(const std::unordered_map<std::string, std::string> &value) {
+        void setHttpExtraHeaders(const std::map<std::string, std::string> &value) {
             std::lock_guard<std::mutex> guard(mutex);
             httpExtraHeaders = value;
             // Suponiendo que EventDispatcher y ClientListenerPropertyChangeEvent están definidos

@@ -31,10 +31,14 @@ namespace lightstreamer::client {
     class ClientListener {
     public:
         virtual void onListenEnd(std::shared_ptr<LightstreamerClient> client) = 0;
+
         virtual void onListenStart(std::shared_ptr<LightstreamerClient> client) = 0;
-        virtual void onServerError(int errorCode, const std::string& errorMessage) = 0;
-        virtual void onStatusChange(const std::string& status) = 0;
-        virtual void onPropertyChange(const std::string& property) = 0;
+
+        virtual void onServerError(int errorCode, const std::string &errorMessage) = 0;
+
+        virtual void onStatusChange(const std::string &status) = 0;
+
+        virtual void onPropertyChange(const std::string &property) = 0;
     };
 }
 

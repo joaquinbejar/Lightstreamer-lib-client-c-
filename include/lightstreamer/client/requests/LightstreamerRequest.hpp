@@ -67,6 +67,12 @@ namespace lightstreamer::client::requests {
             return percentEncodeTLCP(value);
         }
 
+        /**
+         * Helper function to add a parameter to the query string.
+         * @param os The output string stream to which the parameter is appended.
+         * @param key The parameter key.
+         * @param value The parameter value.
+         */
         static void addParameter(std::ostringstream& buffer, const std::string& name, const std::string& value) {
             buffer << name << "=" << encode(value) << "&";
         }
@@ -78,6 +84,7 @@ namespace lightstreamer::client::requests {
         static void addParameter(std::ostringstream& buffer, const std::string& name, long value) {
             buffer << name << "=" << std::to_string(value) << "&";
         }
+
 
         void addUnique() {
             addParameter(this->buffer, "LS_unique", ++unique);
@@ -107,6 +114,14 @@ namespace lightstreamer::client::requests {
             return false;
         }
 
+        /**
+         * Gets the query string without considering the transport layer specifics.
+         * @return A string representation of the query without transport-specific parameters.
+         */
+        std::string getTransportUnawareQueryString() {
+            return getQueryStringBuilder("").str();
+        }
+
     protected:
         static std::string percentEncodeTLCP(const std::string& str) {
             std::ostringstream encoded;
@@ -121,6 +136,28 @@ namespace lightstreamer::client::requests {
                 }
             }
             return encoded.str();
+        }
+        /**
+         * Generates a query string for the request.
+         * @param defaultSessionId The default session ID against which the current session is compared.
+         * @return An output string stream filled with the constructed query string.
+         */
+        virtual std::ostringstream getQueryStringBuilder(const std::string& defaultSessionId) {
+            std::ostringstream result;
+            result << buffer.str();  // Append the current contents of the buffer
+
+            if (!session.empty()) {
+                bool sessionUnneeded = (!defaultSessionId.empty() && defaultSessionId == session);
+                if (!sessionUnneeded) {
+                    // Add the LS_session parameter only if necessary
+                    addParameter(result, "LS_session", session);
+                }
+            }
+            if (result.tellp() == 0) {
+                // Ensure the query string is never empty as it is not allowed by the server
+                result << "\r\n";
+            }
+            return result;
         }
 
     private:

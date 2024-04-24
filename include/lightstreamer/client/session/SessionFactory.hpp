@@ -34,6 +34,7 @@
 #include <lightstreamer/client/protocol/TextProtocolHttp.hpp>
 #include <lightstreamer/client/protocol/TextProtocolWS.hpp>
 #include <lightstreamer/client/session/MessagesListener.hpp>
+#include <lightstreamer/client/session/SessionWS.hpp>
 
 namespace lightstreamer::client::session {
 
@@ -60,7 +61,7 @@ namespace lightstreamer::client::session {
             int objectId = ++objectIdGenerator;
 
             auto httpProvider = HttpProviderFactory::getDefaultInstance(sessionThread);
-            auto httpTransport = std::make_shared<Http>(sessionThread, httpProvider);
+            auto httpTransport = std::make_shared<transport::Http>(sessionThread, httpProvider);
 
             if (isHTTP) {
                 auto txt = std::make_shared<protocol::TextProtocolHttp>(objectId, sessionThread, options,
@@ -69,7 +70,7 @@ namespace lightstreamer::client::session {
                                                      messages, prevSession, sessionThread, txt, details, options,
                                                      handlerPhase, retryAgainIfStreamFails, sessionRecovery);
             } else {
-                std::shared_ptr<Protocol> ws;
+                std::shared_ptr<protocol::Protocol> ws;
 
                 try {
                     ws = std::make_shared<protocol::TextProtocolWS>(objectId, sessionThread, options, details,

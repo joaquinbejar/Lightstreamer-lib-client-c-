@@ -23,12 +23,10 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SERVERSESSION_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_SERVERSESSION_HPP
-#pragma once
-
 #include <memory>
-#include "Session.h"
+#include <lightstreamer/client/session/Session.hpp>
 #include <lightstreamer/client/session/SessionHTTP.hpp>
-#include "SessionWS.h"
+#include <lightstreamer/client/session/SessionWS.hpp>
 
 namespace lightstreamer::client::session {
 

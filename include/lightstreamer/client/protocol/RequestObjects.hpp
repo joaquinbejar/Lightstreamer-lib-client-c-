@@ -32,13 +32,14 @@ namespace lightstreamer::client::protocol {
 
     class RequestObjects {
     public:
-        const LightstreamerRequest *request; // TODO: Replace with the actual type of LightstreamerRequest
-        const RequestTutor *tutor; // TODO: Replace with the actual type of RequestTutor
-        const RequestListener *listener; // TODO: Replace with the actual type of RequestListener
+        const std::shared_ptr<requests::LightstreamerRequest> request;
+        const std::shared_ptr<requests::RequestTutor> tutor;
+        const std::shared_ptr<transport::RequestListener> listener;
 
-        RequestObjects(const LightstreamerRequest *request, const RequestTutor *tutor, const RequestListener *listener)
-                : request(request), tutor(tutor), listener(listener) {
-        }
+        RequestObjects(const std::shared_ptr<requests::LightstreamerRequest> request,
+                       const std::shared_ptr<requests::RequestTutor> tutor,
+                       const std::shared_ptr<transport::RequestListener> listener
+        ) : request(request), tutor(tutor), listener(listener) {}
 
         // Depending on your memory management strategy, you might need to define a destructor,
         // copy constructor, and copy assignment operator, especially if you take ownership of the pointers.

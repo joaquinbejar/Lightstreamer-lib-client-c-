@@ -40,73 +40,82 @@
 
 
 namespace lightstreamer::client::session {
-
+    using namespace util::threads;
 
     class SessionThread {
     private:
         static ILogger *log;
-        util::threads::ThreadMultiplexer<SessionThread> *threads;
+        std::shared_ptr<ThreadMultiplexer<SessionThread>> threads;
         std::queue<std::function<void()>> stackTasks;
-        std::shared_ptr<util::threads::ThreadShutdownHook> shutdownHookReference;
-        std::shared_ptr<util::threads::ThreadShutdownHook> wsShutdownHookReference;
-        SessionManager *sessionManager;
+        std::shared_ptr<ThreadShutdownHook> shutdownHookReference;
+        std::shared_ptr<ThreadShutdownHook> wsShutdownHookReference;
+        std::shared_ptr<SessionManager> sessionManager;
         std::string clientId;
 
         class SessionThreadFactory {
         private:
             static SessionThreadFactory INSTANCE;
             bool dedicatedSessionThread;
-            util::threads::ThreadMultiplexer<SessionThread> *singletonSessionThread;
-            std::mutex mtx;
+            std::shared_ptr<ThreadMultiplexer<SessionThread>> singletonSessionThread;
+            std::mutex mutex;
 
-            SessionThreadFactory() {
-                dedicatedSessionThread = false;
-                singletonSessionThread = nullptr;
+            // Private constructor for the singleton pattern
+            SessionThreadFactory() : dedicatedSessionThread(false) {
+                // Optionally load the configuration for dedicatedSessionThread from system properties or a configuration file
+                // dedicatedSessionThread = readConfiguration("com.lightstreamer.client.session.thread") == "dedicated";
             }
 
         public:
-            static SessionThreadFactory &getInstance() {
+            // Deleted copy constructor and assignment operator to prevent copying of the singleton instance
+            SessionThreadFactory(const SessionThreadFactory&) = delete;
+            SessionThreadFactory& operator=(const SessionThreadFactory&) = delete;
+
+            // Static method to access the singleton instance
+            static SessionThreadFactory& getInstance() {
                 return INSTANCE;
             }
 
-            util::threads::ThreadMultiplexer<SessionThread> *getSessionThread() {
-                std::lock_guard<std::mutex> lock(mtx);
-                util::threads::ThreadMultiplexer<SessionThread> *sessionThread;
+            // Method to get the ThreadMultiplexer instance
+            std::shared_ptr<ThreadMultiplexer<SessionThread>> getSessionThread() {
+                std::lock_guard<std::mutex> lock(mutex);
                 if (dedicatedSessionThread) {
-                    sessionThread = new util::threads::SingleThreadMultiplexer<SessionThread>(); // TODO: fix this
+                    return std::make_shared<SingleThreadMultiplexer<SessionThread>>();
                 } else {
-                    if (singletonSessionThread == nullptr) {
-                        singletonSessionThread = new util::threads::SingleThreadMultiplexer<SessionThread>();
+                    if (!singletonSessionThread) {
+                        singletonSessionThread = std::make_shared<SingleThreadMultiplexer<SessionThread>>();
                     }
-                    sessionThread = singletonSessionThread;
+                    return singletonSessionThread;
                 }
-                return sessionThread;
             }
         };
 
+        // Initialization of the singleton instance
+//        SessionThreadFactory SessionThreadFactory::INSTANCE;
+//        SessionThreadFactory &instance = SessionThreadFactory::getInstance();
+
     public:
         SessionThread() {
-            threads = SessionThreadFactory::SessionThread;
+            threads = SessionThreadFactory::getInstance().getSessionThread();
             clientId = std::to_string(reinterpret_cast<std::uintptr_t>(this));
         }
 
-        void registerShutdownHook(util::threads::ThreadShutdownHook *shutdownHook) {
+        void registerShutdownHook(ThreadShutdownHook *shutdownHook) {
             shutdownHookReference.CompareAndSet(nullptr, shutdownHook);
         }
 
-        void registerWebSocketShutdownHook(util::threads::ThreadShutdownHook *shutdownHook) {
+        void registerWebSocketShutdownHook(ThreadShutdownHook *shutdownHook) {
             wsShutdownHookReference.CompareAndSet(nullptr, shutdownHook);
         }
 
         void await() {
             threads->await();
-            util::threads::ThreadShutdownHook *hook = shutdownHookReference.Value();
+            ThreadShutdownHook *hook = shutdownHookReference.Value();
             if (hook != nullptr) {
                 hook->onShutdown();
             } else {
                 log->Info("No HTTP Shutdown Hook provided");
             }
-            util::threads::ThreadShutdownHook *wsHook = wsShutdownHookReference.Value();
+            ThreadShutdownHook *wsHook = wsShutdownHookReference.Value();
             if (wsHook != nullptr) {
                 wsHook->onShutdown();
             } else {
@@ -142,6 +151,7 @@ namespace lightstreamer::client::session {
             // Do nothing
         }
     };
+
 
 
 } // namespace lightstreamer

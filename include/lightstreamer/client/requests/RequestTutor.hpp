@@ -30,10 +30,10 @@
 #include <string>
 #include <vector>
 #include <cassert>
-#include "SessionThread.h"
-#include "InternalConnectionOptions.h"
-#include "Session.h"
-#include "ServerSession.h"
+#include <lightstreamer/client/session/SessionThread.hpp>
+#include <lightstreamer/client/session/InternalConnectionOptions.hpp>
+#include <lightstreamer/client/session/Session.hpp>
+#include <lightstreamer/client/session/ServerSession.hpp>
 #include <Logger.hpp>
 
 namespace lightstreamer::client::requests {
@@ -44,15 +44,15 @@ namespace lightstreamer::client::requests {
         static inline Logger log = Logger::GetLogger("RequestsLog");
         static inline const long MIN_TIMEOUT = 4000; // The minimum retransmission timeout.
         long timeoutMs;
-        std::shared_ptr<SessionThread> sessionThread;
-        std::shared_ptr<InternalConnectionOptions> connectionOptions;
-        std::shared_ptr<Session> session;
-        std::shared_ptr<ServerSession> serverSession;
+        std::shared_ptr<session::SessionThread> sessionThread;
+        std::shared_ptr<session::InternalConnectionOptions> connectionOptions;
+        std::shared_ptr<session::Session> session;
+        std::shared_ptr<session::ServerSession> serverSession;
         bool timeoutIsRunning = false; // Flag to ensure only one timeout is pending at a time.
         bool discarded = false; // Flag to indicate if the tutor has been discarded.
 
     public:
-        RequestTutor(std::shared_ptr<SessionThread> thread, std::shared_ptr<InternalConnectionOptions> options,
+        RequestTutor(std::shared_ptr<session::SessionThread> thread, std::shared_ptr<session::InternalConnectionOptions> options,
                      long currentTimeout = 0, bool fixedTO = false)
                 : sessionThread(thread), connectionOptions(options) {
             session = sessionThread->GetSessionManager().GetSession();
@@ -101,7 +101,7 @@ namespace lightstreamer::client::requests {
             } else if (serverSession->IsClosed()) {
                 assert(!success);
                 return; // Stop retransmissions and discard tutor.
-            } else if (serverSession->IsTransportHttp() || dynamic_cast<Session::ForceRebindTutor *>(this) != nullptr) {
+            } else if (serverSession->IsTransportHttp() || dynamic_cast<session::Session::ForceRebindTutor *>(this) != nullptr) {
                 assert(!success && serverSession->IsOpen());
                 DoRecovery(); // Always retry when the transport is HTTP.
             } else if (!serverSession->IsSameStreamConnection(*session)) {

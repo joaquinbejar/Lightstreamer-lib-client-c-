@@ -23,6 +23,7 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_REVERSEHEARTBEATTIMER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_REVERSEHEARTBEATTIMER_HPP
+
 #include <chrono>
 #include <cassert>
 #include <cmath>
@@ -30,10 +31,10 @@
 #include <thread>
 #include <mutex>
 #include <lightstreamer/client/session/SessionThread.hpp>
-#include "InternalConnectionOptions.h" // Placeholder for actual options class
-#include "ReverseHeartbeatRequest.h" // Placeholder for the actual request class
-#include "VoidTutor.h" // Placeholder for actual tutor class
-#include "Logger.h" // Placeholder for actual logging
+#include "lightstreamer/client/session/InternalConnectionOptions.hpp" // Placeholder for actual options class
+#include "lightstreamer/client/requests/ReverseHeartbeatRequest.hpp"
+#include <lightstreamer/client/requests/VoidTutor.hpp>
+#include "Logger.hpp"
 
 namespace lightstreamer::client::protocol {
 
@@ -41,8 +42,8 @@ namespace lightstreamer::client::protocol {
     private:
         static Logger log;
 
-        session::SessionThread& sessionThread;
-        InternalConnectionOptions& options;
+        session::SessionThread &sessionThread;
+        session::InternalConnectionOptions &options;
         const long maxIntervalMs; // Maximum interval. Value of LS_inactivity_millis.
         long currentIntervalMs = -1; // It is the minimum between LS_inactivity_millis and the interval chosen by the user.
         bool disableHeartbeats = false;
@@ -59,7 +60,7 @@ namespace lightstreamer::client::protocol {
         bool bindSent = false; // True when the bind session request is sent.
 
     public:
-        ReverseHeartbeatTimer(session::SessionThread& sessionThread, InternalConnectionOptions& options)
+        ReverseHeartbeatTimer(session::SessionThread &sessionThread, session::InternalConnectionOptions &options)
                 : sessionThread(sessionThread), options(options), maxIntervalMs(options.getReverseHeartbeatInterval()) {
             log.debug("rhb max interval " + std::to_string(maxIntervalMs));
             setCurrentInterval(maxIntervalMs);
@@ -126,8 +127,8 @@ namespace lightstreamer::client::protocol {
         // Assuming the existence and inclusion of relevant headers for ReverseHeartbeatRequest, VoidTutor, and SessionThread
         void sendHeartbeat() {
             // Create instances of ReverseHeartbeatRequest and VoidTutor
-            auto request = std::make_shared<ReverseHeartbeatRequest>();
-            auto tutor = std::make_shared<VoidTutor>(sessionThread, options);
+            auto request = std::make_shared<requests::ReverseHeartbeatRequest>();
+            auto tutor = std::make_shared<requests::VoidTutor>(sessionThread, options);
 
             // Assuming sessionThread has a way to access a SessionManager that has the sendReverseHeartbeat method
             sessionThread.getSessionManager()->sendReverseHeartbeat(request, tutor);

@@ -56,8 +56,8 @@ namespace lightstreamer::client::protocol {
         static constexpr const char *CHANGE_SUB_KEY = "X";
         static constexpr const char *MPN_KEY = "M";
 
-        std::unordered_map<std::string, std::shared_ptr<RequestObjects>> keys;
-        std::vector<std::string> queue;
+        std::unordered_map<std::string, std::shared_ptr<RequestObjects>> keys{};
+        std::vector<std::string> queue{};
 
         // Simplified logger; use your actual logging system
         static void logError(const std::string &message) {
@@ -82,15 +82,14 @@ namespace lightstreamer::client::protocol {
             if (getLength() <= 0) {
                 return "";
             }
-            return keys.at(queue[0])->request.getRequestName();
+            return keys.at(queue[0])->request->getRequestName();
         }
 
         long getNextRequestLength() const {
             if (getLength() <= 0) {
                 return 0;
             }
-            return keys.at(queue[0])->request.getTransportUnawareQueryString().length();
-            // TODO we use the longest estimate, as we have no transport information here
+            return keys.at(queue[0])->request->getTransportUnawareQueryString().length();
         }
 
         std::shared_ptr<RequestObjects> shift() {

@@ -23,8 +23,6 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_SERVERSESSION_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_SERVERSESSION_HPP
-#pragma once
-
 #include <memory>
 #include <lightstreamer/client/session/Session.hpp>
 #include <lightstreamer/client/session/SessionHTTP.hpp>

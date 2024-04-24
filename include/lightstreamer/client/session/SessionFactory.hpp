@@ -26,10 +26,10 @@
 
 #include <atomic>
 #include <memory>
-#include "Session.h" // Assuming Session.h defines Session, SessionHTTP, SessionWS, and related classes
+#include <lightstreamer/client/session/Session.hpp>
 #include <Logger.hpp>
-#include "HttpProvider.h" // Assuming HttpProvider.h defines the HTTP transport layer
-#include "Protocol.h" // Assuming Protocol.h defines TextProtocolHttp and TextProtocolWS
+#include <lightstreamer/client/transport/providers/HttpProvider.hpp>
+#include  <lightstreamer/client/protocol/Protocol.hpp>
 #include <lightstreamer/client/session/SessionListener.hpp>
 #include <lightstreamer/client/protocol/TextProtocolHttp.hpp>
 #include <lightstreamer/client/protocol/TextProtocolWS.hpp>

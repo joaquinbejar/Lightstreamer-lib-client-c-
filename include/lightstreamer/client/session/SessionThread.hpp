@@ -100,7 +100,7 @@ namespace lightstreamer::client::session {
         }
 
         void registerShutdownHook(ThreadShutdownHook *shutdownHook) {
-            shutdownHookReference.CompareAndSet(nullptr, shutdownHook);
+            shutdownHookReference.CompareAndSet(nullptr, shutdownHook); // TODO: fix this
         }
 
         void registerWebSocketShutdownHook(ThreadShutdownHook *shutdownHook) {

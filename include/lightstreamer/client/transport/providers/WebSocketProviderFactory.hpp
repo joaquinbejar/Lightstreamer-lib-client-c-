@@ -23,5 +23,36 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPROVIDERFACTORY_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPROVIDERFACTORY_HPP
+#include <memory>
+#include <lightstreamer/client/session/SessionThread.hpp>
+#include <lightstreamer/client/transport/providers/cpp/WebSocketProviderFactory.hpp>
+
+namespace lightstreamer::client::transport::providers {
+    /**
+     * Provides factory methods to create WebSocket providers.
+     */
+    class WebSocketProviderFactory {
+    public:
+        /**
+         * Creates an instance of NettyWebSocketProvider.
+         *
+         * @param thread A reference to a SessionThread object.
+         * @return A smart pointer to a WebSocketProvider.
+         */
+        std::unique_ptr<WebSocketProvider> getInstance(std::shared_ptr<session::SessionThread> thread) {
+            return std::make_unique<NettyWebSocketProvider>();
+        }
+
+        /**
+         * Checks if the response is buffered.
+         *
+         * @return false, indicating that the response is not buffered.
+         */
+        bool isResponseBuffered() const {
+            return false;
+        }
+    };
+
+} // namespace lightstreamer::client::transport::providerscpp
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPROVIDERFACTORY_HPP

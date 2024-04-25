@@ -45,8 +45,8 @@ namespace lightstreamer::client {
         static constexpr auto PROTOCOL_LOG = "lightstreamer.protocol";
         static constexpr auto TRANSPORT_LOG = "lightstreamer.stream";
         static constexpr auto THREADS_LOG = "lightstreamer.threads";
-        // static constexpr auto NETTY_LOG = "lightstreamer.netty";
-        // static constexpr auto NETTY_POOL_LOG = "lightstreamer.netty.pool";
+        // static constexpr auto NETTY_LOG = "lightstreamer.cpp";
+        // static constexpr auto NETTY_POOL_LOG = "lightstreamer.cpp.pool";
         static constexpr auto REQUESTS_LOG = "lightstreamer.requests";
         static constexpr auto UTILS_LOG = "lightstreamer.utils";
         static constexpr auto MPN_LOG = "lightstreamer.mpn";

@@ -264,8 +264,8 @@ namespace lightstreamer::client {
 
             log->info("New Lightstreamer Client instanced (library version: " + std::string(LIB_NAME) + " " + std::string(LIB_VERSION) + ")");
 
-            // Environment::setEnvironmentVariable("io.netty.allocator.type", "unpooled");
-            Environment::setEnvironmentVariable("io.netty.allocator.maxOrder", "5");
+            // Environment::setEnvironmentVariable("io.cpp.allocator.type", "unpooled");
+            Environment::setEnvironmentVariable("io.cpp.allocator.maxOrder", "5");
 
             // SessionThreadSet::sessionThreadSet.tryAdd(std::hash<std::thread::id>()(std::this_thread::get_id()), sessionThread);
 

@@ -25,7 +25,7 @@
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPROVIDERFACTORY_HPP
 #include <memory>
 #include <lightstreamer/client/session/SessionThread.hpp>
-#include <lightstreamer/client/transport/providers/cpp/WebSocketProviderFactory.hpp>
+#include <lightstreamer/client/transport/providers/cpp/CppWebSocketProvider.hpp>
 
 namespace lightstreamer::client::transport::providers {
     /**
@@ -40,7 +40,7 @@ namespace lightstreamer::client::transport::providers {
          * @return A smart pointer to a WebSocketProvider.
          */
         std::unique_ptr<WebSocketProvider> getInstance(std::shared_ptr<session::SessionThread> thread) {
-            return std::make_unique<NettyWebSocketProvider>();
+            return std::make_unique<CppWebSocketProvider>();
         }
 
         /**

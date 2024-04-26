@@ -195,7 +195,7 @@ namespace lightstreamer::client::session {
 
         SessionWS(int objectId, bool isPolling, bool forced, std::shared_ptr<SessionListener> handler, std::shared_ptr<SubscriptionsListener> subscriptions, std::shared_ptr<MessagesListener> messages, std::shared_ptr<Session> originalSession, std::shared_ptr<SessionThread> thread, std::shared_ptr<Protocol> protocol, std::shared_ptr<InternalConnectionDetails> details, std::shared_ptr<InternalConnectionOptions> options, int callerPhase, bool retryAgainIfStreamFails, bool sessionRecovery)
                 : Session(objectId, isPolling, forced, handler, subscriptions, messages, originalSession, thread, protocol, details, options, callerPhase, retryAgainIfStreamFails, sessionRecovery),
-                  earlyOpen(options->EarlyWSOpenEnabled() && !WebSocket::IsDisabled()) {
+                  earlyOpen(options->EarlyWSOpenEnabled() && !transport::WebSocket::IsDisabled()) {
             wsMachine = std::make_unique<StateMachine>(*this);
         }
 
@@ -221,7 +221,7 @@ namespace lightstreamer::client::session {
         }
 
         // Envía un heartbeat inverso
-        void sendReverseHeartbeat(std::unique_ptr<ReverseHeartbeatRequest> request, std::shared_ptr<RequestTutor> tutor) override {
+        void sendReverseHeartbeat(std::unique_ptr<requests::ReverseHeartbeatRequest> request, std::shared_ptr<requests::RequestTutor> tutor) override {
             // TODO:  Implementación específica para enviar heartbeat inverso
         }
 

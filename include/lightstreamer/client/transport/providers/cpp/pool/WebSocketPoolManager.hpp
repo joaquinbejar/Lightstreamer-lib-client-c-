@@ -23,5 +23,20 @@
 
 #ifndef LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPOOLMANAGER_HPP
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPOOLMANAGER_HPP
+#include <memory>
+#include <utility>
+
+namespace lightstreamer::client::transport::providers::netty::pool {
+
+    using DotNetty::Transport::Channels::IChannel;
+    using DotNetty::Transport::Channels::Pool::IChannelPool;
+    using DotNetty::Transport::Channels::Pool::IChannelPoolHandler;
+    using Lightstreamer::DotNet::Logging::Log::ILogger;
+    using Lightstreamer::DotNet::Logging::Log::LogManager;
+
+    /**
+     * A channel pool sharing WebSocket connections.
+     */
+    class WebSocketPoolManager : public std::enable_shared_from_this
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPOOLMANAGER_HPP

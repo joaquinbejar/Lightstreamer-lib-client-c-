@@ -28,6 +28,7 @@
 
 namespace lightstreamer::client::transport::providers::netty::pool {
 
+
     using DotNetty::Transport::Channels::IChannel;
     using DotNetty::Transport::Channels::Pool::IChannelPool;
     using DotNetty::Transport::Channels::Pool::IChannelPoolHandler;

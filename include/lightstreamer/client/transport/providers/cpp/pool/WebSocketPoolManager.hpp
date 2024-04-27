@@ -26,7 +26,7 @@
 #include <memory>
 #include <utility>
 
-namespace lightstreamer::client::transport::providers::netty::pool {
+namespace lightstreamer::client::transport::providers::cpp::pool {
 
 
     using DotNetty::Transport::Channels::IChannel;

@@ -25,19 +25,65 @@
 #define LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPOOLMANAGER_HPP
 #include <memory>
 #include <utility>
+#include "HttpClient.h"
+#include "ExtendedNettyFullAddress.h"
 
 namespace lightstreamer::client::transport::providers::cpp::pool {
+    class WebSocketPoolManager {
+    protected:
+        static ILogger *log;
+        AbstractChannelPoolMap <ExtendedNettyFullAddress, WebSocketChannelPool> *poolMap;
 
+    public:
+        WebSocketPoolManager(HttpPoolManager *httpPoolMap);
 
-    using DotNetty::Transport::Channels::IChannel;
-    using DotNetty::Transport::Channels::Pool::IChannelPool;
-    using DotNetty::Transport::Channels::Pool::IChannelPoolHandler;
-    using Lightstreamer::DotNet::Logging::Log::ILogger;
-    using Lightstreamer::DotNet::Logging::Log::LogManager;
+        IChannelPool *get(ExtendedNettyFullAddress addr);
 
-    /**
-     * A channel pool sharing WebSocket connections.
-     */
-    class WebSocketPoolManager : public std::enable_shared_from_this
+        void Dispose();
+
+        virtual IChannelPoolHandler *decorateChannelPoolHandler(IChannelPoolHandler *handler);
+
+        class WebSocketChannelPoolHandler : public BaseChannelPoolHandler {
+        public:
+            void ChannelReleased(IChannel *ch) override;
+
+            void ChannelAcquired(IChannel *ch) override;
+
+            void ChannelCreated(IChannel *ch) override;
+        };
+    };
+
+// WebSocketPoolManager.cpp
+
+    ILogger *WebSocketPoolManager::log = LogManager::GetLogger(Constants::NETTY_POOL_LOG);
+
+    WebSocketPoolManager::WebSocketPoolManager(HttpPoolManager *httpPoolMap) {
+        // Initialize poolMap...
+    }
+
+    IChannelPool *WebSocketPoolManager::get(ExtendedNettyFullAddress addr) {
+        return poolMap->Get(addr);
+    }
+
+    void WebSocketPoolManager::Dispose() {
+        poolMap->Dispose();
+    }
+
+    IChannelPoolHandler *WebSocketPoolManager::decorateChannelPoolHandler(IChannelPoolHandler *handler) {
+        return handler;
+    }
+
+    void WebSocketPoolManager::WebSocketChannelPoolHandler::ChannelReleased(IChannel *ch) {
+        // ChannelReleased implementation...
+    }
+
+    void WebSocketPoolManager::WebSocketChannelPoolHandler::ChannelAcquired(IChannel *ch) {
+        // ChannelAcquired implementation...
+    }
+
+    void WebSocketPoolManager::WebSocketChannelPoolHandler::ChannelCreated(IChannel *ch) {
+        // ChannelCreated implementation...
+    }
+}
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPOOLMANAGER_HPP

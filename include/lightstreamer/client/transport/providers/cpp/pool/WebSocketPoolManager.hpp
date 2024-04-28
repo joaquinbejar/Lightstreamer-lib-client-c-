@@ -73,6 +73,54 @@ namespace lightstreamer::client::transport::providers::cpp::pool {
     };
 
 
+    class IChannelPool
+    {
+    public:
+        IChannelPool(size_t size)
+        {
+            for(size_t i = 0; i < size; ++i)
+            {
+                connections.push(new Connection);
+            }
+        }
+
+        ~IChannelPool()
+        {
+            while(!connections.empty())
+            {
+                auto conn = connections.front();
+                connections.pop();
+                delete conn;
+            }
+        }
+
+        Connection* acquire()
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            while(connections.empty())
+            {
+                cond_var.wait(lock);
+            }
+            auto conn = connections.front();
+            connections.pop();
+            return conn;
+        }
+
+        void release(Connection* conn)
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            connections.push(conn);
+            cond_var.notify_one();
+        }
+
+    private:
+        std::queue<Connection*> connections;
+        std::mutex mtx;
+        std::condition_variable cond_var;
+    };
+
+
+
     // Un pool de canales que comparte conexiones WebSocket.
     class WebSocketPoolManager
     {

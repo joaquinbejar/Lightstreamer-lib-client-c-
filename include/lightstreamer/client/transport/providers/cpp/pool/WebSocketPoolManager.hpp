@@ -27,63 +27,102 @@
 #include <utility>
 #include "HttpClient.h"
 #include "ExtendedNettyFullAddress.h"
+#include <DotNetty/Transport/Channels.h>
+#include <DotNetty/Transport/Channels/Pool.h>
+#include <Lightstreamer/DotNet/Logging/Log.h>
 
 namespace lightstreamer::client::transport::providers::cpp::pool {
-    class WebSocketPoolManager {
-    protected:
-        static ILogger *log;
-        AbstractChannelPoolMap <ExtendedNettyFullAddress, WebSocketChannelPool> *poolMap;
 
+
+// Un pool de canales que comparte conexiones WebSocket.
+    class WebSocketPoolManager
+    {
     public:
-        WebSocketPoolManager(HttpPoolManager *httpPoolMap);
+        // TEST ONLY
+        virtual IChannelPoolHandler* decorateChannelPoolHandler(IChannelPoolHandler* handler)
+        {
+            return handler;
+        }
 
-        IChannelPool *get(ExtendedNettyFullAddress addr);
+        // Obtiene un canal del pool.
+        virtual IChannelPool* get(ExtendedNettyFullAddress addr)
+        {
+            return poolMap.Get(addr);
+        }
 
-        void Dispose();
+        void Dispose()
+        {
+            poolMap.Dispose();
+        }
 
-        virtual IChannelPoolHandler *decorateChannelPoolHandler(IChannelPoolHandler *handler);
+        WebSocketPoolManager(HttpPoolManager httpPoolMap)
+        {
+            this->poolMap = new AbstractChannelPoolMapAnonymousInnerClass(this, httpPoolMap);
+        }
 
-        class WebSocketChannelPoolHandler : public BaseChannelPoolHandler {
+    private:
+        static ILogger* log = LogManager::GetLogger(Constants::NETTY_POOL_LOG);
+
+        AbstractChannelPoolMap<ExtendedNettyFullAddress, WebSocketChannelPool>* poolMap;
+
+        class AbstractChannelPoolMapAnonymousInnerClass : public AbstractChannelPoolMap<ExtendedNettyFullAddress, WebSocketChannelPool>
+        {
         public:
-            void ChannelReleased(IChannel *ch) override;
+            AbstractChannelPoolMapAnonymousInnerClass(WebSocketPoolManager* outerInstance, HttpPoolManager httpPoolMap)
+            {
+                this->outerInstance = outerInstance;
+                this->httpPoolMap = httpPoolMap;
+            }
 
-            void ChannelAcquired(IChannel *ch) override;
+            WebSocketChannelPool* NewPool(ExtendedNettyFullAddress key)
+            {
+                HttpPoolManager::HttpChannelPool* httpPool = httpPoolMap.getChannelPool(key.Address);
 
-            void ChannelCreated(IChannel *ch) override;
+                IChannelPoolHandler* wsPoolHandler = outerInstance->decorateChannelPoolHandler(new WebSocketChannelPoolHandler());
+                WebSocketChannelPool* wsPool = new WebSocketChannelPool(httpPool, key, wsPoolHandler);
+
+                return wsPool;
+            }
+
+        private:
+            WebSocketPoolManager* outerInstance;
+            HttpPoolManager httpPoolMap;
+        };
+
+        // Controlador que es llamado por el administrador del pool cuando un canal es adquirido o liberado.
+        class WebSocketChannelPoolHandler : public BaseChannelPoolHandler
+        {
+        public:
+            void ChannelReleased(IChannel* ch)
+            {
+                BaseChannelPoolHandler::ChannelReleased(ch);
+                if (log->IsDebugEnabled())
+                {
+                    log->Debug("WebSocket channel released [" + ch->Id + "]");
+                }
+            }
+
+            void ChannelAcquired(IChannel* ch)
+            {
+                BaseChannelPoolHandler::ChannelAcquired(ch);
+                if (log->IsDebugEnabled())
+                {
+                    log->Debug("WebSocket channel acquired [" + ch->Id + "]");
+                }
+            }
+
+            void ChannelCreated(IChannel* ch)
+            {
+                BaseChannelPoolHandler::ChannelCreated(ch);
+                // PipelineUtils.populateHttpPipeline(ch, key, new NettySocketHandler());
+                if (log->IsDebugEnabled())
+                {
+                    log->Debug("WebSocket channel created [" + ch->Id + "]");
+                }
+            }
         };
     };
 
-// WebSocketPoolManager.cpp
-
-    ILogger *WebSocketPoolManager::log = LogManager::GetLogger(Constants::NETTY_POOL_LOG);
-
-    WebSocketPoolManager::WebSocketPoolManager(HttpPoolManager *httpPoolMap) {
-        // Initialize poolMap...
-    }
-
-    IChannelPool *WebSocketPoolManager::get(ExtendedNettyFullAddress addr) {
-        return poolMap->Get(addr);
-    }
-
-    void WebSocketPoolManager::Dispose() {
-        poolMap->Dispose();
-    }
-
-    IChannelPoolHandler *WebSocketPoolManager::decorateChannelPoolHandler(IChannelPoolHandler *handler) {
-        return handler;
-    }
-
-    void WebSocketPoolManager::WebSocketChannelPoolHandler::ChannelReleased(IChannel *ch) {
-        // ChannelReleased implementation...
-    }
-
-    void WebSocketPoolManager::WebSocketChannelPoolHandler::ChannelAcquired(IChannel *ch) {
-        // ChannelAcquired implementation...
-    }
-
-    void WebSocketPoolManager::WebSocketChannelPoolHandler::ChannelCreated(IChannel *ch) {
-        // ChannelCreated implementation...
-    }
 }
 
 #endif //LIGHTSTREAMER_LIB_CLIENT_CPP_WEBSOCKETPOOLMANAGER_HPP

@@ -27,14 +27,53 @@
 #include <utility>
 #include "HttpClient.h"
 #include "ExtendedNettyFullAddress.h"
-#include <DotNetty/Transport/Channels.h>
+
+#include <optional>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+
 #include <DotNetty/Transport/Channels/Pool.h>
 #include <Lightstreamer/DotNet/Logging/Log.h>
 
 namespace lightstreamer::client::transport::providers::cpp::pool {
 
 
-// Un pool de canales que comparte conexiones WebSocket.
+    template<typename T>
+    class IChannel
+    {
+    public:
+        bool send(T item)
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            data_queue.push(std::move(item));
+            cond_var.notify_one();
+            return true;
+        }
+
+        std::optional<T> recv()
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            cond_var.wait(lock, [this]{ return !data_queue.empty(); });
+            T result = std::move(data_queue.front());
+            data_queue.pop();
+            return result;
+        }
+
+        bool close()
+        {
+            // TODO: Implement this
+            return true;
+        }
+
+    private:
+        std::queue<T> data_queue;
+        std::mutex mtx;
+        std::condition_variable cond_var;
+    };
+
+
+    // Un pool de canales que comparte conexiones WebSocket.
     class WebSocketPoolManager
     {
     public:
